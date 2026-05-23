@@ -2,6 +2,7 @@
 
 import { useFetch } from '@/hooks/use-fetch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { OnboardingChecklist } from '@/components/onboarding/OnboardingChecklist';
 import {
   DollarSign,
   ShoppingCart,
@@ -88,6 +89,9 @@ export default function AppDashboard() {
           Visão geral das suas operações de vending
         </p>
       </div>
+
+      {/* Onboarding (some quando primeira venda chega) */}
+      <OnboardingChecklist />
 
       {/* Alerts Banner */}
       {(metrics?.pending_alerts || 0) > 0 && (

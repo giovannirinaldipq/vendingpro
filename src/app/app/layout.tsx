@@ -25,6 +25,7 @@ import {
   Shield,
   FileSignature,
   Banknote,
+  FileBarChart,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -50,6 +51,7 @@ const navigation = [
   { name: 'Contratos', href: '/app/contratos', icon: FileSignature },
   { name: 'Conciliação', href: '/app/conciliacao', icon: Banknote },
   { name: 'Sugestões', href: '/app/sugestoes', icon: Sparkles },
+  { name: 'Relatórios', href: '/app/relatorios', icon: FileBarChart },
   { name: 'Importar Dados', href: '/app/importar', icon: FileSpreadsheet },
   { name: 'Analytics', href: '/app/analytics', icon: BarChart3 },
   { name: 'Rankings', href: '/app/rankings', icon: TrendingUp },
