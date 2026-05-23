@@ -21,6 +21,7 @@ import {
   Users,
   ClipboardCheck,
   Calculator,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -43,6 +44,7 @@ const navigation = [
   { name: 'Reabastecedores', href: '/app/reabastecedores', icon: Users },
   { name: 'Visitas', href: '/app/visitas', icon: ClipboardCheck },
   { name: 'Financeiro', href: '/app/financeiro', icon: Calculator },
+  { name: 'Sugestões', href: '/app/sugestoes', icon: Sparkles },
   { name: 'Importar Dados', href: '/app/importar', icon: FileSpreadsheet },
   { name: 'Analytics', href: '/app/analytics', icon: BarChart3 },
   { name: 'Rankings', href: '/app/rankings', icon: TrendingUp },
