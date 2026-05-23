@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/admin/auth';
+import { logAudit, extractRequestMeta } from '@/lib/admin/audit';
 
 export async function GET(request: NextRequest) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return NextResponse.json({ success: false, error: { code: auth.error, message: auth.error } }, { status: auth.status });
   const supabase = await createClient();
   const searchParams = request.nextUrl.searchParams;
 
@@ -47,6 +51,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdmin(['super_admin', 'financial']);
+  if (!auth.ok) return NextResponse.json({ success: false, error: { code: auth.error, message: auth.error } }, { status: auth.status });
+
   const supabase = await createClient();
   const body = await request.json();
 
@@ -89,6 +96,17 @@ export async function POST(request: NextRequest) {
   if (error) {
     return NextResponse.json({ success: false, error: { code: 'DB_ERROR', message: error.message } }, { status: 500 });
   }
+
+  const meta = extractRequestMeta(request);
+  await logAudit({
+    adminUserId: auth.admin.id,
+    action: 'invoice.created_manual',
+    entityType: 'billing.invoices',
+    entityId: data.id,
+    newValues: { tenant_id, reference_month, due_date, machines_count, price_per_machine, total },
+    ipAddress: meta.ipAddress,
+    userAgent: meta.userAgent,
+  });
 
   return NextResponse.json({ success: true, data }, { status: 201 });
 }

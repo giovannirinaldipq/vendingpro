@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { registerPaymentSchema } from '@/lib/validators';
+import { requireAdmin } from '@/lib/admin/auth';
+import { logAudit, extractRequestMeta } from '@/lib/admin/audit';
 
 export async function GET(request: NextRequest) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return NextResponse.json({ success: false, error: { code: auth.error, message: auth.error } }, { status: auth.status });
   const supabase = await createClient();
   const searchParams = request.nextUrl.searchParams;
 
@@ -43,6 +47,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdmin(['super_admin', 'financial']);
+  if (!auth.ok) return NextResponse.json({ success: false, error: { code: auth.error, message: auth.error } }, { status: auth.status });
+
   const supabase = await createClient();
   const body = await request.json();
 
@@ -88,6 +95,7 @@ export async function POST(request: NextRequest) {
       payment_date: validation.data.payment_date,
       is_manual: true,
       notes: validation.data.notes,
+      created_by: auth.admin.id,
     })
     .select()
     .single();
@@ -114,6 +122,17 @@ export async function POST(request: NextRequest) {
     .update({ subscription_status: 'active' })
     .eq('id', invoice.tenant_id)
     .in('subscription_status', ['overdue', 'suspended']);
+
+  const meta = extractRequestMeta(request);
+  await logAudit({
+    adminUserId: auth.admin.id,
+    action: 'payment.registered_manual',
+    entityType: 'billing.payments',
+    entityId: payment.id,
+    newValues: { invoice_id: validation.data.invoice_id, amount: validation.data.amount, payment_method: validation.data.payment_method },
+    ipAddress: meta.ipAddress,
+    userAgent: meta.userAgent,
+  });
 
   return NextResponse.json({ success: true, data: payment }, { status: 201 });
 }

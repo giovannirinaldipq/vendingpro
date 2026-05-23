@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createPlanSchema } from '@/lib/validators';
+import { requireAdmin } from '@/lib/admin/auth';
+import { logAudit, extractRequestMeta } from '@/lib/admin/audit';
 
 export async function GET() {
+  const auth = await requireAdmin();
+  if (!auth.ok) return NextResponse.json({ success: false, error: { code: auth.error, message: auth.error } }, { status: auth.status });
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -35,6 +39,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdmin(['super_admin']);
+  if (!auth.ok) return NextResponse.json({ success: false, error: { code: auth.error, message: auth.error } }, { status: auth.status });
+
   const supabase = await createClient();
   const body = await request.json();
 
@@ -62,6 +69,17 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json({ success: false, error: { code: 'DB_ERROR', message: error.message } }, { status: 500 });
   }
+
+  const meta = extractRequestMeta(request);
+  await logAudit({
+    adminUserId: auth.admin.id,
+    action: 'plan.created',
+    entityType: 'billing.plans',
+    entityId: data.id,
+    newValues: validation.data as unknown as Record<string, unknown>,
+    ipAddress: meta.ipAddress,
+    userAgent: meta.userAgent,
+  });
 
   return NextResponse.json({ success: true, data }, { status: 201 });
 }
