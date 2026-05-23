@@ -22,6 +22,7 @@ import {
   ClipboardCheck,
   Calculator,
   Sparkles,
+  Shield,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -49,6 +50,7 @@ const navigation = [
   { name: 'Analytics', href: '/app/analytics', icon: BarChart3 },
   { name: 'Rankings', href: '/app/rankings', icon: TrendingUp },
   { name: 'Alertas', href: '/app/alertas', icon: Bell },
+  { name: 'Segurança', href: '/app/seguranca', icon: Shield },
   { name: 'Configurações', href: '/app/configuracoes', icon: Settings },
 ];
 

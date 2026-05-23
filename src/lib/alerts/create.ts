@@ -1,5 +1,6 @@
 import { createClient as createSupabaseAdmin, type SupabaseClient } from '@supabase/supabase-js';
 import { sendAlertEmail } from '@/lib/email';
+import { isWhatsappConfigured, sendWhatsApp } from '@/lib/notify';
 import type { AlertInput, AlertSettings, AlertSeverity } from './types';
 import { SEVERITY_ORDER } from './types';
 
@@ -13,6 +14,7 @@ export interface CreateAlertResult {
   created: boolean;
   alertId?: string;
   emailSent?: boolean;
+  whatsappSent?: boolean;
   error?: string;
 }
 
@@ -45,6 +47,7 @@ export async function createAlertIfNew(input: AlertInput, settings: AlertSetting
 
   const alertId = data.id;
   let emailSent = false;
+  let whatsappSent = false;
 
   if (shouldNotifyByEmail(input.severity, settings)) {
     const recipients = await resolveRecipients(input.tenant_id, settings);
@@ -68,7 +71,36 @@ export async function createAlertIfNew(input: AlertInput, settings: AlertSetting
     }
   }
 
-  return { ok: true, created: true, alertId, emailSent };
+  // WhatsApp: só para severity high/critical, se configurado
+  if (
+    isWhatsappConfigured() &&
+    (input.severity === 'high' || input.severity === 'critical')
+  ) {
+    const { data: users } = await supabaseAdmin
+      .from('users')
+      .select('phone, notification_whatsapp')
+      .eq('tenant_id', input.tenant_id)
+      .eq('is_active', true)
+      .not('phone', 'is', null);
+    const phones = (users ?? [])
+      .filter(u => u.notification_whatsapp !== false && u.phone)
+      .map(u => u.phone as string);
+
+    if (phones.length > 0) {
+      const body = `🚨 [${input.severity.toUpperCase()}] ${input.title}\n\n${input.message}`;
+      const results = await Promise.all(phones.map(p => sendWhatsApp(p, body)));
+      const anyOk = results.some(r => r.ok);
+      if (anyOk) {
+        whatsappSent = true;
+        await supabaseAdmin
+          .from('alerts')
+          .update({ notified_whatsapp: true })
+          .eq('id', alertId);
+      }
+    }
+  }
+
+  return { ok: true, created: true, alertId, emailSent, whatsappSent };
 }
 
 function shouldNotifyByEmail(severity: AlertSeverity, settings: AlertSettings): boolean {
