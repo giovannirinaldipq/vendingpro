@@ -18,6 +18,8 @@ import {
   Menu,
   ChevronDown,
   Building2,
+  Users,
+  ClipboardCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -37,6 +39,8 @@ const navigation = [
   { name: 'Máquinas', href: '/app/maquinas', icon: Monitor },
   { name: 'Produtos', href: '/app/produtos', icon: Package },
   { name: 'Estoque', href: '/app/estoque', icon: Boxes },
+  { name: 'Reabastecedores', href: '/app/reabastecedores', icon: Users },
+  { name: 'Visitas', href: '/app/visitas', icon: ClipboardCheck },
   { name: 'Importar Dados', href: '/app/importar', icon: FileSpreadsheet },
   { name: 'Analytics', href: '/app/analytics', icon: BarChart3 },
   { name: 'Rankings', href: '/app/rankings', icon: TrendingUp },
