@@ -4,6 +4,7 @@ import { detectSalesDrop } from './detectors/sales-drop';
 import { detectRuptureImminent } from './detectors/rupture-imminent';
 import { detectProductStale } from './detectors/product-stale';
 import { detectContractExpiring } from './detectors/contract-expiring';
+import { detectMachineLoss } from './detectors/machine-loss';
 import type { DetectorResult } from './types';
 
 export interface TenantRunResult {
@@ -22,6 +23,7 @@ export async function runAlertChecksForTenant(tenantId: string, now: Date = new 
     rupture_imminent: await detectRuptureImminent(tenantId, settings, now),
     product_stale: await detectProductStale(tenantId, settings, now),
     contract_expiring: await detectContractExpiring(tenantId, settings, now),
+    machine_loss: await detectMachineLoss(tenantId, settings, now),
   };
 
   const total_created = Object.values(detectors).reduce((s, d) => s + d.created, 0);
