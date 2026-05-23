@@ -98,6 +98,42 @@ export function tplTrialSuspended(t: TenantCtx) {
   return { subject: title, html: renderLayout({ title, preheader: 'Escolha um plano para reativar o acesso.', content }) };
 }
 
+export interface AlertEmailCtx {
+  alert_type: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  title: string;
+  message: string;
+  machine_label?: string | null;
+}
+
+export function tplAlert(ctx: AlertEmailCtx) {
+  const severityLabel = SEVERITY_LABEL[ctx.severity];
+  const severityColor = SEVERITY_COLOR[ctx.severity];
+  const title = `[${severityLabel}] ${ctx.title}`;
+  const content = `
+    <div style="display:inline-block;padding:4px 10px;border-radius:999px;background:${severityColor.bg};color:${severityColor.fg};font-size:12px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:16px;">${severityLabel}</div>
+    <h2 style="margin:0 0 12px;font-size:18px;color:#0f172a;">${escape(ctx.title)}</h2>
+    <p style="margin:0 0 16px;color:#475569;line-height:1.6;">${escape(ctx.message)}</p>
+    ${ctx.machine_label ? `<p style="margin:0 0 16px;color:#64748b;font-size:13px;"><strong>Máquina:</strong> ${escape(ctx.machine_label)}</p>` : ''}
+    ${button(`${APP_URL}/app/alertas`, 'Ver na central de alertas')}
+    <p style="margin:24px 0 0;color:#94a3b8;font-size:12px;">Você está recebendo este email porque configurou alertas em VendingPro. Para alterar as preferências, vá em Configurações → Alertas.</p>`;
+  return { subject: title, html: renderLayout({ title, preheader: ctx.message.slice(0, 120), content }) };
+}
+
+const SEVERITY_LABEL = {
+  low: 'Baixa',
+  medium: 'Média',
+  high: 'Alta',
+  critical: 'Crítica',
+} as const;
+
+const SEVERITY_COLOR = {
+  low:      { bg: '#e0f2fe', fg: '#075985' },
+  medium:   { bg: '#fef3c7', fg: '#92400e' },
+  high:     { bg: '#fee2e2', fg: '#991b1b' },
+  critical: { bg: '#1e293b', fg: '#fef2f2' },
+} as const;
+
 function firstName(name: string): string {
   return name.trim().split(/\s+/)[0] || name;
 }

@@ -1,6 +1,7 @@
 import { EMAIL_FROM, resend } from './client';
-import type { InvoiceCtx, TenantCtx } from './templates';
+import type { AlertEmailCtx, InvoiceCtx, TenantCtx } from './templates';
 import {
+  tplAlert,
   tplInvoiceCreated,
   tplInvoiceOverdue,
   tplInvoiceReminder,
@@ -12,7 +13,7 @@ import {
 } from './templates';
 
 interface SendInput {
-  to: string;
+  to: string | string[];
   subject: string;
   html: string;
   tags?: { name: string; value: string }[];
@@ -92,4 +93,36 @@ export function sendTrialActivated(t: TenantCtx, to: string) {
 export function sendTrialSuspended(t: TenantCtx, to: string) {
   const { subject, html } = tplTrialSuspended(t);
   return sendEmail({ to, subject, html, tags: [{ name: 'type', value: 'trial_suspended' }] });
+}
+
+interface SendAlertInput {
+  to: string[];
+  tenantId: string;
+  alertType: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  title: string;
+  message: string;
+  machineId?: string;
+  machineLabel?: string | null;
+}
+
+export function sendAlertEmail(input: SendAlertInput) {
+  const ctx: AlertEmailCtx = {
+    alert_type: input.alertType,
+    severity: input.severity,
+    title: input.title,
+    message: input.message,
+    machine_label: input.machineLabel ?? null,
+  };
+  const { subject, html } = tplAlert(ctx);
+  return sendEmail({
+    to: input.to,
+    subject,
+    html,
+    tags: [
+      { name: 'type', value: 'alert' },
+      { name: 'alert_type', value: input.alertType },
+      { name: 'severity', value: input.severity },
+    ],
+  });
 }

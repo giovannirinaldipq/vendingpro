@@ -1,2 +1,2 @@
 export * from './send';
-export type { InvoiceCtx, TenantCtx } from './templates';
+export type { AlertEmailCtx, InvoiceCtx, TenantCtx } from './templates';

@@ -12,6 +12,8 @@ import {
   Eye,
   Monitor,
   Filter,
+  Cpu,
+  Hand,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -58,8 +60,10 @@ interface Alert {
   message: string;
   data?: Record<string, unknown>;
   status: 'active' | 'acknowledged' | 'resolved' | 'dismissed';
+  source?: 'auto' | 'manual';
   acknowledged_at?: string;
   resolved_at?: string;
+  notified_email?: boolean;
   created_at: string;
 }
 
@@ -318,6 +322,7 @@ export default function AlertsPage() {
                 <TableRow>
                   <TableHead>Severidade</TableHead>
                   <TableHead>Alerta</TableHead>
+                  <TableHead>Origem</TableHead>
                   <TableHead>Máquina</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Status</TableHead>
@@ -343,6 +348,17 @@ export default function AlertsPage() {
                             {alert.message}
                           </p>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {alert.source === 'auto' ? (
+                          <Badge variant="secondary" className="bg-violet-100 text-violet-700">
+                            <Cpu className="mr-1 h-3 w-3" />Auto
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="bg-gray-100 text-gray-700">
+                            <Hand className="mr-1 h-3 w-3" />Manual
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell>
                         {alert.machine ? (
