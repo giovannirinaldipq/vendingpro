@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { parseVMPayFile, type ParsedSale } from '@/lib/parsers/vmpay';
+import { parseVendPagoFile } from '@/lib/parsers/vendpago';
 
 async function getTenantId(supabase: Awaited<ReturnType<typeof createClient>>) {
   const { data: { user } } = await supabase.auth.getUser();
@@ -43,11 +44,16 @@ export async function POST(request: NextRequest) {
 
     // Parsear baseado no sistema
     let parseResult;
-    if (system === 'vmpay' || !system) {
+    let importSource: 'vmpay' | 'vendpago';
+    if (system === 'vendpago') {
+      parseResult = parseVendPagoFile(buffer);
+      importSource = 'vendpago';
+    } else if (system === 'vmpay' || !system) {
       parseResult = parseVMPayFile(buffer);
+      importSource = 'vmpay';
     } else {
       return NextResponse.json(
-        { success: false, error: { code: 'UNSUPPORTED', message: 'Sistema não suportado ainda' } },
+        { success: false, error: { code: 'UNSUPPORTED', message: `Sistema "${system}" não suportado. Use 'vmpay' ou 'vendpago'.` } },
         { status: 400 }
       );
     }
@@ -114,7 +120,8 @@ export async function POST(request: NextRequest) {
           product_code: sale.product_code,
           barcode: sale.barcode,
           category: sale.category,
-          import_source: 'vmpay',
+          import_source: importSource,
+          ...sale.raw_data,
         },
       });
     }

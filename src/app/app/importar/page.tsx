@@ -126,10 +126,10 @@ export default function ImportPage() {
                   VM PAY
                 </div>
               </SelectItem>
-              <SelectItem value="vendpago" disabled>
+              <SelectItem value="vendpago">
                 <div className="flex items-center gap-2">
                   <FileSpreadsheet className="h-4 w-4 text-green-500" />
-                  VendPago (em breve)
+                  VendPago
                 </div>
               </SelectItem>
             </SelectContent>
@@ -319,12 +319,20 @@ export default function ImportPage() {
           <CardContent>
             <ul className="space-y-2 text-sm">
               <li className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-yellow-500" />
-                Em desenvolvimento
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                CSV exportado do painel (encoding Latin-1)
               </li>
-              <li className="flex items-center gap-2 text-muted-foreground">
-                <AlertCircle className="h-4 w-4" />
-                Envie uma planilha de exemplo para habilitar
+              <li className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                Detecta CNPJ e período do operador
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                Mapeamento por nome da máquina (ex: "Smart PagBank - xx:xx:xx - …")
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                Pagamentos: TEF / PIX / CASH / PRIVATE LABEL
               </li>
             </ul>
           </CardContent>
