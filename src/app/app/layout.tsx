@@ -12,10 +12,10 @@ import {
   FileSpreadsheet,
   BarChart3,
   TrendingUp,
+  Bell,
   Settings,
   LogOut,
   Menu,
-  Bell,
   ChevronDown,
   Building2,
 } from 'lucide-react';
@@ -40,6 +40,7 @@ const navigation = [
   { name: 'Importar Dados', href: '/app/importar', icon: FileSpreadsheet },
   { name: 'Analytics', href: '/app/analytics', icon: BarChart3 },
   { name: 'Rankings', href: '/app/rankings', icon: TrendingUp },
+  { name: 'Alertas', href: '/app/alertas', icon: Bell },
   { name: 'Configurações', href: '/app/configuracoes', icon: Settings },
 ];
 
