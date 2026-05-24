@@ -42,8 +42,10 @@ export default function LoginPage() {
         return;
       }
 
+      // Descobre se é admin ou cliente e direciona apropriadamente
+      const whoami = await fetch('/api/whoami').then(r => r.json());
       toast.success('Login realizado');
-      router.push('/app');
+      router.push(whoami.redirect_to ?? '/app');
       router.refresh();
     } catch {
       toast.error('Erro ao fazer login. Tente novamente.');
