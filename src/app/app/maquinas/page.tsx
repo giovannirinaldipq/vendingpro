@@ -52,9 +52,11 @@ const statusConfig = {
 };
 
 const typeLabels: Record<string, string> = {
-  snack: 'Snacks',
-  beverage: 'Bebidas',
-  combo: 'Combo',
+  snack_beverage: 'Snacks e Bebidas',
+  // Compat com dados legados que ainda não foram normalizados:
+  snack: 'Snacks e Bebidas',
+  beverage: 'Snacks e Bebidas',
+  combo: 'Snacks e Bebidas',
   coffee: 'Café',
   other: 'Outro',
 };

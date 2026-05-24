@@ -10,10 +10,23 @@ import { Switch } from '@/components/ui/switch';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { User, Building2, Bell, Shield, Loader2, Save } from 'lucide-react';
+import { Pill } from '@/components/ui/pill';
+import { User, Building2, Bell, Shield, Loader2, Save, CreditCard, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 type Severity = 'low' | 'medium' | 'high' | 'critical';
+
+interface VoucherFee { label: string; percent: number; }
+
+interface FinanceSettings {
+  tenant_id: string;
+  card_fee_percent: number;
+  debit_card_fee_percent: number;
+  pix_fee_percent: number;
+  cash_fee_percent: number;
+  meal_voucher_fee_percent: number;
+  other_voucher_fees: VoucherFee[];
+}
 
 interface AlertSettings {
   tenant_id: string;
@@ -41,6 +54,10 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [recipientsText, setRecipientsText] = useState('');
 
+  const [finance, setFinance] = useState<FinanceSettings | null>(null);
+  const [financeLoading, setFinanceLoading] = useState(true);
+  const [financeSaving, setFinanceSaving] = useState(false);
+
   useEffect(() => {
     fetch('/api/app/alert-settings')
       .then(r => r.json())
@@ -51,7 +68,79 @@ export default function SettingsPage() {
         }
       })
       .finally(() => setLoading(false));
+
+    fetch('/api/app/finance-settings')
+      .then(r => r.json())
+      .then(json => {
+        if (json.data) {
+          setFinance({
+            ...json.data,
+            other_voucher_fees: Array.isArray(json.data.other_voucher_fees)
+              ? json.data.other_voucher_fees
+              : [],
+          });
+        }
+      })
+      .finally(() => setFinanceLoading(false));
   }, []);
+
+  function updateFinance<K extends keyof FinanceSettings>(key: K, value: FinanceSettings[K]) {
+    setFinance(f => f ? { ...f, [key]: value } : f);
+  }
+
+  function addVoucher() {
+    setFinance(f => f ? {
+      ...f,
+      other_voucher_fees: [...f.other_voucher_fees, { label: '', percent: 0 }],
+    } : f);
+  }
+
+  function updateVoucher(idx: number, patch: Partial<VoucherFee>) {
+    setFinance(f => f ? {
+      ...f,
+      other_voucher_fees: f.other_voucher_fees.map((v, i) => i === idx ? { ...v, ...patch } : v),
+    } : f);
+  }
+
+  function removeVoucher(idx: number) {
+    setFinance(f => f ? {
+      ...f,
+      other_voucher_fees: f.other_voucher_fees.filter((_, i) => i !== idx),
+    } : f);
+  }
+
+  async function saveFinance() {
+    if (!finance) return;
+    setFinanceSaving(true);
+    try {
+      const validVouchers = finance.other_voucher_fees.filter(v => v.label.trim() && v.percent >= 0);
+      const body = {
+        card_fee_percent: finance.card_fee_percent,
+        debit_card_fee_percent: finance.debit_card_fee_percent,
+        pix_fee_percent: finance.pix_fee_percent,
+        cash_fee_percent: finance.cash_fee_percent,
+        meal_voucher_fee_percent: finance.meal_voucher_fee_percent,
+        other_voucher_fees: validVouchers,
+      };
+      const res = await fetch('/api/app/finance-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        toast.success('Taxas financeiras salvas');
+        setFinance({
+          ...json.data,
+          other_voucher_fees: Array.isArray(json.data.other_voucher_fees) ? json.data.other_voucher_fees : [],
+        });
+      } else {
+        toast.error(json.error ?? 'Falha ao salvar');
+      }
+    } finally {
+      setFinanceSaving(false);
+    }
+  }
 
   function update<K extends keyof AlertSettings>(key: K, value: AlertSettings[K]) {
     setSettings(s => s ? { ...s, [key]: value } : s);
@@ -100,6 +189,128 @@ export default function SettingsPage() {
         <h1 className="text-2xl font-bold tracking-tight">Configurações</h1>
         <p className="text-muted-foreground">Gerencie suas preferências e dados da conta</p>
       </div>
+
+      {/* Taxas financeiras */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Taxas dos meios de pagamento
+          </CardTitle>
+          <CardDescription>
+            Configure quanto cada operadora desconta da sua receita. Usado nos relatórios
+            de margem real e nos alertas de prejuízo.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {financeLoading || !finance ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-text-tertiary" />
+            </div>
+          ) : (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <FeeField
+                  label="Cartão de Crédito"
+                  value={finance.card_fee_percent}
+                  onChange={v => updateFinance('card_fee_percent', v)}
+                  max={30}
+                  hint="Bandeiras de crédito (Visa, Master, Elo)"
+                />
+                <FeeField
+                  label="Cartão de Débito"
+                  value={finance.debit_card_fee_percent}
+                  onChange={v => updateFinance('debit_card_fee_percent', v)}
+                  max={30}
+                  hint="Geralmente menor que crédito"
+                />
+                <FeeField
+                  label="PIX"
+                  value={finance.pix_fee_percent}
+                  onChange={v => updateFinance('pix_fee_percent', v)}
+                  max={10}
+                  hint="Normalmente 0% no QR Code direto"
+                />
+                <FeeField
+                  label="Dinheiro"
+                  value={finance.cash_fee_percent}
+                  onChange={v => updateFinance('cash_fee_percent', v)}
+                  max={10}
+                  hint="Custo operacional de coleta/troco"
+                />
+                <FeeField
+                  label="Vale Alimentação/Refeição"
+                  value={finance.meal_voucher_fee_percent}
+                  onChange={v => updateFinance('meal_voucher_fee_percent', v)}
+                  max={30}
+                  hint="Alelo, Sodexo, VR, Ticket"
+                />
+              </div>
+
+              <Separator />
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-text-primary">Outros vouchers</p>
+                    <p className="text-xs text-text-tertiary">
+                      Adicione outros meios de pagamento com taxas próprias (Caju, Flash, Swile, etc)
+                    </p>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={addVoucher}>
+                    <Plus className="mr-1 h-4 w-4" />Adicionar
+                  </Button>
+                </div>
+
+                {finance.other_voucher_fees.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-border-default p-4 text-center text-xs text-text-tertiary">
+                    Nenhum voucher adicional cadastrado
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {finance.other_voucher_fees.map((v, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <Input
+                          placeholder="Nome do voucher (ex: Caju)"
+                          value={v.label}
+                          onChange={e => updateVoucher(idx, { label: e.target.value })}
+                          className="flex-1"
+                        />
+                        <div className="relative w-32">
+                          <Input
+                            type="number"
+                            min={0}
+                            max={30}
+                            step={0.1}
+                            inputMode="decimal"
+                            value={v.percent}
+                            onChange={e => updateVoucher(idx, { percent: Number(e.target.value) })}
+                            className="pr-8 tabular-nums"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-text-tertiary">%</span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => removeVoucher(idx)}
+                          aria-label={`Remover ${v.label || 'voucher'}`}
+                        >
+                          <Trash2 className="h-4 w-4 text-text-tertiary" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <Button onClick={saveFinance} disabled={financeSaving}>
+                {financeSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</> : <><Save className="mr-2 h-4 w-4" />Salvar taxas</>}
+              </Button>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Alertas automáticos */}
       <Card>
@@ -294,8 +505,48 @@ export default function SettingsPage() {
             </div>
             <a href="/forgot-password"><Button variant="outline" size="sm">Alterar</Button></a>
           </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium flex items-center gap-2">
+                Autenticação em 2 fatores (WhatsApp)
+                <Pill tone="amber" size="sm">Em breve</Pill>
+              </p>
+              <p className="text-sm text-muted-foreground">Receba um código no WhatsApp ao fazer login</p>
+            </div>
+            <Button variant="outline" size="sm" disabled>Ativar</Button>
+          </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function FeeField({
+  label, value, onChange, max, hint,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  max: number;
+  hint?: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs font-medium text-text-secondary">{label}</Label>
+      <div className="relative">
+        <Input
+          type="number"
+          min={0}
+          max={max}
+          step={0.1}
+          inputMode="decimal"
+          value={value ?? 0}
+          onChange={e => onChange(Number(e.target.value))}
+          className="pr-8 tabular-nums"
+        />
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-text-tertiary">%</span>
+      </div>
+      {hint && <p className="text-[11px] text-text-tertiary">{hint}</p>}
     </div>
   );
 }

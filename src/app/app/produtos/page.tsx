@@ -13,10 +13,11 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Pill } from '@/components/ui/pill';
+import { cn } from '@/lib/utils';
 import {
   Table,
   TableBody,
@@ -110,7 +111,7 @@ export default function ProductsPage() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Buscar por nome, código ou categoria..."
+              placeholder="Buscar por nome ou categoria..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
@@ -159,54 +160,55 @@ export default function ProductsPage() {
                   <TableRow key={product.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                          <Package className="h-5 w-5 text-primary" />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-navy/10">
+                          <Package className="h-5 w-5 text-brand-navy" />
                         </div>
                         <div>
                           <p className="font-medium">{product.name}</p>
-                          <p className="text-xs text-muted-foreground">{product.barcode || 'Sem código'}</p>
+                          {product.unit_size && (
+                            <p className="text-xs text-text-tertiary tabular-nums">{product.unit_size}</p>
+                          )}
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{product.category || 'Sem categoria'}</Badge>
+                      <Pill tone="outline">{product.category || 'Sem categoria'}</Pill>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right tabular-nums">
                       {product.default_sale_price
                         ? `R$ ${product.default_sale_price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
                         : '-'}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right tabular-nums">
                       {product.default_cost_price
                         ? `R$ ${product.default_cost_price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
                         : '-'}
                     </TableCell>
                     <TableCell>
-                      <Badge className={product.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}>
+                      <Pill tone={product.is_active ? 'success' : 'neutral'} dot>
                         {product.is_active ? 'Ativo' : 'Inativo'}
-                      </Badge>
+                      </Pill>
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
-                        <DropdownMenuTrigger>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
+                        <DropdownMenuTrigger
+                          className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }))}
+                          aria-label={`Ações de ${product.name}`}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <Link href={`/app/produtos/${product.id}`}>
-                            <DropdownMenuItem>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Editar
-                            </DropdownMenuItem>
-                          </Link>
+                          <DropdownMenuItem>
+                            <Link href={`/app/produtos/${product.id}`} className="flex items-center gap-2 w-full">
+                              <Edit className="h-4 w-4" />Editar
+                            </Link>
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            className="text-red-600"
+                            variant="destructive"
                             onClick={() => handleDelete(product.id)}
                           >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Excluir
+                            <Trash2 className="mr-2 h-4 w-4" />Excluir
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

@@ -26,7 +26,7 @@ const machineSchema = z.object({
   code: z.string().min(1, 'Código é obrigatório'),
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   location_id: z.string().optional(),
-  machine_type: z.enum(['snack', 'beverage', 'combo', 'coffee', 'other']).optional(),
+  machine_type: z.enum(['snack_beverage', 'coffee', 'other']).optional(),
   manufacturer: z.string().optional(),
   model: z.string().optional(),
   total_slots: z.number().int().positive().optional(),
@@ -163,9 +163,7 @@ export default function NewMachinePage() {
                     <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="snack">Snacks</SelectItem>
-                    <SelectItem value="beverage">Bebidas</SelectItem>
-                    <SelectItem value="combo">Combo</SelectItem>
+                    <SelectItem value="snack_beverage">Snacks e Bebidas</SelectItem>
                     <SelectItem value="coffee">Café</SelectItem>
                     <SelectItem value="other">Outro</SelectItem>
                   </SelectContent>

@@ -8,10 +8,18 @@ const supabaseAdmin = createAdmin(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+const voucherFeeSchema = z.object({
+  label: z.string().min(1).max(60),
+  percent: z.number().min(0).max(30),
+});
+
 const schema = z.object({
   card_fee_percent: z.number().min(0).max(30).optional(),
+  debit_card_fee_percent: z.number().min(0).max(30).optional(),
   pix_fee_percent: z.number().min(0).max(10).optional(),
   cash_fee_percent: z.number().min(0).max(10).optional(),
+  meal_voucher_fee_percent: z.number().min(0).max(30).optional(),
+  other_voucher_fees: z.array(voucherFeeSchema).max(20).optional(),
   loss_alert_enabled: z.boolean().optional(),
   loss_alert_period_days: z.number().int().min(7).max(90).optional(),
 });

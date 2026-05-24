@@ -9,7 +9,7 @@ export type SubscriptionStatus = 'trial' | 'active' | 'overdue' | 'suspended' | 
 export type InvoiceStatus = 'draft' | 'pending' | 'paid' | 'overdue' | 'cancelled';
 export type UserRole = 'owner' | 'admin' | 'manager' | 'viewer';
 export type MachineStatus = 'active' | 'inactive' | 'maintenance' | 'installing' | 'deactivated';
-export type MachineType = 'snack' | 'beverage' | 'combo' | 'coffee' | 'other';
+export type MachineType = 'snack_beverage' | 'coffee' | 'other';
 export type TelemetrySystem = 'vmpay' | 'vendpago' | 'other';
 export type LocationType = 'school' | 'company' | 'hospital' | 'gym' | 'mall' | 'bus_station' | 'condominium' | 'university' | 'other';
 export type ContractType = 'rent' | 'commission' | 'free';
@@ -228,11 +228,55 @@ export interface Product {
   id: string;
   tenant_id: string;
   name: string;
+  /** @deprecated mantido por compatibilidade com parser VMPay; UI não expõe mais */
   barcode: string | null;
+  /** Categoria livre, editável pelo cliente (ex: "Salgadinhos", "Bebidas Premium") */
   category: string | null;
+  /** Tamanho/gramatura/volume (ex: "350ml", "41,5g") */
+  unit_size: string | null;
+  /** Preço de venda DEFAULT — pode ser sobrescrito por máquina em MachineProduct.sale_price */
   default_sale_price: number | null;
   default_cost_price: number | null;
   is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Preço de venda de um produto numa máquina específica.
+ * Permite que o mesmo Kit Kat seja R$ 4 numa máquina e R$ 6 em outra.
+ */
+export interface MachineProduct {
+  id: string;
+  tenant_id: string;
+  machine_id: string;
+  product_id: string;
+  sale_price: number;
+  cost_price: number | null;
+  slot_code: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  // Relations
+  product?: Product;
+}
+
+export interface FinanceSettings {
+  tenant_id: string;
+  /** Taxa sobre cartão de crédito (%) */
+  card_fee_percent: number;
+  /** Taxa sobre cartão de débito (%) */
+  debit_card_fee_percent: number;
+  /** Taxa sobre PIX (%) */
+  pix_fee_percent: number;
+  /** Taxa sobre dinheiro (%) — usado pra coberturas operacionais */
+  cash_fee_percent: number;
+  /** Taxa sobre Vale Alimentação/Refeição (Alelo, Sodexo, VR, Ticket) (%) */
+  meal_voucher_fee_percent: number;
+  /** Outras taxas de vouchers/meios alternativos */
+  other_voucher_fees: Array<{ label: string; percent: number }>;
+  loss_alert_enabled: boolean;
+  loss_alert_period_days: number;
   created_at: string;
   updated_at: string;
 }

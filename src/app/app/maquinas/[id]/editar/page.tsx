@@ -24,7 +24,7 @@ import {
 const machineSchema = z.object({
   code: z.string().min(1, 'Código é obrigatório'),
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  machine_type: z.enum(['snack', 'beverage', 'combo', 'coffee', 'other']),
+  machine_type: z.enum(['snack_beverage', 'coffee', 'other']),
   location_id: z.string().optional(),
   status: z.enum(['active', 'inactive', 'maintenance']),
 });
@@ -53,7 +53,7 @@ export default function EditMachinePage({ params }: { params: Promise<{ id: stri
   } = useForm<MachineFormData>({
     resolver: zodResolver(machineSchema),
     defaultValues: {
-      machine_type: 'snack',
+      machine_type: 'snack_beverage',
       status: 'active',
     },
   });
@@ -81,7 +81,9 @@ export default function EditMachinePage({ params }: { params: Promise<{ id: stri
           reset({
             code: machine.code,
             name: machine.name,
-            machine_type: machine.machine_type || 'snack',
+            machine_type: ['snack', 'beverage', 'combo'].includes(machine.machine_type)
+            ? 'snack_beverage'
+            : (machine.machine_type || 'snack_beverage'),
             location_id: machine.location_id || '',
             status: machine.status || 'active',
           });
@@ -196,9 +198,7 @@ export default function EditMachinePage({ params }: { params: Promise<{ id: stri
                     <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="snack">Snacks</SelectItem>
-                    <SelectItem value="beverage">Bebidas</SelectItem>
-                    <SelectItem value="combo">Combo</SelectItem>
+                    <SelectItem value="snack_beverage">Snacks e Bebidas</SelectItem>
                     <SelectItem value="coffee">Café</SelectItem>
                     <SelectItem value="other">Outro</SelectItem>
                   </SelectContent>
