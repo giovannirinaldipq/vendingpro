@@ -143,8 +143,23 @@ export default function ImportPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Importar Dados</h1>
-        <p className="text-muted-foreground">Importe vendas das suas planilhas de telemetria</p>
+        <p className="text-text-secondary">Importe vendas das suas planilhas de telemetria</p>
       </div>
+
+      {step === 'upload' && (
+        <div className="rounded-lg border border-info/30 bg-info-soft/40 p-4 text-sm flex gap-3">
+          <Calendar className="h-5 w-5 text-info shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="font-medium text-text-primary">Como funciona o fluxo diário</p>
+            <p className="text-xs text-text-secondary">
+              Suba a planilha exportada do VMPay/Vendpago <strong>todo dia pela manhã</strong>,
+              referente ao dia anterior. O sistema infere o consumo, atualiza o estoque, gera o
+              picklist de reabastecimento e alimenta os relatórios. Sem upload diário, as métricas
+              em tempo real ficam defasadas.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center gap-2 text-xs">
         <StepDot active={step === 'upload'} done={step !== 'upload'}>1. Arquivo</StepDot>

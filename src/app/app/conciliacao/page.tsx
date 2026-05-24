@@ -1,11 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Loader2, Upload, CheckCircle2, XCircle, AlertCircle, FileText } from 'lucide-react';
+import { Loader2, Upload, CheckCircle2, XCircle, AlertCircle, FileText, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Pill } from '@/components/ui/pill';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -24,11 +23,11 @@ interface MatchResponse {
 }
 
 const fmtBRL = (n: number) => Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-const CONF_CLR: Record<string, string> = {
-  high: 'bg-green-100 text-green-700',
-  medium: 'bg-blue-100 text-blue-700',
-  low: 'bg-amber-100 text-amber-700',
-  none: 'bg-gray-100 text-gray-600',
+const CONF_TONE: Record<string, 'success' | 'info' | 'warning' | 'neutral'> = {
+  high: 'success',
+  medium: 'info',
+  low: 'warning',
+  none: 'neutral',
 };
 const CONF_LABEL: Record<string, string> = { high: 'Alto', medium: 'Médio', low: 'Baixo', none: '—' };
 
@@ -58,8 +57,21 @@ export default function ConciliacaoPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Conciliação bancária</h1>
-        <p className="text-sm text-muted-foreground">Suba o extrato em CSV e veja quais lançamentos batem com seus pagamentos registrados.</p>
+        <h1 className="text-2xl font-bold tracking-tight">Conciliação bancária</h1>
+        <p className="text-sm text-text-secondary">Suba o extrato bancário e veja quais entradas batem com seus pagamentos registrados.</p>
+      </div>
+
+      <div className="rounded-lg border border-info/30 bg-info-soft/40 p-4 text-sm flex gap-3">
+        <Info className="h-5 w-5 text-info shrink-0 mt-0.5" />
+        <div className="space-y-1">
+          <p className="font-medium text-text-primary">O que entra aqui (e o que não entra)</p>
+          <p className="text-xs text-text-secondary">
+            Esta tela cruza o <strong>extrato do seu banco</strong> com os pagamentos
+            cadastrados no sistema (faturas, comissões, recebíveis) — agregado, não por
+            máquina. Vendas das máquinas continuam sendo importadas em
+            <strong> Dados → Importar</strong>; aqui é só conferência de caixa.
+          </p>
+        </div>
       </div>
 
       <Card>
@@ -69,14 +81,14 @@ export default function ConciliacaoPage() {
         </CardHeader>
         <CardContent>
           <label htmlFor="csv" className="block">
-            <div className="rounded border-2 border-dashed border-muted-foreground/30 p-12 flex flex-col items-center justify-center text-sm cursor-pointer hover:bg-muted/40">
-              <Upload className="h-10 w-10 mb-3 text-muted-foreground" />
+            <div className="rounded-lg border-2 border-dashed border-border-default p-12 flex flex-col items-center justify-center text-sm cursor-pointer hover:bg-surface-subtle hover:border-border-strong transition-colors">
+              <Upload className="h-10 w-10 mb-3 text-text-tertiary" />
               <span className="font-medium">Clique para selecionar CSV</span>
-              <span className="text-xs text-muted-foreground mt-1">ou arraste e solte aqui</span>
+              <span className="text-xs text-text-tertiary mt-1">ou arraste e solte aqui</span>
             </div>
           </label>
           <input id="csv" type="file" accept=".csv,text/csv" className="hidden" disabled={busy} onChange={e => e.target.files?.[0] && handleUpload(e.target.files[0])} />
-          {busy && <div className="flex items-center justify-center mt-4 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin mr-2" />Processando...</div>}
+          {busy && <div className="flex items-center justify-center mt-4 text-sm text-text-tertiary"><Loader2 className="h-4 w-4 animate-spin mr-2" />Processando...</div>}
         </CardContent>
       </Card>
 
@@ -84,17 +96,17 @@ export default function ConciliacaoPage() {
         <>
           <div className="grid gap-4 md:grid-cols-5">
             <KpiCard label="Linhas" value={result.stats.total_rows} />
-            <KpiCard label="Match alto" value={result.stats.matched_high} color="text-green-600" />
-            <KpiCard label="Match médio/baixo" value={result.stats.matched_medium + result.stats.matched_low} color="text-amber-600" />
-            <KpiCard label="Sem correspondência" value={result.stats.unmatched} color="text-red-600" />
-            <KpiCard label="Saídas (ignoradas)" value={result.stats.outflows} color="text-gray-500" />
+            <KpiCard label="Match alto" value={result.stats.matched_high} color="text-success" />
+            <KpiCard label="Match médio/baixo" value={result.stats.matched_medium + result.stats.matched_low} color="text-warning" />
+            <KpiCard label="Sem correspondência" value={result.stats.unmatched} color="text-danger" />
+            <KpiCard label="Saídas (ignoradas)" value={result.stats.outflows} color="text-text-tertiary" />
           </div>
 
           {result.parse_warnings.length > 0 && (
-            <Card className="border-amber-200">
+            <Card className="border-warning/40">
               <CardContent className="pt-6 flex items-start gap-2 text-sm">
-                <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                <div>{result.parse_warnings.join('. ')}</div>
+                <AlertCircle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
+                <div className="text-text-secondary">{result.parse_warnings.join('. ')}</div>
               </CardContent>
             </Card>
           )}
@@ -114,20 +126,24 @@ export default function ConciliacaoPage() {
                 </TableHeader>
                 <TableBody>
                   {result.matches.map((m, i) => (
-                    <TableRow key={i} className={m.confidence === 'none' && m.bank_row.amount > 0 ? 'bg-red-50/30' : ''}>
-                      <TableCell className="text-sm">{new Date(m.bank_row.date).toLocaleDateString('pt-BR')}</TableCell>
+                    <TableRow key={i} className={m.confidence === 'none' && m.bank_row.amount > 0 ? 'bg-danger-soft/30' : ''}>
+                      <TableCell className="text-sm tabular-nums">{new Date(m.bank_row.date).toLocaleDateString('pt-BR')}</TableCell>
                       <TableCell className="text-sm">{m.bank_row.description}</TableCell>
-                      <TableCell className={`text-right font-medium ${m.bank_row.amount > 0 ? 'text-green-700' : 'text-muted-foreground'}`}>{fmtBRL(m.bank_row.amount)}</TableCell>
+                      <TableCell className={`text-right font-medium tabular-nums ${m.bank_row.amount > 0 ? 'text-success' : 'text-text-tertiary'}`}>{fmtBRL(m.bank_row.amount)}</TableCell>
                       <TableCell>
                         {m.matched_payment_id ? (
-                          <Badge className={CONF_CLR[m.confidence]}><CheckCircle2 className="mr-1 h-3 w-3" />{CONF_LABEL[m.confidence]}</Badge>
+                          <Pill tone={CONF_TONE[m.confidence]} dot>
+                            <CheckCircle2 className="h-3 w-3" />{CONF_LABEL[m.confidence]}
+                          </Pill>
                         ) : m.bank_row.amount > 0 ? (
-                          <Badge className="bg-red-100 text-red-700"><XCircle className="mr-1 h-3 w-3" />Sem match</Badge>
+                          <Pill tone="danger" dot>
+                            <XCircle className="h-3 w-3" />Sem match
+                          </Pill>
                         ) : (
-                          <Badge variant="secondary">Saída</Badge>
+                          <Pill tone="neutral">Saída</Pill>
                         )}
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{m.reason}</TableCell>
+                      <TableCell className="text-xs text-text-tertiary">{m.reason}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
