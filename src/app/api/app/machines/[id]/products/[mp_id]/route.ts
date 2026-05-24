@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { z } from 'zod';
+
+const supabaseAdmin = createAdminClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 const updateSchema = z.object({
   sale_price: z.number().min(0).optional(),
@@ -12,8 +18,8 @@ const updateSchema = z.object({
 async function getTenantId(supabase: Awaited<ReturnType<typeof createClient>>) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
-  const { data: profile } = await supabase
-    .from('users').select('tenant_id').eq('id', user.id).single();
+  const { data: profile } = await supabaseAdmin
+    .from('users').select('tenant_id').eq('id', user.id).maybeSingle();
   return profile?.tenant_id ?? null;
 }
 
@@ -40,7 +46,7 @@ export async function PATCH(
     );
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('machine_products')
     .update(validation.data)
     .eq('id', mp_id)
@@ -73,7 +79,7 @@ export async function DELETE(
     );
   }
 
-  const { error } = await supabase
+  const { error } = await supabaseAdmin
     .from('machine_products')
     .delete()
     .eq('id', mp_id)

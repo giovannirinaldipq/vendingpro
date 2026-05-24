@@ -192,10 +192,15 @@ export default function EditMachinePage({ params }: { params: Promise<{ id: stri
                 <Label>Tipo</Label>
                 <Select
                   value={currentType}
-                  onValueChange={(value) => setValue('machine_type', value as MachineFormData['machine_type'])}
+                  onValueChange={(value) => setValue('machine_type', (value ?? 'snack_beverage') as MachineFormData['machine_type'])}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo" />
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione o tipo">
+                      {currentType === 'snack_beverage' ? 'Snacks e Bebidas'
+                       : currentType === 'coffee' ? 'Café'
+                       : currentType === 'other' ? 'Outro'
+                       : null}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="snack_beverage">Snacks e Bebidas</SelectItem>
@@ -209,10 +214,15 @@ export default function EditMachinePage({ params }: { params: Promise<{ id: stri
                 <Label>Status</Label>
                 <Select
                   value={currentStatus}
-                  onValueChange={(value) => setValue('status', value as MachineFormData['status'])}
+                  onValueChange={(value) => setValue('status', (value ?? 'active') as MachineFormData['status'])}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o status" />
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione o status">
+                      {currentStatus === 'active' ? 'Ativa'
+                       : currentStatus === 'inactive' ? 'Inativa'
+                       : currentStatus === 'maintenance' ? 'Em Manutenção'
+                       : null}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="active">Ativa</SelectItem>
@@ -229,11 +239,14 @@ export default function EditMachinePage({ params }: { params: Promise<{ id: stri
                 value={currentLocation || ''}
                 onValueChange={(value) => setValue('location_id', value || undefined)}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o local" />
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecione o local">
+                    {currentLocation
+                      ? locations.find(l => l.id === currentLocation)?.name
+                      : null}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sem local</SelectItem>
                   {locations.map((location) => (
                     <SelectItem key={location.id} value={location.id}>
                       {location.name}

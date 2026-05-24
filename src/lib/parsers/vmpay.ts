@@ -79,6 +79,10 @@ export interface VMPayParseResult {
       end: string;
     };
     total_revenue: number;
+    /** Indica formato detectado: 'sales_detailed' (linha por venda) ou 'cashless_aggregated' (linha por dia) */
+    format?: 'sales_detailed' | 'cashless_aggregated';
+    /** Quando agregado: soma de transações reais embutidas (cada linha é um dia com N vendas) */
+    aggregated_transactions?: number;
   };
   errors: string[];
 }
@@ -401,6 +405,9 @@ function parseVMPayCashlessAggregated(
     });
   }
 
+  // Soma de transações reais (cada linha é um dia agregando N transações na quantity)
+  const aggregatedTransactions = sales.reduce((sum, s) => sum + (s.quantity ?? 0), 0);
+
   return {
     success: true,
     sales,
@@ -411,6 +418,8 @@ function parseVMPayCashlessAggregated(
       machines: Array.from(machinesSet).sort(),
       date_range: { start: minDate, end: maxDate },
       total_revenue: Math.round(totalRevenue * 100) / 100,
+      format: 'cashless_aggregated',
+      aggregated_transactions: aggregatedTransactions,
     },
     errors,
   };

@@ -20,6 +20,8 @@ export interface ParseOutput {
     total_revenue: number;
     cnpj_operador?: string;
     periodo?: string;
+    format?: 'sales_detailed' | 'cashless_aggregated';
+    aggregated_transactions?: number;
   };
   errors: string[];
 }
@@ -54,6 +56,8 @@ export function runParser(buffer: ArrayBuffer, system: ImportSource): ParseOutpu
       machines: r.summary.machines,
       date_range: r.summary.date_range,
       total_revenue: r.summary.total_revenue,
+      format: r.summary.format,
+      aggregated_transactions: r.summary.aggregated_transactions,
     },
     errors: r.errors,
   };

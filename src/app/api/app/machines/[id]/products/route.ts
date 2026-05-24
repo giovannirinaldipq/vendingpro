@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { z } from 'zod';
+
+const supabaseAdmin = createAdminClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 const createSchema = z.object({
   product_id: z.string().uuid(),
@@ -13,17 +19,13 @@ const createSchema = z.object({
 async function getTenantId(supabase: Awaited<ReturnType<typeof createClient>>) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
-  const { data: profile } = await supabase
-    .from('users').select('tenant_id').eq('id', user.id).single();
+  const { data: profile } = await supabaseAdmin
+    .from('users').select('tenant_id').eq('id', user.id).maybeSingle();
   return profile?.tenant_id ?? null;
 }
 
-async function machineBelongsToTenant(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  machineId: string,
-  tenantId: string
-) {
-  const { data } = await supabase
+async function machineBelongsToTenant(machineId: string, tenantId: string) {
+  const { data } = await supabaseAdmin
     .from('machines').select('id').eq('id', machineId).eq('tenant_id', tenantId).maybeSingle();
   return !!data;
 }
@@ -36,17 +38,18 @@ export async function GET(
   const supabase = await createClient();
   const tenantId = await getTenantId(supabase);
   if (!tenantId) return NextResponse.json({ success: true, data: { items: [] } });
-  if (!(await machineBelongsToTenant(supabase, machineId, tenantId))) {
+  if (!(await machineBelongsToTenant(machineId, tenantId))) {
     return NextResponse.json(
       { success: false, error: { code: 'NOT_FOUND', message: 'Máquina não encontrada' } },
       { status: 404 }
     );
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('machine_products')
     .select('id, sale_price, cost_price, slot_code, is_active, created_at, updated_at, product:products(id, name, category, unit_size, default_sale_price, default_cost_price)')
     .eq('machine_id', machineId)
+    .eq('tenant_id', tenantId)
     .order('slot_code', { ascending: true, nullsFirst: false });
 
   if (error) {
@@ -72,7 +75,7 @@ export async function POST(
       { status: 403 }
     );
   }
-  if (!(await machineBelongsToTenant(supabase, machineId, tenantId))) {
+  if (!(await machineBelongsToTenant(machineId, tenantId))) {
     return NextResponse.json(
       { success: false, error: { code: 'NOT_FOUND', message: 'Máquina não encontrada' } },
       { status: 404 }
@@ -89,8 +92,8 @@ export async function POST(
   }
 
   // Confirma que o produto pertence ao tenant
-  const { data: product } = await supabase
-    .from('products').select('id, tenant_id').eq('id', validation.data.product_id).single();
+  const { data: product } = await supabaseAdmin
+    .from('products').select('id, tenant_id').eq('id', validation.data.product_id).maybeSingle();
   if (!product || product.tenant_id !== tenantId) {
     return NextResponse.json(
       { success: false, error: { code: 'INVALID_PRODUCT', message: 'Produto inválido' } },
@@ -98,7 +101,7 @@ export async function POST(
     );
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('machine_products')
     .insert({
       ...validation.data,

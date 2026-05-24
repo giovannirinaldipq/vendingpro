@@ -39,6 +39,8 @@ interface PreviewData {
     date_range: { start: string; end: string };
     cnpj_operador?: string;
     periodo?: string;
+    format?: 'sales_detailed' | 'cashless_aggregated';
+    aggregated_transactions?: number;
   };
   machines: MachineRow[];
   available_machines: AvailableMachine[];
@@ -284,9 +286,33 @@ export default function ImportPage() {
             <CardContent>
               <div className="grid sm:grid-cols-3 gap-4">
                 <KpiInline label="Período do arquivo" value={`${fmtDate(preview.summary.date_range.start)} → ${fmtDate(preview.summary.date_range.end)}`} />
-                <KpiInline label="Vendas no arquivo" value={String(preview.summary.valid_records)} sub={preview.summary.skipped_records > 0 ? `${preview.summary.skipped_records} linhas puladas` : undefined} />
+                {preview.summary.format === 'cashless_aggregated' ? (
+                  <KpiInline
+                    label="Dias agregados"
+                    value={String(preview.summary.valid_records)}
+                    sub={`${preview.summary.aggregated_transactions?.toLocaleString('pt-BR') ?? '—'} vendas no total`}
+                  />
+                ) : (
+                  <KpiInline
+                    label="Vendas no arquivo"
+                    value={String(preview.summary.valid_records)}
+                    sub={preview.summary.skipped_records > 0 ? `${preview.summary.skipped_records} linhas puladas` : undefined}
+                  />
+                )}
                 <KpiInline label="Receita total" value={fmtBRL(preview.summary.total_revenue)} sub={preview.summary.cnpj_operador ? `CNPJ ${preview.summary.cnpj_operador}` : undefined} />
               </div>
+              {preview.summary.format === 'cashless_aggregated' && (
+                <div className="mt-3 rounded-lg border border-warning/30 bg-warning-soft/40 p-3 flex gap-2 text-xs">
+                  <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+                  <div className="text-text-secondary">
+                    <p className="font-medium text-text-primary mb-0.5">Este arquivo é AGREGADO por dia (relatório cashless do VMPay).</p>
+                    <p>Cada linha = total daquele dia naquela máquina, sem detalhe por produto.
+                      Receita por dia, Mapa de Calor (diário) e Rankings funcionam normalmente.
+                      <strong> Top Produtos vai aparecer como &quot;Vendas do dia (cashless agregado)&quot;.</strong>
+                      Pra ter detalhe por produto, exporte o relatório de <em>Vendas</em> (não cashless) no portal VMPay.</p>
+                  </div>
+                </div>
+              )}
               {preview.summary.periodo && (
                 <p className="text-xs text-text-tertiary mt-3">📄 {preview.summary.periodo}</p>
               )}

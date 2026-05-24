@@ -34,26 +34,22 @@ export async function GET(request: NextRequest) {
 
   // Calcular data inicial
   const now = new Date();
-  let startDate: Date;
-  switch (period) {
-    case '7d':
-      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      break;
-    case '90d':
-      startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-      break;
-    default:
-      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  }
-
-  const startDateStr = startDate.toISOString().split('T')[0];
+  const DAY = 24 * 60 * 60 * 1000;
+  const PERIOD_DAYS: Record<string, number | 'all'> = {
+    '7d': 7, '30d': 30, '90d': 90, '180d': 180, '365d': 365, 'all': 'all',
+  };
+  const periodDays = PERIOD_DAYS[period] ?? 30;
+  const startDateStr: string | null = periodDays === 'all'
+    ? null
+    : new Date(now.getTime() - periodDays * DAY).toISOString().split('T')[0];
 
   // Buscar vendas com máquinas
-  const { data: sales } = await supabase
+  let salesQuery = supabase
     .from('sales')
     .select('machine_id, total_price, quantity, product_name')
-    .eq('tenant_id', tenantId)
-    .gte('sale_date', startDateStr);
+    .eq('tenant_id', tenantId);
+  if (startDateStr) salesQuery = salesQuery.gte('sale_date', startDateStr);
+  const { data: sales } = await salesQuery;
 
   // Buscar máquinas
   const { data: machines } = await supabase

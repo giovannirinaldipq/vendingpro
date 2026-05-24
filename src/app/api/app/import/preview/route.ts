@@ -13,6 +13,8 @@ export interface PreviewResponse {
       date_range: { start: string; end: string };
       cnpj_operador?: string;
       periodo?: string;
+      format?: 'sales_detailed' | 'cashless_aggregated';
+      aggregated_transactions?: number;
     };
     machines: Array<{
       external_name: string;
@@ -95,6 +97,8 @@ export async function POST(req: NextRequest) {
         date_range: parsed.summary.date_range,
         cnpj_operador: parsed.summary.cnpj_operador,
         periodo: parsed.summary.periodo,
+        format: parsed.summary.format,
+        aggregated_transactions: parsed.summary.aggregated_transactions,
       },
       machines,
       available_machines: availableMachines ?? [],

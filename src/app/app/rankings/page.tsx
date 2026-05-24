@@ -70,15 +70,15 @@ interface RankingsData {
 }
 
 function getScoreColor(score: number): string {
-  if (score >= 70) return 'text-green-600 bg-green-100';
-  if (score >= 50) return 'text-yellow-600 bg-yellow-100';
-  return 'text-red-600 bg-red-100';
+  if (score >= 70) return 'text-success bg-success-soft';
+  if (score >= 50) return 'text-warning bg-warning-soft';
+  return 'text-danger bg-danger-soft';
 }
 
 function getScoreIcon(score: number) {
-  if (score >= 70) return <CheckCircle className="h-4 w-4 text-green-600" />;
-  if (score >= 50) return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
-  return <XCircle className="h-4 w-4 text-red-600" />;
+  if (score >= 70) return <CheckCircle className="h-4 w-4 text-success" />;
+  if (score >= 50) return <AlertTriangle className="h-4 w-4 text-warning" />;
+  return <XCircle className="h-4 w-4 text-danger" />;
 }
 
 export default function RankingsPage() {
@@ -114,13 +114,24 @@ export default function RankingsPage() {
           </p>
         </div>
         <Select value={period} onValueChange={(v) => v && setPeriod(v)}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue />
+          <SelectTrigger className="w-[170px]">
+            <SelectValue>
+              {period === '7d' ? 'Últimos 7 dias'
+               : period === '30d' ? 'Últimos 30 dias'
+               : period === '90d' ? 'Últimos 90 dias'
+               : period === '180d' ? 'Últimos 180 dias'
+               : period === '365d' ? 'Último ano'
+               : period === 'all' ? 'Todo o histórico'
+               : period}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="7d">Últimos 7 dias</SelectItem>
             <SelectItem value="30d">Últimos 30 dias</SelectItem>
             <SelectItem value="90d">Últimos 90 dias</SelectItem>
+            <SelectItem value="180d">Últimos 180 dias</SelectItem>
+            <SelectItem value="365d">Último ano</SelectItem>
+            <SelectItem value="all">Todo o histórico</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -236,36 +247,33 @@ export default function RankingsPage() {
                       {data.machines.map((machine, index) => (
                         <TableRow key={machine.id}>
                           <TableCell className="font-medium">
-                            {index < 3 ? (
-                              <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full ${
-                                index === 0 ? 'bg-yellow-100 text-yellow-700' :
-                                index === 1 ? 'bg-gray-100 text-gray-700' :
-                                'bg-orange-100 text-orange-700'
-                              }`}>
-                                {index + 1}
-                              </span>
-                            ) : (
-                              index + 1
-                            )}
+                            <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
+                              index === 0 ? 'bg-warning-soft text-warning' :
+                              index === 1 ? 'bg-surface-subtle text-text-secondary' :
+                              index === 2 ? 'bg-brand-amber/15 text-brand-amber' :
+                              'text-text-tertiary'
+                            }`}>
+                              {index + 1}
+                            </span>
                           </TableCell>
                           <TableCell>
                             <div>
                               <p className="font-medium">{machine.name}</p>
-                              <p className="text-xs text-muted-foreground">{machine.code}</p>
+                              <p className="text-xs text-text-tertiary">{machine.code}</p>
                             </div>
                           </TableCell>
                           <TableCell>{machine.location}</TableCell>
-                          <TableCell className="text-right font-medium">
+                          <TableCell className="text-right font-medium tabular-nums">
                             R$ {machine.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </TableCell>
-                          <TableCell className="text-right">{machine.sales}</TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="text-right tabular-nums">{machine.sales}</TableCell>
+                          <TableCell className="text-right tabular-nums">
                             R$ {machine.ticket.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </TableCell>
                           <TableCell className="text-center">
-                            <Badge className={getScoreColor(machine.health_score)}>
+                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${getScoreColor(machine.health_score)}`}>
                               {machine.health_score}
-                            </Badge>
+                            </span>
                           </TableCell>
                         </TableRow>
                       ))}

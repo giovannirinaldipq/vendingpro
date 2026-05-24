@@ -88,20 +88,35 @@ export default function AnalyticsPage() {
         </div>
         <div className="flex gap-2">
           <Select value={period} onValueChange={(v) => v && setPeriod(v)}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-[170px]">
               <Calendar className="mr-2 h-4 w-4" />
-              <SelectValue />
+              <SelectValue>
+                {period === '7d' ? 'Últimos 7 dias'
+                 : period === '30d' ? 'Últimos 30 dias'
+                 : period === '90d' ? 'Últimos 90 dias'
+                 : period === '180d' ? 'Últimos 180 dias'
+                 : period === '365d' ? 'Último ano'
+                 : period === 'all' ? 'Todo o histórico'
+                 : period}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="7d">Últimos 7 dias</SelectItem>
               <SelectItem value="30d">Últimos 30 dias</SelectItem>
               <SelectItem value="90d">Últimos 90 dias</SelectItem>
+              <SelectItem value="180d">Últimos 180 dias</SelectItem>
+              <SelectItem value="365d">Último ano</SelectItem>
+              <SelectItem value="all">Todo o histórico</SelectItem>
             </SelectContent>
           </Select>
           <Select value={machineId} onValueChange={(v) => v && setMachineId(v)}>
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-[220px]">
               <Monitor className="mr-2 h-4 w-4" />
-              <SelectValue />
+              <SelectValue>
+                {machineId === 'all'
+                  ? 'Todas as máquinas'
+                  : (machines.find(m => m.id === machineId)?.name ?? 'Selecione')}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas as máquinas</SelectItem>

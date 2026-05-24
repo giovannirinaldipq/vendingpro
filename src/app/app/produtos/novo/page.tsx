@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, Loader2, Info } from 'lucide-react';
+import { ArrowLeft, Loader2, Info, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Pill } from '@/components/ui/pill';
+import { cn } from '@/lib/utils';
 
 const productSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
@@ -36,9 +37,7 @@ const CATEGORY_SUGGESTIONS = [
 export default function NewProductPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [categoryQuery, setCategoryQuery] = useState('');
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [selectedCategory, setSelectedCategory] = useState('');
 
   const {
     register,
@@ -52,24 +51,9 @@ export default function NewProductPage() {
     },
   });
 
-  useEffect(() => {
-    function onClick(e: MouseEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
-        setShowSuggestions(false);
-      }
-    }
-    document.addEventListener('mousedown', onClick);
-    return () => document.removeEventListener('mousedown', onClick);
-  }, []);
-
-  const filteredSuggestions = categoryQuery
-    ? CATEGORY_SUGGESTIONS.filter(c => c.toLowerCase().includes(categoryQuery.toLowerCase()))
-    : CATEGORY_SUGGESTIONS;
-
   function pickCategory(c: string) {
-    setCategoryQuery(c);
+    setSelectedCategory(c);
     setValue('category', c);
-    setShowSuggestions(false);
   }
 
   async function onSubmit(data: ProductFormData) {
@@ -143,42 +127,38 @@ export default function NewProductPage() {
               </div>
             </div>
 
-            <div className="space-y-2" ref={wrapperRef}>
+            <div className="space-y-2">
               <Label htmlFor="category">Categoria</Label>
-              <div className="relative">
-                <Input
-                  id="category"
-                  placeholder="Digite ou escolha uma categoria"
-                  value={categoryQuery}
-                  onChange={(e) => {
-                    setCategoryQuery(e.target.value);
-                    setValue('category', e.target.value);
-                    setShowSuggestions(true);
-                  }}
-                  onFocus={() => setShowSuggestions(true)}
-                  autoComplete="off"
-                />
-                {showSuggestions && filteredSuggestions.length > 0 && (
-                  <div className="absolute z-10 mt-1 w-full rounded-md border border-border-default bg-surface-card shadow-popover overflow-hidden">
-                    <div className="max-h-56 overflow-y-auto py-1">
-                      {filteredSuggestions.map(c => (
-                        <button
-                          key={c}
-                          type="button"
-                          onClick={() => pickCategory(c)}
-                          className="block w-full text-left px-3 py-1.5 text-sm hover:bg-surface-subtle text-text-primary"
-                        >
-                          {c}
-                        </button>
-                      ))}
-                    </div>
-                    {categoryQuery && !CATEGORY_SUGGESTIONS.some(c => c.toLowerCase() === categoryQuery.toLowerCase()) && (
-                      <div className="border-t border-border-default px-3 py-2 text-xs text-text-tertiary bg-surface-subtle">
-                        Pressione Enter ou continue para usar &quot;{categoryQuery}&quot; como categoria nova
-                      </div>
-                    )}
-                  </div>
-                )}
+              <Input
+                id="category"
+                placeholder="Digite uma categoria ou clique numa sugestão abaixo"
+                value={selectedCategory}
+                onChange={(e) => {
+                  setSelectedCategory(e.target.value);
+                  setValue('category', e.target.value);
+                }}
+                autoComplete="off"
+              />
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {CATEGORY_SUGGESTIONS.map(c => {
+                  const active = selectedCategory.toLowerCase() === c.toLowerCase();
+                  return (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => pickCategory(c)}
+                      className={cn(
+                        'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors',
+                        active
+                          ? 'border-brand-navy bg-brand-navy text-white'
+                          : 'border-border-default bg-surface-card text-text-secondary hover:border-brand-navy hover:text-brand-navy'
+                      )}
+                    >
+                      {active && <Check className="h-3 w-3" />}
+                      {c}
+                    </button>
+                  );
+                })}
               </div>
               <p className="text-[11px] text-text-tertiary">
                 Use suas próprias categorias — não precisa seguir uma lista fixa

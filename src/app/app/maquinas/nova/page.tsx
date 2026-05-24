@@ -54,11 +54,33 @@ const LOCATION_TYPES: { value: string; label: string }[] = [
   { value: 'other', label: 'Outro' },
 ];
 
+const MACHINE_TYPE_LABELS: Record<string, string> = {
+  snack_beverage: 'Snacks e Bebidas',
+  coffee: 'Café',
+  other: 'Outro',
+};
+
+const TELEMETRY_LABELS: Record<string, string> = {
+  vmpay: 'VM PAY',
+  vendpago: 'VendPago',
+  other: 'Outro',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  active: 'Ativa',
+  installing: 'Em Instalação',
+  maintenance: 'Em Manutenção',
+  inactive: 'Inativa',
+};
+
 export default function NewMachinePage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [locations, setLocations] = useState<Location[]>([]);
   const [selectedLocationId, setSelectedLocationId] = useState<string>('');
+  const [selectedMachineType, setSelectedMachineType] = useState<string>('');
+  const [selectedTelemetry, setSelectedTelemetry] = useState<string>('');
+  const [selectedStatus, setSelectedStatus] = useState<string>('active');
 
   // Dialog "criar local rápido"
   const [locDialogOpen, setLocDialogOpen] = useState(false);
@@ -203,16 +225,7 @@ export default function NewMachinePage() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Local</Label>
-                  <button
-                    type="button"
-                    onClick={() => setLocDialogOpen(true)}
-                    className="text-xs font-medium text-brand-navy hover:underline inline-flex items-center gap-1"
-                  >
-                    <Plus className="h-3 w-3" />Criar novo
-                  </button>
-                </div>
+                <Label>Local</Label>
                 <Select
                   value={selectedLocationId}
                   onValueChange={(value) => {
@@ -221,8 +234,12 @@ export default function NewMachinePage() {
                     setValue('location_id', v || undefined);
                   }}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder={locations.length === 0 ? 'Nenhum local — clique "Criar novo"' : 'Selecione o local'} />
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={locations.length === 0 ? 'Nenhum local cadastrado' : 'Selecione o local'}>
+                      {selectedLocationId
+                        ? locations.find(l => l.id === selectedLocationId)?.name
+                        : null}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {locations.map((location) => (
@@ -232,13 +249,29 @@ export default function NewMachinePage() {
                     ))}
                   </SelectContent>
                 </Select>
+                <button
+                  type="button"
+                  onClick={() => setLocDialogOpen(true)}
+                  className="text-xs font-medium text-brand-navy hover:underline inline-flex items-center gap-1 pt-0.5"
+                >
+                  <Plus className="h-3 w-3" />Criar novo local
+                </button>
               </div>
 
               <div className="space-y-2">
                 <Label>Tipo de Máquina</Label>
-                <Select onValueChange={(value) => setValue('machine_type', value as MachineFormData['machine_type'])}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo" />
+                <Select
+                  value={selectedMachineType}
+                  onValueChange={(value) => {
+                    const v = (value ?? '') as MachineFormData['machine_type'] | '';
+                    setSelectedMachineType(v ?? '');
+                    setValue('machine_type', v || undefined);
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione o tipo">
+                      {selectedMachineType ? MACHINE_TYPE_LABELS[selectedMachineType] : null}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="snack_beverage">Snacks e Bebidas</SelectItem>
@@ -312,9 +345,18 @@ export default function NewMachinePage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Sistema de Telemetria</Label>
-                <Select onValueChange={(value) => setValue('telemetry_system', value as MachineFormData['telemetry_system'])}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o sistema" />
+                <Select
+                  value={selectedTelemetry}
+                  onValueChange={(value) => {
+                    const v = (value ?? '') as MachineFormData['telemetry_system'] | '';
+                    setSelectedTelemetry(v ?? '');
+                    setValue('telemetry_system', v || undefined);
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione o sistema">
+                      {selectedTelemetry ? TELEMETRY_LABELS[selectedTelemetry] : null}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="vmpay">VM PAY</SelectItem>
@@ -345,9 +387,18 @@ export default function NewMachinePage() {
           <CardContent>
             <div className="space-y-2">
               <Label>Status Operacional</Label>
-              <Select defaultValue="active" onValueChange={(value) => setValue('status', value as MachineFormData['status'])}>
+              <Select
+                value={selectedStatus}
+                onValueChange={(value) => {
+                  const v = (value ?? 'active') as MachineFormData['status'];
+                  setSelectedStatus(v);
+                  setValue('status', v);
+                }}
+              >
                 <SelectTrigger className="w-full sm:w-[250px]">
-                  <SelectValue />
+                  <SelectValue>
+                    {STATUS_LABELS[selectedStatus] ?? 'Ativa'}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="active">Ativa</SelectItem>
@@ -403,7 +454,11 @@ export default function NewMachinePage() {
             <div className="space-y-2">
               <Label>Tipo</Label>
               <Select value={newLocType} onValueChange={(v) => setNewLocType(v ?? 'company')}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="w-full">
+                  <SelectValue>
+                    {LOCATION_TYPES.find(t => t.value === newLocType)?.label ?? 'Empresa'}
+                  </SelectValue>
+                </SelectTrigger>
                 <SelectContent>
                   {LOCATION_TYPES.map(t => (
                     <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
