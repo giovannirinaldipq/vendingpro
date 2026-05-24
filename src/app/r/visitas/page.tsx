@@ -4,12 +4,13 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  MapPin, ClipboardCheck, Loader2, Play, CheckCircle, Clock, Camera,
+  MapPin, Loader2, Play, CheckCircle, Clock, Camera,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Pill } from '@/components/ui/pill';
+import { EmptyStateV2 } from '@/components/ui/empty-state-v2';
 
 interface Machine {
   id: string;
@@ -88,33 +89,37 @@ export default function VisitasPage() {
 
   if (!data || data.machines.length === 0) {
     return (
-      <div className="text-center py-12">
-        <ClipboardCheck className="mx-auto h-12 w-12 text-text-tertiary/50" />
-        <h1 className="mt-4 text-lg font-semibold text-text-primary">Nenhuma máquina atribuída</h1>
-        <p className="mt-2 text-sm text-text-secondary max-w-md mx-auto">
-          Você ainda não tem máquinas atribuídas a você. Peça à empresa pra te atribuir as máquinas no painel.
-        </p>
-      </div>
+      <EmptyStateV2
+        illustration="no-machines"
+        title="Nenhuma máquina atribuída"
+        description="Peça à empresa pra te atribuir as máquinas no painel — depois disso elas aparecem aqui pra você visitar."
+      />
     );
   }
 
   const { summary, machines } = data;
+  const progressPercent = summary.total === 0 ? 0 : (summary.done / summary.total) * 100;
+  const allDone = summary.done === summary.total && summary.total > 0;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Minhas visitas hoje</h1>
-        <p className="text-sm text-text-secondary mt-1">
+        <h1 className="text-2xl font-bold tracking-tight text-text-primary">
+          {allDone ? 'Visitas finalizadas ✦' : 'Minhas visitas hoje'}
+        </h1>
+        <p className="text-sm text-text-secondary mt-1 tabular-nums">
           {summary.done} de {summary.total} concluídas
-          {summary.in_progress > 0 && ` · ${summary.in_progress} em andamento`}
+          {summary.in_progress > 0 && (
+            <> · <span className="text-warning font-medium">{summary.in_progress} em andamento</span></>
+          )}
         </p>
       </div>
 
-      {/* Progress bar simples */}
-      <div className="h-2 rounded-full bg-surface-subtle overflow-hidden">
+      {/* Progress amber — assinatura visual: progresso = ganho de marca */}
+      <div className="relative h-2 rounded-full bg-surface-subtle overflow-hidden">
         <div
-          className="h-full bg-success transition-all duration-500"
-          style={{ width: `${summary.total === 0 ? 0 : (summary.done / summary.total) * 100}%` }}
+          className={`h-full transition-all duration-500 ${allDone ? 'animate-progress-shimmer' : 'bg-brand-amber'}`}
+          style={{ width: `${progressPercent}%` }}
         />
       </div>
 
@@ -178,7 +183,19 @@ export default function VisitasPage() {
 }
 
 function StatusPill({ status }: { status: 'pending' | 'in_progress' | 'done' }) {
-  if (status === 'done') return <Pill tone="success" size="sm" dot>Concluída</Pill>;
-  if (status === 'in_progress') return <Pill tone="warning" size="sm" dot><Clock className="h-3 w-3" />Em andamento</Pill>;
+  if (status === 'done') {
+    return (
+      <Pill tone="success" size="sm">
+        <CheckCircle className="h-3 w-3" />Concluída
+      </Pill>
+    );
+  }
+  if (status === 'in_progress') {
+    return (
+      <Pill tone="warning" size="sm" dot>
+        <Clock className="h-3 w-3" />Em andamento
+      </Pill>
+    );
+  }
   return <Pill tone="neutral" size="sm">Pendente</Pill>;
 }
