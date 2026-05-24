@@ -18,6 +18,16 @@ async function isAdminUser(userId: string): Promise<boolean> {
   return !!data;
 }
 
+async function isRestockerUser(userId: string): Promise<boolean> {
+  const { data } = await supabaseAdmin
+    .from('restockers')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('is_active', true)
+    .maybeSingle();
+  return !!data;
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -73,9 +83,12 @@ export async function updateSession(request: NextRequest) {
 
   // Logado acessando /login, /register ou raiz → manda pra rota apropriada
   if (user && (pathname === '/login' || pathname === '/register' || pathname === '/')) {
-    const admin = await isAdminUser(user.id);
+    const [admin, restocker] = await Promise.all([
+      isAdminUser(user.id),
+      isRestockerUser(user.id),
+    ]);
     const url = request.nextUrl.clone();
-    url.pathname = admin ? '/admin' : '/app';
+    url.pathname = admin ? '/admin' : restocker ? '/r/visitas' : '/app';
     url.search = '';
     return NextResponse.redirect(url);
   }
@@ -84,6 +97,29 @@ export async function updateSession(request: NextRequest) {
   if (user && pathname.startsWith('/admin') && !pathname.startsWith('/api/admin')) {
     const admin = await isAdminUser(user.id);
     if (!admin) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/app';
+      return NextResponse.redirect(url);
+    }
+  }
+
+  // Reabastecedor tentando /app/* ou /admin/* → redireciona pra /r/visitas
+  if (user && (pathname.startsWith('/app') || pathname.startsWith('/admin'))) {
+    if (!pathname.startsWith('/api/')) {
+      const restocker = await isRestockerUser(user.id);
+      if (restocker) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/r/visitas';
+        url.search = '';
+        return NextResponse.redirect(url);
+      }
+    }
+  }
+
+  // Acesso a /r/* exige ser reabastecedor (e nada mais)
+  if (user && pathname.startsWith('/r/') && !pathname.startsWith('/api/')) {
+    const restocker = await isRestockerUser(user.id);
+    if (!restocker) {
       const url = request.nextUrl.clone();
       url.pathname = '/app';
       return NextResponse.redirect(url);

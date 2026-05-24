@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Loader2, Save, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Trash2, Send, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,32 @@ export default function EditRestockerPage() {
   const [allMachines, setAllMachines] = useState<Machine[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [savingAssign, setSavingAssign] = useState(false);
+  const [inviting, setInviting] = useState(false);
+
+  async function sendInvite() {
+    if (!r?.email) {
+      toast.error('Cadastre um email antes de enviar o convite');
+      return;
+    }
+    setInviting(true);
+    try {
+      const res = await fetch(`/api/app/restockers/${id}/invite`, { method: 'POST' });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(json.data?.message ?? 'Convite enviado');
+        if (json.data?.action_url) {
+          // Email não foi enviado — mostra o link pra admin copiar
+          // eslint-disable-next-line no-console
+          console.info('Link de convite (Resend não enviou):', json.data.action_url);
+          toast.info('Link disponível no console (F12) — copie e envie manualmente', { duration: 8000 });
+        }
+      } else {
+        toast.error(json.error?.message ?? 'Falha ao enviar convite');
+      }
+    } finally {
+      setInviting(false);
+    }
+  }
 
   useEffect(() => {
     (async () => {
@@ -178,14 +204,31 @@ export default function EditRestockerPage() {
               </div>
             </div>
           </div>
-          <div className="flex gap-2 pt-2">
+          <div className="flex flex-wrap gap-2 pt-2">
             <Button onClick={save} disabled={saving}>
               {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando</> : <><Save className="mr-2 h-4 w-4" />Salvar</>}
             </Button>
-            <Button variant="outline" onClick={deactivate} className="text-red-600 hover:text-red-700">
+            <Button
+              variant="outline"
+              onClick={sendInvite}
+              disabled={inviting || !r.email || !r.is_active}
+              title={!r.email ? 'Adicione um email primeiro' : !r.is_active ? 'Reative o reabastecedor primeiro' : 'Envia link de acesso para o email cadastrado'}
+            >
+              {inviting
+                ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enviando...</>
+                : <><Send className="mr-2 h-4 w-4" />Enviar convite por email</>}
+            </Button>
+            <Button variant="ghost" onClick={deactivate} className="text-danger hover:text-danger ml-auto">
               <Trash2 className="mr-2 h-4 w-4" />Desativar
             </Button>
           </div>
+          {r.email && (
+            <p className="text-[11px] text-text-tertiary flex items-center gap-1 pt-1">
+              <Mail className="h-3 w-3" />
+              O convite manda um link mágico para <span className="font-medium">{r.email}</span> —
+              ao clicar, o reabastecedor é levado direto para <code className="bg-surface-subtle px-1 rounded">/r/visitas</code>
+            </p>
+          )}
         </CardContent>
       </Card>
 
