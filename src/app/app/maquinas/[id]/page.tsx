@@ -217,6 +217,12 @@ export default function MachineDetailPage({ params }: { params: Promise<{ id: st
         </div>
 
         <div className="flex gap-2">
+          <Link href={`/app/maquinas/${id}/produtos`}>
+            <Button variant="outline">
+              <ShoppingCart className="mr-2 h-4 w-4" />
+              Produtos
+            </Button>
+          </Link>
           <Link href={`/app/maquinas/${id}/editar`}>
             <Button variant="outline">
               <Edit className="mr-2 h-4 w-4" />
