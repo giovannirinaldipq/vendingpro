@@ -5,15 +5,16 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Package, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { loginSchema, type LoginInput } from '@/lib/validators';
 import { createClient } from '@/lib/supabase/client';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -29,7 +30,6 @@ export default function LoginPage() {
 
   async function onSubmit(data: LoginInput) {
     setIsLoading(true);
-
     try {
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithPassword({
@@ -42,8 +42,8 @@ export default function LoginPage() {
         return;
       }
 
-      toast.success('Login realizado com sucesso!');
-      router.push('/admin');
+      toast.success('Login realizado com sucesso');
+      router.push('/app');
       router.refresh();
     } catch {
       toast.error('Erro ao fazer login. Tente novamente.');
@@ -53,68 +53,82 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary">
-            <Package className="h-6 w-6 text-primary-foreground" />
-          </div>
-          <CardTitle className="text-2xl">VendingPro</CardTitle>
-          <CardDescription>
-            Entre com suas credenciais para acessar o sistema
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="seu@email.com"
-                {...register('email')}
-                disabled={isLoading}
-              />
-              {errors.email && (
-                <p className="text-sm text-red-500">{errors.email.message}</p>
-              )}
-            </div>
+    <div className="relative flex min-h-screen items-center justify-center bg-background p-4 overflow-hidden">
+      {/* Decorative gradient orbs */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-hero opacity-70" />
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Senha</Label>
-                <Link
-                  href="/forgot-password"
-                  className="text-sm text-primary hover:underline"
-                >
-                  Esqueceu a senha?
-                </Link>
+      <div className="relative z-10 w-full max-w-md space-y-8">
+        {/* Logo stacked dark — centralizado, 320px */}
+        <div className="flex flex-col items-center">
+          <BrandLogo variant="stacked" forceTheme="dark" width={280} priority />
+          <p className="mt-6 text-center text-sm text-muted-foreground max-w-xs">
+            Saiba quando abastecer, o que está vendendo e se está dando lucro
+          </p>
+        </div>
+
+        <Card className="shadow-card border-border/60">
+          <CardContent className="p-6 sm:p-8">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  autoComplete="email"
+                  {...register('email')}
+                  disabled={isLoading}
+                />
+                {errors.email && (
+                  <p className="text-sm text-destructive">{errors.email.message}</p>
+                )}
               </div>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                {...register('password')}
-                disabled={isLoading}
-              />
-              {errors.password && (
-                <p className="text-sm text-red-500">{errors.password.message}</p>
-              )}
-            </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Entrando...
-                </>
-              ) : (
-                'Entrar'
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Senha</Label>
+                  <Link
+                    href="/forgot-password"
+                    className="text-xs font-medium text-brand-primary hover:underline"
+                  >
+                    Esqueci minha senha
+                  </Link>
+                </div>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  {...register('password')}
+                  disabled={isLoading}
+                />
+                {errors.password && (
+                  <p className="text-sm text-destructive">{errors.password.message}</p>
+                )}
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full bg-brand-primary hover:bg-brand-primary-hover text-white font-semibold h-11"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Entrando...
+                  </>
+                ) : (
+                  'Entrar'
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <p className="text-center text-xs text-muted-foreground">
+          © 2026 VendingPro · gestão inteligente para vending machines
+        </p>
+      </div>
     </div>
   );
 }
