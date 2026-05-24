@@ -27,10 +27,10 @@ interface AdminUserRow {
 }
 
 const ROLE_BADGE: Record<AdminRole, string> = {
-  super_admin: 'bg-purple-100 text-purple-700',
-  financial: 'bg-blue-100 text-blue-700',
-  support: 'bg-emerald-100 text-emerald-700',
-  commercial: 'bg-amber-100 text-amber-700',
+  super_admin: 'bg-brand-navy/10 text-brand-navy',
+  financial:   'bg-info-soft text-info',
+  support:     'bg-success-soft text-success',
+  commercial:  'bg-brand-amber/15 text-[#92400e] dark:text-brand-amber',
 };
 
 export default function UsuariosAdminPage() {

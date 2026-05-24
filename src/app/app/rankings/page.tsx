@@ -215,7 +215,7 @@ export default function RankingsPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle className="flex items-center gap-2">
-                        <Trophy className="h-5 w-5 text-yellow-500" />
+                        <Trophy className="h-5 w-5 text-brand-amber" strokeWidth={2} />
                         Ranking de Máquinas
                       </CardTitle>
                       <CardDescription>
@@ -292,7 +292,7 @@ export default function RankingsPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Trophy className="h-5 w-5 text-yellow-500" />
+                    <Trophy className="h-5 w-5 text-brand-amber" strokeWidth={2} />
                     Ranking de Produtos
                   </CardTitle>
                   <CardDescription>
@@ -315,17 +315,14 @@ export default function RankingsPage() {
                       {data.products.map((product, index) => (
                         <TableRow key={product.name}>
                           <TableCell className="font-medium">
-                            {index < 3 ? (
-                              <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full ${
-                                index === 0 ? 'bg-yellow-100 text-yellow-700' :
-                                index === 1 ? 'bg-gray-100 text-gray-700' :
-                                'bg-orange-100 text-orange-700'
-                              }`}>
-                                {index + 1}
-                              </span>
-                            ) : (
-                              index + 1
-                            )}
+                            <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-mono font-semibold tabular-nums ${
+                              index === 0 ? 'bg-brand-amber/20 text-[#92400e] dark:text-brand-amber' :
+                              index === 1 ? 'bg-surface-subtle text-text-secondary' :
+                              index === 2 ? 'bg-brand-navy/10 text-brand-navy' :
+                              'text-text-tertiary'
+                            }`}>
+                              {index + 1}
+                            </span>
                           </TableCell>
                           <TableCell className="font-medium max-w-[200px] truncate">
                             {product.name}

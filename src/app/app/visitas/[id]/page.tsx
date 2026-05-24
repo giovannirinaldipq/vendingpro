@@ -57,7 +57,7 @@ export default function VisitDetailPage() {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>{visit.machine?.name ?? 'Máquina removida'}</span>
-            <Badge className={visit.checkout_at ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}>{status}</Badge>
+            <Badge className={visit.checkout_at ? 'bg-success-soft text-success' : 'bg-warning-soft text-warning'}>{status}</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -70,7 +70,7 @@ export default function VisitDetailPage() {
             <div>
               <div className="text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" />Duração</div>
               <div className="font-medium">{visit.duration_minutes != null ? `${visit.duration_minutes} min` : 'Em curso'}</div>
-              {visit.is_duration_valid === false && <div className="text-xs text-amber-600">Atipica</div>}
+              {visit.is_duration_valid === false && <div className="text-xs text-warning">Atípica</div>}
             </div>
             <div>
               <div className="text-muted-foreground">Check-in</div>
@@ -84,7 +84,7 @@ export default function VisitDetailPage() {
               <div className="text-muted-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />Distância do local</div>
               <div className="font-medium">
                 {visit.checkin_distance_meters != null
-                  ? <span className={visit.is_location_valid === false ? 'text-red-600' : ''}>{visit.checkin_distance_meters}m{visit.is_location_valid === false ? ' (fora do raio)' : ''}</span>
+                  ? <span className={visit.is_location_valid === false ? 'text-danger' : ''}>{visit.checkin_distance_meters}m{visit.is_location_valid === false ? ' (fora do raio)' : ''}</span>
                   : 'Sem GPS'}
               </div>
             </div>

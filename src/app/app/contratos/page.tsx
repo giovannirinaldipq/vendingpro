@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Loader2, AlertCircle, TrendingDown, TrendingUp, Clock } from 'lucide-react';
+import { Loader2, TrendingDown, TrendingUp, Clock } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { EmptyStateV2 } from '@/components/ui/empty-state-v2';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -26,10 +27,10 @@ interface ContractRow {
 }
 
 const STATUS: Record<string, { label: string; color: string }> = {
-  active: { label: 'Ativo', color: 'bg-green-100 text-green-700' },
-  expiring_soon: { label: 'Vencendo', color: 'bg-amber-100 text-amber-700' },
-  expired: { label: 'Vencido', color: 'bg-red-100 text-red-700' },
-  no_contract: { label: 'Sem contrato', color: 'bg-gray-100 text-gray-700' },
+  active:        { label: 'Ativo',       color: 'bg-success-soft text-success' },
+  expiring_soon: { label: 'Vencendo',    color: 'bg-warning-soft text-warning' },
+  expired:       { label: 'Vencido',     color: 'bg-danger-soft text-danger' },
+  no_contract:   { label: 'Sem contrato',color: 'bg-surface-subtle text-text-tertiary' },
 };
 
 const fmtBRL = (n: number) => Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -51,14 +52,45 @@ export default function ContractsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Contratos</h1>
-        <p className="text-sm text-muted-foreground">Rentabilidade real por ponto comercial.</p>
+        <h1 className="text-2xl font-bold tracking-tight">Contratos</h1>
+        <p className="text-sm text-text-secondary">Rentabilidade real por ponto comercial.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Card><CardHeader className="pb-2"><CardDescription>Total de pontos</CardDescription></CardHeader><CardContent><div className="text-2xl font-bold">{rows.length}</div></CardContent></Card>
-        <Card className={expiringSoon > 0 ? 'border-amber-300' : ''}><CardHeader className="pb-2"><CardDescription className="flex items-center gap-1"><Clock className="h-3 w-3" />Vencendo / vencidos</CardDescription></CardHeader><CardContent><div className={`text-2xl font-bold ${expiringSoon > 0 ? 'text-amber-600' : ''}`}>{expiringSoon}</div></CardContent></Card>
-        <Card className={losing > 0 ? 'border-red-300' : ''}><CardHeader className="pb-2"><CardDescription className="flex items-center gap-1"><TrendingDown className="h-3 w-3" />Pontos no prejuízo</CardDescription></CardHeader><CardContent><div className={`text-2xl font-bold ${losing > 0 ? 'text-red-600' : ''}`}>{losing}</div></CardContent></Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-tertiary">
+              Total de pontos
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="font-mono text-3xl font-medium tabular-nums text-text-primary">{rows.length}</div>
+          </CardContent>
+        </Card>
+        <Card className={expiringSoon > 0 ? 'border-warning/40' : ''}>
+          <CardHeader className="pb-2">
+            <CardDescription className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-tertiary flex items-center gap-1">
+              <Clock className="h-3 w-3" />Vencendo / vencidos
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className={`font-mono text-3xl font-medium tabular-nums ${expiringSoon > 0 ? 'text-warning' : 'text-text-primary'}`}>
+              {expiringSoon}
+            </div>
+          </CardContent>
+        </Card>
+        <Card className={losing > 0 ? 'border-danger/40' : ''}>
+          <CardHeader className="pb-2">
+            <CardDescription className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-tertiary flex items-center gap-1">
+              <TrendingDown className="h-3 w-3" />Pontos no prejuízo
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className={`font-mono text-3xl font-medium tabular-nums ${losing > 0 ? 'text-danger' : 'text-text-primary'}`}>
+              {losing}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
@@ -67,8 +99,14 @@ export default function ContractsPage() {
           <CardDescription>Resultado das máquinas − aluguel/comissão (últimos 30 dias)</CardDescription>
         </CardHeader>
         <CardContent>
-          {loading ? <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div> : rows.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground"><AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-30" />Nenhum local cadastrado.</div>
+          {loading ? <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-text-tertiary" /></div> : rows.length === 0 ? (
+            <EmptyStateV2
+              illustration="no-machines"
+              title="Sem locais cadastrados"
+              description="Cadastre seus pontos comerciais (locais) com tipo de contrato e valor pra ver a rentabilidade real de cada um."
+              ctaLabel="Cadastrar primeiro local"
+              ctaHref="/app/locais/novo"
+            />
           ) : (
             <Table>
               <TableHeader>
@@ -84,30 +122,30 @@ export default function ContractsPage() {
               </TableHeader>
               <TableBody>
                 {rows.map(r => (
-                  <TableRow key={r.location_id} className={!r.is_profitable ? 'bg-red-50/40' : ''}>
+                  <TableRow key={r.location_id} className={!r.is_profitable ? 'bg-danger-soft/30' : ''}>
                     <TableCell>
-                      <Link href={`/app/locais`} className="font-medium hover:underline">{r.location_name}</Link>
+                      <Link href={`/app/locais`} className="font-medium hover:text-brand-navy hover:underline">{r.location_name}</Link>
                     </TableCell>
                     <TableCell>
                       <Badge className={STATUS[r.status].color}>{STATUS[r.status].label}</Badge>
-                      {r.contract_type && <div className="text-xs text-muted-foreground mt-1">{r.contract_type === 'rent' ? `Aluguel ${fmtBRL(r.contract_value ?? 0)}` : r.contract_type === 'commission' ? `${r.commission_percent}% comissão` : 'Comodato'}</div>}
+                      {r.contract_type && <div className="text-xs text-text-tertiary mt-1">{r.contract_type === 'rent' ? `Aluguel ${fmtBRL(r.contract_value ?? 0)}` : r.contract_type === 'commission' ? `${r.commission_percent}% comissão` : 'Comodato'}</div>}
                     </TableCell>
                     <TableCell className="text-sm">
                       {r.contract_end_date ? (
                         <>
-                          <div>{new Date(r.contract_end_date).toLocaleDateString('pt-BR')}</div>
+                          <div className="tabular-nums">{new Date(r.contract_end_date).toLocaleDateString('pt-BR')}</div>
                           {r.days_until_end != null && (
-                            <div className={`text-xs ${r.days_until_end < 0 ? 'text-red-600' : r.days_until_end <= 30 ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                            <div className={`text-xs tabular-nums ${r.days_until_end < 0 ? 'text-danger' : r.days_until_end <= 30 ? 'text-warning' : 'text-text-tertiary'}`}>
                               {r.days_until_end < 0 ? `${Math.abs(r.days_until_end)}d vencido` : `em ${r.days_until_end}d`}
                             </div>
                           )}
                         </>
                       ) : '—'}
                     </TableCell>
-                    <TableCell className="text-right">{r.machine_count}</TableCell>
-                    <TableCell className="text-right">{fmtBRL(r.net_result_30d)}</TableCell>
-                    <TableCell className="text-right text-muted-foreground">{fmtBRL(r.rent_for_period)}</TableCell>
-                    <TableCell className={`text-right font-semibold ${r.is_profitable ? 'text-green-700' : 'text-red-700'}`}>
+                    <TableCell className="text-right font-mono tabular-nums">{r.machine_count}</TableCell>
+                    <TableCell className="text-right font-mono tabular-nums">{fmtBRL(r.net_result_30d)}</TableCell>
+                    <TableCell className="text-right font-mono tabular-nums text-text-tertiary">{fmtBRL(r.rent_for_period)}</TableCell>
+                    <TableCell className={`text-right font-mono font-semibold tabular-nums ${r.is_profitable ? 'text-success' : 'text-danger'}`}>
                       {r.is_profitable ? <TrendingUp className="inline h-3 w-3 mr-1" /> : <TrendingDown className="inline h-3 w-3 mr-1" />}
                       {fmtBRL(r.rentability_30d)}
                     </TableCell>

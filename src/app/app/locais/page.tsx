@@ -224,7 +224,7 @@ export default function LocationsPage() {
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            className="text-red-600"
+                            variant="destructive"
                             onClick={() => handleDelete(location.id)}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />

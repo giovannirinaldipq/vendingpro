@@ -284,7 +284,7 @@ export default function AlertsPage() {
                 {data?.alerts.map((alert) => {
                   const Icon = SeverityIcon(alert.severity);
                   return (
-                    <TableRow key={alert.id} className={alert.status === 'active' ? 'bg-red-50/50' : ''}>
+                    <TableRow key={alert.id} className={alert.status === 'active' ? 'bg-warning-soft/30' : ''}>
                       <TableCell>
                         <Badge className={severityConfig[alert.severity]?.color}>
                           <Icon className="mr-1 h-3 w-3" />

@@ -96,7 +96,7 @@ export default function RestockersPage() {
                     </TableCell>
                     <TableCell>
                       {r.is_active
-                        ? <Badge className="bg-green-100 text-green-700">Ativo</Badge>
+                        ? <Badge className="bg-success-soft text-success">Ativo</Badge>
                         : <Badge className="bg-gray-200 text-gray-700">Inativo</Badge>}
                     </TableCell>
                     <TableCell className="text-right">

@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
@@ -13,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 import { loginSchema, type LoginInput } from '@/lib/validators';
 import { createClient } from '@/lib/supabase/client';
 
@@ -61,15 +61,9 @@ export default function LoginPage() {
 
       <div className="relative z-10 flex min-h-screen items-center justify-center p-4">
         <div className="w-full max-w-[400px]">
-          {/* Logo stacked dark */}
+          {/* Logo stacked theme-aware — light em fundo claro, darkmode em fundo escuro */}
           <div className="mb-8 flex justify-center">
-            <Image
-              src="/brand/01-vending-pro-stacked-dark.svg"
-              alt="Vending Pro"
-              width={240}
-              height={175}
-              priority
-            />
+            <BrandLogo variant="stacked" height={140} priority />
           </div>
 
           <Card>
@@ -108,7 +102,7 @@ export default function LoginPage() {
                     </Label>
                     <Link
                       href="/forgot-password"
-                      className="text-xs font-medium text-brand-navy hover:underline"
+                      className="text-xs font-medium text-brand-navy hover:text-brand-amber transition-colors"
                     >
                       Esqueci minha senha
                     </Link>
@@ -146,7 +140,10 @@ export default function LoginPage() {
           </Card>
 
           <p className="mt-6 text-center text-xs text-text-tertiary">
-            © 2026 Vending Pro · Gestão para vending machines
+            <span className="font-medium text-text-secondary">Vending</span>
+            <span className="font-medium text-brand-amber">Pro</span>
+            <span className="mx-1.5 text-text-tertiary/40">·</span>
+            Gestão para máquinas de venda
           </p>
         </div>
       </div>

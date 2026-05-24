@@ -199,7 +199,7 @@ export default function CheckinMobilePage() {
                   <div className="font-mono text-xs">{coords.lat.toFixed(6)}, {coords.lng.toFixed(6)}</div>
                 </div>
               ) : gpsError ? (
-                <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">{gpsError}</div>
+                <div className="rounded-lg border border-danger/30 bg-danger-soft p-3 text-sm text-danger">{gpsError}</div>
               ) : (
                 <div className="flex items-center justify-center py-8 text-muted-foreground">
                   <Loader2 className="h-5 w-5 animate-spin mr-2" />Aguardando GPS...
@@ -301,7 +301,7 @@ export default function CheckinMobilePage() {
 
           {step === 'done' && (
             <div className="text-center py-8 space-y-4">
-              <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
+              <CheckCircle2 className="h-16 w-16 text-brand-amber mx-auto" strokeWidth={2} />
               <h3 className="text-xl font-bold">Visita finalizada!</h3>
               <p className="text-sm text-muted-foreground">Boa! Os dados ficaram registrados.</p>
               <div className="flex flex-col gap-2">
@@ -318,9 +318,9 @@ export default function CheckinMobilePage() {
 
 function StepBadge({ active, done, children }: { active: boolean; done?: boolean; children: React.ReactNode }) {
   const cls = done
-    ? 'bg-green-100 text-green-700'
+    ? 'bg-success-soft text-success'
     : active
-      ? 'bg-blue-100 text-blue-700'
-      : 'bg-gray-100 text-gray-500';
+      ? 'bg-brand-navy/10 text-brand-navy'
+      : 'bg-surface-subtle text-text-tertiary';
   return <Badge className={cls}>{children}</Badge>;
 }
