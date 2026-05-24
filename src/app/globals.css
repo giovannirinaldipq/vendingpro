@@ -373,3 +373,33 @@
 
 .scrollbar-none { scrollbar-width: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }
+
+/* ═══════════════════════════════════════════════════════════════
+   ANIMAÇÕES — assinaturas visuais "Cartoon Premium"
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Pulso de máquina viva (StatusDot online).
+   2s, infinito, easing suave. Discreto pra não distrair, mas visível. */
+@keyframes machine-pulse {
+  0%, 100% { transform: scale(1);   opacity: 0.6; }
+  50%      { transform: scale(2.5); opacity: 0;   }
+}
+.animate-machine-pulse {
+  animation: machine-pulse 2s ease-out infinite;
+}
+
+/* Shimmer pra progress bar de meta (gamificação sutil) */
+@keyframes progress-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+.animate-progress-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--brand-amber) 0%,
+    color-mix(in srgb, var(--brand-amber) 60%, white) 50%,
+    var(--brand-amber) 100%
+  );
+  background-size: 200% 100%;
+  animation: progress-shimmer 2.5s linear infinite;
+}

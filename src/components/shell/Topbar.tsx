@@ -41,8 +41,12 @@ export function Topbar() {
           className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }), 'relative')}
           aria-label="Notificações"
         >
-          <Bell className="h-4 w-4" />
-          <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-danger" />
+          <Bell className="h-4 w-4" strokeWidth={1.75} />
+          {/* Bolinha amber: nova notificação. Pulsa pra atrair olhar sem alarmar. */}
+          <span className="absolute right-1 top-1 inline-flex h-1.5 w-1.5">
+            <span aria-hidden className="absolute inset-0 rounded-full bg-brand-amber animate-machine-pulse" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brand-amber" />
+          </span>
         </Link>
 
         <DropdownMenu>
