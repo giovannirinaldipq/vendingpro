@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import "./globals.css";
@@ -8,11 +8,19 @@ const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
   display: "swap",
+  weight: ["400", "500", "600", "700"],
+});
+
+const jetbrains = JetBrains_Mono({
+  variable: "--font-jetbrains",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
-  title: "VendingPro · Gestão inteligente para vending machines",
-  description: "Saiba quando abastecer, o que está vendendo e se está dando lucro — sem complicação",
+  title: "Vending Pro · Gestão inteligente para vending machines",
+  description: "Controle de máquinas, vendas e operação em tempo real para franqueadoras de vending.",
   icons: {
     icon: [
       { url: "/brand/favicon.ico", sizes: "any" },
@@ -24,10 +32,9 @@ export const metadata: Metadata = {
     ],
     shortcut: "/brand/favicon.ico",
   },
-  manifest: undefined,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#1e40af" },
+    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
+    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
   ],
 };
 
@@ -37,8 +44,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
-      <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
+    <html
+      lang="pt-BR"
+      className={`${inter.variable} ${jetbrains.variable} h-full`}
+      suppressHydrationWarning
+    >
+      <body className="min-h-full bg-background text-foreground font-sans antialiased">
         <ThemeProvider>
           {children}
           <Toaster richColors position="top-right" />

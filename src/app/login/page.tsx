@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
@@ -14,7 +15,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { loginSchema, type LoginInput } from '@/lib/validators';
 import { createClient } from '@/lib/supabase/client';
-import { BrandLogo } from '@/components/brand/BrandLogo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -42,7 +42,7 @@ export default function LoginPage() {
         return;
       }
 
-      toast.success('Login realizado com sucesso');
+      toast.success('Login realizado');
       router.push('/app');
       router.refresh();
     } catch {
@@ -53,81 +53,100 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-background p-4 overflow-hidden">
-      {/* Decorative gradient orbs */}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-hero opacity-70" />
+    <div className="relative min-h-screen bg-surface-base">
+      {/* Pattern grid sutil — Linear-style */}
+      <div className="pointer-events-none absolute inset-0 bg-grid-subtle" />
 
-      <div className="relative z-10 w-full max-w-md space-y-8">
-        {/* Logo stacked dark — centralizado, 320px */}
-        <div className="flex flex-col items-center">
-          <BrandLogo variant="stacked" forceTheme="dark" width={280} priority />
-          <p className="mt-6 text-center text-sm text-muted-foreground max-w-xs">
-            Saiba quando abastecer, o que está vendendo e se está dando lucro
+      <div className="relative z-10 flex min-h-screen items-center justify-center p-4">
+        <div className="w-full max-w-[400px]">
+          {/* Logo stacked dark */}
+          <div className="mb-8 flex justify-center">
+            <Image
+              src="/brand/01-vending-pro-stacked-dark.svg"
+              alt="Vending Pro"
+              width={240}
+              height={175}
+              priority
+            />
+          </div>
+
+          <Card>
+            <CardContent className="p-7">
+              <div className="mb-6">
+                <h1 className="text-lg font-semibold tracking-tight text-text-primary">
+                  Acesse sua conta
+                </h1>
+                <p className="mt-1 text-sm text-text-secondary">
+                  Entre com email e senha
+                </p>
+              </div>
+
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="email" className="text-xs font-medium text-text-secondary">
+                    Email
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="seu@email.com"
+                    autoComplete="email"
+                    {...register('email')}
+                    disabled={isLoading}
+                  />
+                  {errors.email && (
+                    <p className="text-xs text-danger">{errors.email.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password" className="text-xs font-medium text-text-secondary">
+                      Senha
+                    </Label>
+                    <Link
+                      href="/forgot-password"
+                      className="text-xs font-medium text-brand-navy hover:underline"
+                    >
+                      Esqueci minha senha
+                    </Link>
+                  </div>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    autoComplete="current-password"
+                    {...register('password')}
+                    disabled={isLoading}
+                  />
+                  {errors.password && (
+                    <p className="text-xs text-danger">{errors.password.message}</p>
+                  )}
+                </div>
+
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="w-full mt-2"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Entrando...
+                    </>
+                  ) : (
+                    'Entrar'
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          <p className="mt-6 text-center text-xs text-text-tertiary">
+            © 2026 Vending Pro · Gestão para vending machines
           </p>
         </div>
-
-        <Card className="shadow-card border-border/60">
-          <CardContent className="p-6 sm:p-8">
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="seu@email.com"
-                  autoComplete="email"
-                  {...register('email')}
-                  disabled={isLoading}
-                />
-                {errors.email && (
-                  <p className="text-sm text-destructive">{errors.email.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Senha</Label>
-                  <Link
-                    href="/forgot-password"
-                    className="text-xs font-medium text-brand-primary hover:underline"
-                  >
-                    Esqueci minha senha
-                  </Link>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                  {...register('password')}
-                  disabled={isLoading}
-                />
-                {errors.password && (
-                  <p className="text-sm text-destructive">{errors.password.message}</p>
-                )}
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full bg-brand-primary hover:bg-brand-primary-hover text-white font-semibold h-11"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Entrando...
-                  </>
-                ) : (
-                  'Entrar'
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <p className="text-center text-xs text-muted-foreground">
-          © 2026 VendingPro · gestão inteligente para vending machines
-        </p>
       </div>
     </div>
   );

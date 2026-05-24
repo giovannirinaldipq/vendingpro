@@ -1,0 +1,202 @@
+'use client';
+
+import Link from 'next/link';
+import Image from 'next/image';
+import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import {
+  LayoutDashboard, MapPin, Monitor, Package, Boxes,
+  FileSpreadsheet, BarChart3, TrendingUp, Bell, Settings,
+  Users, ClipboardCheck, Calculator, Sparkles, Shield,
+  FileSignature, Banknote, FileBarChart, PanelLeftClose, PanelLeft,
+  type LucideIcon,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+
+interface NavItem {
+  name: string;
+  href: string;
+  icon: LucideIcon;
+}
+
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
+const navigation: NavSection[] = [
+  {
+    title: 'Operação',
+    items: [
+      { name: 'Dashboard', href: '/app', icon: LayoutDashboard },
+      { name: 'Máquinas', href: '/app/maquinas', icon: Monitor },
+      { name: 'Locais', href: '/app/locais', icon: MapPin },
+      { name: 'Produtos', href: '/app/produtos', icon: Package },
+      { name: 'Estoque', href: '/app/estoque', icon: Boxes },
+    ],
+  },
+  {
+    title: 'Campo',
+    items: [
+      { name: 'Reabastecedores', href: '/app/reabastecedores', icon: Users },
+      { name: 'Visitas', href: '/app/visitas', icon: ClipboardCheck },
+    ],
+  },
+  {
+    title: 'Financeiro',
+    items: [
+      { name: 'Financeiro', href: '/app/financeiro', icon: Calculator },
+      { name: 'Contratos', href: '/app/contratos', icon: FileSignature },
+      { name: 'Conciliação', href: '/app/conciliacao', icon: Banknote },
+    ],
+  },
+  {
+    title: 'Inteligência',
+    items: [
+      { name: 'Sugestões', href: '/app/sugestoes', icon: Sparkles },
+      { name: 'Analytics', href: '/app/analytics', icon: BarChart3 },
+      { name: 'Rankings', href: '/app/rankings', icon: TrendingUp },
+      { name: 'Alertas', href: '/app/alertas', icon: Bell },
+    ],
+  },
+  {
+    title: 'Dados',
+    items: [
+      { name: 'Importar', href: '/app/importar', icon: FileSpreadsheet },
+      { name: 'Relatórios', href: '/app/relatorios', icon: FileBarChart },
+    ],
+  },
+  {
+    title: 'Conta',
+    items: [
+      { name: 'Segurança', href: '/app/seguranca', icon: Shield },
+      { name: 'Configurações', href: '/app/configuracoes', icon: Settings },
+    ],
+  },
+];
+
+const STORAGE_KEY = 'vp_sidebar_collapsed';
+
+export function Sidebar() {
+  const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored === '1') setCollapsed(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted) localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0');
+  }, [collapsed, mounted]);
+
+  // Cmd+B / Ctrl+B toggle
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        setCollapsed(c => !c);
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  function isActive(href: string) {
+    if (href === '/app') return pathname === '/app';
+    return pathname === href || pathname.startsWith(href + '/');
+  }
+
+  return (
+    <aside
+      className={cn(
+        'hidden lg:flex h-screen flex-col border-r border-border-default bg-surface-card transition-[width] duration-200',
+        collapsed ? 'w-[64px]' : 'w-[240px]'
+      )}
+      aria-label="Navegação principal"
+    >
+      {/* Brand */}
+      <div className={cn(
+        'flex h-16 items-center border-b border-border-default',
+        collapsed ? 'justify-center px-2' : 'px-5'
+      )}>
+        <Link href="/app" className="flex items-center" aria-label="Vending Pro — Dashboard">
+          {collapsed ? (
+            <Image
+              src="/brand/06-vending-pro-icon-light.svg"
+              alt="Vending Pro"
+              width={32}
+              height={32}
+              priority
+            />
+          ) : (
+            <Image
+              src="/brand/04-vending-pro-horizontal-light.svg"
+              alt="Vending Pro"
+              width={128}
+              height={32}
+              priority
+            />
+          )}
+        </Link>
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto scrollbar-thin py-4">
+        {navigation.map((section, sIdx) => (
+          <div key={section.title} className={sIdx > 0 ? 'mt-6' : ''}>
+            {!collapsed && (
+              <div className="px-5 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-text-tertiary">
+                {section.title}
+              </div>
+            )}
+            {collapsed && sIdx > 0 && (
+              <div className="mx-2 my-2 h-px bg-border-default" />
+            )}
+            <div className={cn('space-y-0.5', collapsed ? 'px-2' : 'px-3')}>
+              {section.items.map(item => {
+                const active = isActive(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    title={collapsed ? item.name : undefined}
+                    className={cn(
+                      'group flex items-center gap-3 rounded-md text-sm font-medium transition-colors',
+                      collapsed ? 'h-9 w-9 justify-center mx-auto' : 'px-3 h-9',
+                      active
+                        ? 'bg-brand-navy text-white'
+                        : 'text-text-secondary hover:bg-surface-subtle hover:text-text-primary'
+                    )}
+                  >
+                    <item.icon
+                      className={cn('shrink-0', collapsed ? 'h-[18px] w-[18px]' : 'h-[18px] w-[18px]')}
+                      strokeWidth={active ? 2 : 1.75}
+                    />
+                    {!collapsed && <span className="truncate">{item.name}</span>}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </nav>
+
+      {/* Collapse toggle */}
+      <div className={cn('border-t border-border-default p-2', collapsed && 'flex justify-center')}>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => setCollapsed(c => !c)}
+          aria-label={collapsed ? 'Expandir sidebar' : 'Recolher sidebar'}
+          title="Cmd+B"
+        >
+          {collapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+        </Button>
+      </div>
+    </aside>
+  );
+}
