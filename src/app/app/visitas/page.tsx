@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Loader2, MapPin, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
+import { Loader2, MapPin, CheckCircle2, AlertCircle, Clock, Camera } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Pill } from '@/components/ui/pill';
+import { EmptyStateV2 } from '@/components/ui/empty-state-v2';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -46,14 +47,21 @@ export default function VisitsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Visitas</h1>
-        <p className="text-sm text-muted-foreground">Histórico de abastecimentos com GPS e fotos.</p>
+        <h1 className="text-2xl font-bold tracking-tight">Visitas</h1>
+        <p className="text-sm text-text-secondary">Histórico de abastecimentos com GPS e fotos antes/depois.</p>
       </div>
 
       <Card>
         <CardContent className="pt-6">
           <Select value={statusFilter} onValueChange={v => v && setStatusFilter(v)}>
-            <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue>
+                {statusFilter === 'all' ? 'Todas'
+                 : statusFilter === 'open' ? 'Em andamento'
+                 : statusFilter === 'closed' ? 'Concluídas'
+                 : 'Filtrar'}
+              </SelectValue>
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas</SelectItem>
               <SelectItem value="open">Em andamento</SelectItem>
@@ -66,13 +74,19 @@ export default function VisitsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Histórico</CardTitle>
-          <CardDescription>{rows.length} visita{rows.length === 1 ? '' : 's'}</CardDescription>
+          <CardDescription>
+            <span className="tabular-nums">{rows.length}</span> visita{rows.length === 1 ? '' : 's'}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+            <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-text-tertiary" /></div>
           ) : rows.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">Nenhuma visita encontrada.</div>
+            <EmptyStateV2
+              illustration="no-data"
+              title="Sem visitas no filtro selecionado"
+              description="Quando seus reabastecedores fizerem check-in nas máquinas, as visitas aparecem aqui com foto antes/depois e validação de GPS."
+            />
           ) : (
             <Table>
               <TableHeader>
@@ -90,33 +104,47 @@ export default function VisitsPage() {
                   <TableRow key={v.id}>
                     <TableCell>
                       <div className="font-medium">{v.machine?.name ?? '—'}</div>
-                      <div className="text-xs text-muted-foreground">{v.machine?.code}</div>
+                      <div className="text-xs font-mono tabular-nums text-text-tertiary">{v.machine?.code}</div>
                     </TableCell>
                     <TableCell>{v.restocker?.name ?? '—'}</TableCell>
-                    <TableCell className="text-sm">{new Date(v.checkin_at).toLocaleString('pt-BR')}</TableCell>
+                    <TableCell className="text-sm tabular-nums">{new Date(v.checkin_at).toLocaleString('pt-BR')}</TableCell>
                     <TableCell>
-                      {v.duration_minutes != null ? `${v.duration_minutes} min` : (
-                        <Badge variant="secondary" className="bg-blue-100 text-blue-700"><Clock className="mr-1 h-3 w-3" />Em curso</Badge>
+                      {v.duration_minutes != null ? (
+                        <span className="font-mono tabular-nums text-sm">{v.duration_minutes} min</span>
+                      ) : (
+                        <Pill tone="warning" size="sm" dot>
+                          <Clock className="h-3 w-3" />Em curso
+                        </Pill>
                       )}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1 flex-wrap">
-                        {v.is_location_valid === false
-                          ? <Badge className="bg-red-100 text-red-700"><AlertCircle className="mr-1 h-3 w-3" />Fora de raio ({v.checkin_distance_meters}m)</Badge>
-                          : v.checkin_distance_meters != null
-                            ? <Badge className="bg-green-100 text-green-700"><MapPin className="mr-1 h-3 w-3" />{v.checkin_distance_meters}m</Badge>
-                            : <Badge variant="secondary">Sem GPS</Badge>}
+                        {v.is_location_valid === false ? (
+                          <Pill tone="danger" size="sm">
+                            <AlertCircle className="h-3 w-3" />Fora de raio ({v.checkin_distance_meters}m)
+                          </Pill>
+                        ) : v.checkin_distance_meters != null ? (
+                          <Pill tone="success" size="sm">
+                            <MapPin className="h-3 w-3" />{v.checkin_distance_meters}m
+                          </Pill>
+                        ) : (
+                          <Pill tone="neutral" size="sm">Sem GPS</Pill>
+                        )}
                         {v.is_duration_valid === false && v.duration_minutes != null && (
-                          <Badge className="bg-amber-100 text-amber-700"><AlertCircle className="mr-1 h-3 w-3" />Tempo atípico</Badge>
+                          <Pill tone="warning" size="sm">
+                            <AlertCircle className="h-3 w-3" />Tempo atípico
+                          </Pill>
                         )}
                         {v.checkin_photo_url && v.checkout_photo_url && (
-                          <Badge className="bg-emerald-100 text-emerald-700"><CheckCircle2 className="mr-1 h-3 w-3" />2 fotos</Badge>
+                          <Pill tone="amber" size="sm" dot>
+                            <Camera className="h-3 w-3" />2 fotos
+                          </Pill>
                         )}
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Link href={`/app/visitas/${v.id}`}>
-                        <span className="text-sm text-primary hover:underline">Ver detalhes</span>
+                      <Link href={`/app/visitas/${v.id}`} className="text-sm font-medium text-brand-navy hover:underline">
+                        Ver detalhes
                       </Link>
                     </TableCell>
                   </TableRow>

@@ -101,28 +101,36 @@ const SEVERITY_LABEL = {
   low: 'Baixo',
 };
 
+function firstName(full: string | null | undefined): string {
+  if (!full) return 'você';
+  return full.trim().split(/\s+/)[0];
+}
+
 export default function AppDashboard() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsResponse | null>(null);
   const [topMachines, setTopMachines] = useState<RankingsResponse | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [userName, setUserName] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let aborted = false;
     (async () => {
       try {
-        const [mRes, aRes, rRes, alRes] = await Promise.all([
+        const [mRes, aRes, rRes, alRes, meRes] = await Promise.all([
           fetch('/api/app/dashboard').then(r => r.json()),
           fetch('/api/app/analytics?period=30d').then(r => r.json()),
           fetch('/api/app/rankings?period=30d&sort=revenue').then(r => r.json()),
           fetch('/api/app/alerts?status=active').then(r => r.json()),
+          fetch('/api/me').then(r => r.json()),
         ]);
         if (aborted) return;
         setMetrics(mRes.data ?? mRes);
         setAnalytics(aRes.data ?? aRes);
         setTopMachines(rRes.data ?? rRes);
         setAlerts((alRes.data?.alerts ?? alRes.alerts ?? []).slice(0, 5));
+        if (meRes.success && meRes.data?.name) setUserName(meRes.data.name);
       } finally {
         if (!aborted) setLoading(false);
       }
@@ -135,7 +143,7 @@ export default function AppDashboard() {
       {/* Saudação personalizada — substitui PageHeader genérico */}
       <div className="mb-6">
         <h1 className="text-3xl font-semibold tracking-tight text-text-primary">
-          {greetingByHour()}, João
+          {greetingByHour()}, {firstName(userName)}
         </h1>
         <p className="mt-1 text-sm text-text-tertiary">
           <span className="capitalize">{formatTodayPtBR()}</span>
@@ -390,7 +398,18 @@ function TopMachinesTable({ machines }: { machines: RankingsResponse['machines']
       <ul className="divide-y divide-border-default">
         {machines.map((m, i) => (
           <li key={m.id} className="grid grid-cols-12 gap-3 px-6 py-3 hover:bg-surface-subtle/60 transition-colors">
-            <div className="col-span-1 font-mono-num text-sm text-text-tertiary">{(i + 1).toString().padStart(2, '0')}</div>
+            <div className="col-span-1 self-center">
+              {/* #1 ganha selo amber sutil — top performer */}
+              {i === 0 ? (
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-brand-amber/20 text-[11px] font-mono font-bold tabular-nums text-[#92400e] dark:text-brand-amber">
+                  1
+                </span>
+              ) : (
+                <span className="font-mono text-sm tabular-nums text-text-tertiary">
+                  {(i + 1).toString().padStart(2, '0')}
+                </span>
+              )}
+            </div>
             <div className="col-span-5 min-w-0">
               <Link href={`/app/maquinas/${m.id}`} className="text-sm font-medium text-text-primary hover:text-brand-navy truncate block">
                 {m.name}
@@ -399,13 +418,13 @@ function TopMachinesTable({ machines }: { machines: RankingsResponse['machines']
                 <div className="text-xs text-text-tertiary truncate">{m.location}</div>
               )}
             </div>
-            <div className="col-span-3 text-right font-mono-num text-sm text-text-secondary self-center">{fmtInt(m.sales ?? 0)}</div>
+            <div className="col-span-3 text-right font-mono text-sm tabular-nums text-text-secondary self-center">{fmtInt(m.sales ?? 0)}</div>
             <div className="col-span-3 text-right self-center">
-              <div className="font-mono-num text-sm font-medium text-text-primary">{fmtBRLFull(m.revenue ?? 0)}</div>
+              <div className="font-mono text-sm font-medium tabular-nums text-text-primary">{fmtBRLFull(m.revenue ?? 0)}</div>
               {max > 0 && (
                 <div className="mt-1 h-1 rounded-full bg-surface-subtle overflow-hidden">
                   <div
-                    className="h-full bg-brand-navy"
+                    className={i === 0 ? 'h-full bg-brand-amber' : 'h-full bg-brand-navy/60'}
                     style={{ width: `${((m.revenue ?? 0) / max) * 100}%` }}
                   />
                 </div>

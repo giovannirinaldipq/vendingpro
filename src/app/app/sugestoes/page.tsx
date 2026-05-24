@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Loader2, CalendarClock, Package2, ShoppingCart, AlertCircle, ArrowRight } from 'lucide-react';
+import { Loader2, CalendarClock, Package2, ShoppingCart, ArrowRight, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Pill } from '@/components/ui/pill';
 import { Button } from '@/components/ui/button';
+import { EmptyStateV2 } from '@/components/ui/empty-state-v2';
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from '@/components/ui/tabs';
@@ -44,16 +45,11 @@ interface PurchaseItem {
   reason: string;
 }
 
-const URGENCY: Record<string, string> = {
-  high: 'bg-red-100 text-red-700',
-  medium: 'bg-amber-100 text-amber-700',
-  low: 'bg-blue-100 text-blue-700',
+const URGENCY_TONE: Record<string, 'danger' | 'warning' | 'info'> = {
+  high: 'danger', medium: 'warning', low: 'info',
 };
-const STATUS: Record<string, string> = {
-  depleted: 'bg-red-100 text-red-700',
-  critical: 'bg-orange-100 text-orange-700',
-  low: 'bg-amber-100 text-amber-700',
-  ok: 'bg-green-100 text-green-700',
+const STATUS_TONE: Record<string, 'danger' | 'warning' | 'amber' | 'success'> = {
+  depleted: 'danger', critical: 'danger', low: 'warning', ok: 'success',
 };
 const STATUS_LABEL: Record<string, string> = {
   depleted: 'Acabou', critical: 'Crítico', low: 'Baixo', ok: 'OK',
@@ -82,8 +78,11 @@ export default function SuggestionsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Sugestões inteligentes</h1>
-        <p className="text-sm text-muted-foreground">O sistema analisa seus dados e diz o que fazer.</p>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight">Sugestões inteligentes</h1>
+          <Sparkles className="h-5 w-5 text-brand-amber" strokeWidth={2} />
+        </div>
+        <p className="text-sm text-text-secondary mt-1">O sistema analisa seus dados e te diz o que fazer.</p>
       </div>
 
       <Tabs defaultValue="schedule">
@@ -100,7 +99,13 @@ export default function SuggestionsPage() {
               <CardDescription>Baseado em 4 semanas de vendas. Sugerimos o dia/horário de menor movimento para evitar fila.</CardDescription>
             </CardHeader>
             <CardContent>
-              {loading ? <Loader stub /> : schedule.length === 0 ? <Empty msg="Sem dados de venda suficientes." /> : (
+              {loading ? <LoaderStub /> : schedule.length === 0 ? (
+                <EmptyStateV2
+                  illustration="no-data"
+                  title="Aprendendo seu padrão de vendas"
+                  description="Precisamos de pelo menos 4 semanas de vendas pra sugerir os melhores dias e horários de visita."
+                />
+              ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -117,14 +122,18 @@ export default function SuggestionsPage() {
                       <TableRow key={s.machine_id}>
                         <TableCell>
                           <div className="font-medium">{s.machine_name}</div>
-                          {s.location_name && <div className="text-xs text-muted-foreground">{s.location_name}</div>}
+                          {s.location_name && <div className="text-xs text-text-tertiary">{s.location_name}</div>}
                         </TableCell>
                         <TableCell>
-                          <div className="font-medium">{new Date(s.next_suggested_date).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}</div>
+                          <div className="font-medium font-mono tabular-nums">{new Date(s.next_suggested_date).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}</div>
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{s.reason}</TableCell>
-                        <TableCell className="text-sm">{s.last_visit_at ? new Date(s.last_visit_at).toLocaleDateString('pt-BR') : 'nunca'}</TableCell>
-                        <TableCell><Badge className={URGENCY[s.urgency]}>{s.urgency === 'high' ? 'Urgente' : s.urgency === 'medium' ? 'Atenção' : 'Normal'}</Badge></TableCell>
+                        <TableCell className="text-sm text-text-secondary">{s.reason}</TableCell>
+                        <TableCell className="text-sm tabular-nums">{s.last_visit_at ? new Date(s.last_visit_at).toLocaleDateString('pt-BR') : 'nunca'}</TableCell>
+                        <TableCell>
+                          <Pill tone={URGENCY_TONE[s.urgency]} dot size="sm">
+                            {s.urgency === 'high' ? 'Urgente' : s.urgency === 'medium' ? 'Atenção' : 'Normal'}
+                          </Pill>
+                        </TableCell>
                         <TableCell>
                           <Link href={`/checkin/${s.machine_id}`}>
                             <Button size="sm" variant="outline">Check-in agora<ArrowRight className="ml-1 h-3 w-3" /></Button>
@@ -146,7 +155,15 @@ export default function SuggestionsPage() {
               <CardDescription>Com base no consumo médio dos últimos 14 dias e estoque atual.</CardDescription>
             </CardHeader>
             <CardContent>
-              {loading ? <Loader stub /> : predictions.length === 0 ? <Empty msg="Sem estoque cadastrado." /> : (
+              {loading ? <LoaderStub /> : predictions.length === 0 ? (
+                <EmptyStateV2
+                  illustration="no-machines"
+                  title="Sem estoque cadastrado"
+                  description="Cadastre os produtos das suas máquinas pra calcular quanto tempo cada item ainda dura."
+                  ctaLabel="Ir para estoque"
+                  ctaHref="/app/estoque"
+                />
+              ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -160,13 +177,17 @@ export default function SuggestionsPage() {
                   </TableHeader>
                   <TableBody>
                     {predictions.map(p => (
-                      <TableRow key={p.product_id} className={p.status === 'critical' || p.status === 'depleted' ? 'bg-red-50/40' : ''}>
+                      <TableRow key={p.product_id} className={p.status === 'critical' || p.status === 'depleted' ? 'bg-danger-soft/30' : ''}>
                         <TableCell className="font-medium">{p.product_name}</TableCell>
-                        <TableCell className="text-right">{p.current_quantity}</TableCell>
-                        <TableCell className="text-right">{p.avg_daily_consumption}</TableCell>
-                        <TableCell className="text-right">{p.days_of_stock ?? '∞'}</TableCell>
-                        <TableCell>{p.estimated_runout_date ? new Date(p.estimated_runout_date).toLocaleDateString('pt-BR') : '—'}</TableCell>
-                        <TableCell><Badge className={STATUS[p.status]}>{STATUS_LABEL[p.status]}</Badge></TableCell>
+                        <TableCell className="text-right font-mono tabular-nums">{p.current_quantity}</TableCell>
+                        <TableCell className="text-right font-mono tabular-nums">{p.avg_daily_consumption}</TableCell>
+                        <TableCell className="text-right font-mono tabular-nums">{p.days_of_stock ?? '∞'}</TableCell>
+                        <TableCell className="tabular-nums">{p.estimated_runout_date ? new Date(p.estimated_runout_date).toLocaleDateString('pt-BR') : '—'}</TableCell>
+                        <TableCell>
+                          <Pill tone={STATUS_TONE[p.status]} size="sm" dot>
+                            {STATUS_LABEL[p.status]}
+                          </Pill>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -183,7 +204,14 @@ export default function SuggestionsPage() {
               <CardDescription>Quantidades sugeridas para manter 30 dias de estoque a partir do consumo atual.</CardDescription>
             </CardHeader>
             <CardContent>
-              {loading ? <Loader stub /> : purchase.length === 0 ? <Empty msg="Estoque OK para os próximos 30 dias!" /> : (
+              {loading ? <LoaderStub /> : purchase.length === 0 ? (
+                <EmptyStateV2
+                  illustration="no-alerts"
+                  positive
+                  title="Estoque OK para os próximos 30 dias ✦"
+                  description="Não precisa comprar nada agora. A previsão é recalculada conforme entram novas vendas."
+                />
+              ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -198,10 +226,10 @@ export default function SuggestionsPage() {
                     {purchase.map(p => (
                       <TableRow key={p.product_id}>
                         <TableCell className="font-medium">{p.product_name}</TableCell>
-                        <TableCell className="text-right">{p.current_quantity}</TableCell>
-                        <TableCell className="text-right">{p.avg_daily_consumption}</TableCell>
-                        <TableCell className="text-right font-semibold">{p.suggested_purchase_quantity}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{p.reason}</TableCell>
+                        <TableCell className="text-right font-mono tabular-nums">{p.current_quantity}</TableCell>
+                        <TableCell className="text-right font-mono tabular-nums">{p.avg_daily_consumption}</TableCell>
+                        <TableCell className="text-right font-mono font-semibold tabular-nums text-brand-navy">{p.suggested_purchase_quantity}</TableCell>
+                        <TableCell className="text-sm text-text-secondary">{p.reason}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -215,9 +243,6 @@ export default function SuggestionsPage() {
   );
 }
 
-function Loader({ stub }: { stub?: boolean }) {
-  return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
-}
-function Empty({ msg }: { msg: string }) {
-  return <div className="text-center py-12 text-muted-foreground"><AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-30" />{msg}</div>;
+function LoaderStub() {
+  return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-text-tertiary" /></div>;
 }
