@@ -1,21 +1,43 @@
 'use client';
 
 import Link from 'next/link';
-import { Bell, Search, Settings, Shield, LogOut, ChevronDown } from 'lucide-react';
+import { useState } from 'react';
+import { Menu, Bell, Search, Settings, LogOut, ChevronDown } from 'lucide-react';
 import { buttonVariants } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Pill } from '@/components/ui/pill';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
-import { MobileSidebar } from './MobileSidebar';
+import { AdminSidebar } from './AdminSidebar';
 import { cn } from '@/lib/utils';
 
-export function Topbar() {
+export function AdminTopbar() {
+  const [open, setOpen] = useState(false);
+
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border-default bg-surface-card/95 backdrop-blur-sm px-4 lg:px-6">
-      <MobileSidebar />
+      {/* Mobile menu */}
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger
+          className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }), 'lg:hidden')}
+          aria-label="Abrir menu"
+        >
+          <Menu className="h-4 w-4" />
+        </SheetTrigger>
+        <SheetContent side="left" className="w-[260px] p-0 border-r-0">
+          <div className="lg:hidden h-full block">
+            <div className="block h-full [&>aside]:flex [&>aside]:w-full">
+              <AdminSidebar />
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Pill tone="amber" size="sm">Backoffice</Pill>
 
       <div className="hidden md:flex flex-1 max-w-md">
         <button
@@ -37,7 +59,7 @@ export function Topbar() {
         <ThemeToggle />
 
         <Link
-          href="/app/alertas"
+          href="/admin/cobranca"
           className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }), 'relative')}
           aria-label="Notificações"
         >
@@ -48,25 +70,20 @@ export function Topbar() {
         <DropdownMenu>
           <DropdownMenuTrigger
             className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'gap-2 px-2 h-9')}
-            aria-label="Menu da conta"
+            aria-label="Menu da conta admin"
           >
             <Avatar className="h-7 w-7">
-              <AvatarFallback className="bg-surface-subtle text-text-secondary text-[11px] font-medium">
-                JS
+              <AvatarFallback className="bg-brand-amber-100 text-brand-amber-800 text-[11px] font-semibold">
+                AD
               </AvatarFallback>
             </Avatar>
-            <span className="hidden sm:inline text-sm font-medium text-text-primary">João Silva</span>
+            <span className="hidden sm:inline text-sm font-medium text-text-primary">Admin</span>
             <ChevronDown className="h-3.5 w-3.5 text-text-tertiary" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52">
             <DropdownMenuItem>
-              <Link href="/app/configuracoes" className="flex items-center gap-2 w-full">
+              <Link href="/admin/configuracoes" className="flex items-center gap-2 w-full">
                 <Settings className="h-4 w-4 text-text-tertiary" />Configurações
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Link href="/app/seguranca" className="flex items-center gap-2 w-full">
-                <Shield className="h-4 w-4 text-text-tertiary" />Segurança
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
