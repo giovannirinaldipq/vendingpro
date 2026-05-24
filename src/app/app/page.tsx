@@ -9,15 +9,29 @@ import {
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
 } from 'recharts';
-import { PageHeader } from '@/components/shell/PageHeader';
 import { KpiCard } from '@/components/ui/kpi-card';
+import { KpiCardHero } from '@/components/ui/kpi-hero';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Pill } from '@/components/ui/pill';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { KpiSkeleton, ChartSkeleton, TableSkeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
+import { EmptyStateV2 } from '@/components/ui/empty-state-v2';
 import { OnboardingChecklist } from '@/components/onboarding/OnboardingChecklist';
 import { cn } from '@/lib/utils';
+
+function greetingByHour(): string {
+  const h = new Date().getHours();
+  if (h < 12) return 'Bom dia';
+  if (h < 18) return 'Boa tarde';
+  return 'Boa noite';
+}
+
+function formatTodayPtBR(): string {
+  return new Date().toLocaleDateString('pt-BR', {
+    weekday: 'long', day: 'numeric', month: 'long',
+  });
+}
 
 interface DashboardMetrics {
   total_revenue: number;
@@ -118,27 +132,37 @@ export default function AppDashboard() {
 
   return (
     <div>
-      <PageHeader
-        title="Dashboard"
-        description="Visão geral da operação"
-      />
+      {/* Saudação personalizada — substitui PageHeader genérico */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-semibold tracking-tight text-text-primary">
+          {greetingByHour()}, João
+        </h1>
+        <p className="mt-1 text-sm text-text-tertiary">
+          <span className="capitalize">{formatTodayPtBR()}</span>
+          {!loading && metrics && (
+            <> · <span className="tabular-nums">{metrics.active_machines}</span> máquinas operando</>
+          )}
+        </p>
+      </div>
 
       <OnboardingChecklist />
 
       {/* ───── ROW 1 — KPIs ──────────────────────────────── */}
+      {/* HERO em col-span-2 + 2 secundários alinhados — assimetria proposital pra criar hierarquia */}
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-4">
         {loading ? (
           <><KpiSkeleton /><KpiSkeleton /><KpiSkeleton /><KpiSkeleton /></>
         ) : (
           <>
-            <KpiCard
-              label="Receita 30d"
-              value={fmtBRL(metrics?.total_revenue ?? 0)}
-              delta={metrics?.revenue_growth}
-              deltaLabel="vs período anterior"
-              icon={DollarSign}
-              tone="primary"
-            />
+            <div className="sm:col-span-2">
+              <KpiCardHero
+                label="Receita 30D"
+                value={fmtBRL(metrics?.total_revenue ?? 0)}
+                deltaPercent={metrics?.revenue_growth}
+                subtitle="vs período anterior"
+                icon={DollarSign}
+              />
+            </div>
             <KpiCard
               label="Vendas"
               value={fmtInt(metrics?.total_sales ?? 0)}
@@ -152,14 +176,6 @@ export default function AppDashboard() {
               delta={metrics?.ticket_growth}
               deltaLabel="vs período anterior"
               icon={TrendingUp}
-            />
-            <KpiCard
-              label="Máquinas no ar"
-              value={metrics?.active_machines ?? 0}
-              hint={(metrics?.machines_with_issues ?? 0) > 0
-                ? `${metrics?.machines_with_issues} com problemas`
-                : 'todas operacionais'}
-              icon={Monitor}
             />
           </>
         )}
@@ -249,8 +265,8 @@ function RevenueChart({ data }: { data: Array<{ date: string; revenue: number; s
               <AreaChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--brand-navy)" stopOpacity={0.18} />
-                    <stop offset="100%" stopColor="var(--brand-navy)" stopOpacity={0} />
+                    <stop offset="0%" stopColor="#fbbf24" stopOpacity={0.22} />
+                    <stop offset="100%" stopColor="#fbbf24" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid stroke="var(--border-default)" strokeDasharray="3 3" vertical={false} />
@@ -288,11 +304,11 @@ function RevenueChart({ data }: { data: Array<{ date: string; revenue: number; s
                 <Area
                   type="monotone"
                   dataKey="revenue"
-                  stroke="var(--brand-navy)"
-                  strokeWidth={2}
+                  stroke="#fbbf24"
+                  strokeWidth={2.5}
                   fill="url(#revFill)"
                   dot={false}
-                  activeDot={{ r: 4, fill: 'var(--brand-navy)', stroke: 'var(--surface-card)', strokeWidth: 2 }}
+                  activeDot={{ r: 4, fill: '#fbbf24', stroke: 'var(--surface-card)', strokeWidth: 2 }}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -328,11 +344,11 @@ function ActiveAlertsCard({ alerts, loading }: { alerts: Alert[]; loading: boole
             ))}
           </div>
         ) : alerts.length === 0 ? (
-          <EmptyState
-            icon={AlertTriangle}
-            title="Nenhum alerta ativo"
-            description="Tudo operacional por aqui."
-            className="py-12"
+          <EmptyStateV2
+            illustration="no-alerts"
+            positive
+            title="Tudo respirando bem por aqui ✦"
+            description="Nenhum alerta ativo no momento. O motor checa a cada 15 minutos."
           />
         ) : (
           <ul className="divide-y divide-border-default">

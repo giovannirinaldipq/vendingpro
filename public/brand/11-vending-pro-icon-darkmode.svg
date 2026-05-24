@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Vending Pro">
+  <title>Vending Pro</title>
+  <rect x="0.00" y="0.00" width="24" height="24" rx="5.04" fill="#ffffff"/>
+  <rect x="38.00" y="0.00" width="24" height="24" rx="5.04" fill="#ffffff" fill-opacity="0.18"/>
+  <rect x="76.00" y="0.00" width="24" height="24" rx="5.04" fill="#ffffff"/>
+  <rect x="0.00" y="38.00" width="24" height="24" rx="5.04" fill="#ffffff" fill-opacity="0.18"/>
+  <rect x="38.00" y="38.00" width="24" height="24" rx="5.04" fill="#ffffff"/>
+  <rect x="76.00" y="38.00" width="24" height="24" rx="5.04" fill="#ffffff" fill-opacity="0.18"/>
+  <rect x="0.00" y="76.00" width="24" height="24" rx="5.04" fill="#ffffff" fill-opacity="0.18"/>
+  <rect x="38.00" y="76.00" width="24" height="24" rx="5.04" fill="#ffffff" fill-opacity="0.18"/>
+  <rect x="76.00" y="76.00" width="24" height="24" rx="5.04" fill="#ffffff" fill-opacity="0.18"/>
+</svg>

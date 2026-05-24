@@ -39,18 +39,23 @@ export function BrandLogo({
   // SSR-safe: usa light por padrão até hidratar
   const theme = forceTheme ?? (mounted ? resolvedTheme : 'light');
 
+  // Mapa CORRETO:
+  // - light  → desenho navy sobre fundo transparente (usar em fundos claros)
+  // - dark   → desenho branco sobre fundo transparente (usar em fundos escuros)
+  // Os arquivos -dark (01/03/05) têm badge navy embedded e NÃO devem ser usados
+  // sobre fundos escuros — eles são pra contextos isolados (post comercial).
   const srcMap = {
     horizontal: {
       light: '/brand/04-vending-pro-horizontal-light.svg',
-      dark: '/brand/03-vending-pro-horizontal-dark.svg',
+      dark:  '/brand/10-vending-pro-horizontal-darkmode.svg',
     },
     stacked: {
       light: '/brand/02-vending-pro-stacked-light.svg',
-      dark: '/brand/01-vending-pro-stacked-dark.svg',
+      dark:  '/brand/09-vending-pro-stacked-darkmode.svg',
     },
     icon: {
       light: '/brand/06-vending-pro-icon-light.svg',
-      dark: '/brand/05-vending-pro-icon-badge.svg',
+      dark:  '/brand/11-vending-pro-icon-darkmode.svg',
     },
   };
 
