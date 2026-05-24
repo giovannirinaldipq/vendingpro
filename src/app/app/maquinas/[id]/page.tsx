@@ -84,10 +84,10 @@ interface MachineStats {
 }
 
 const statusConfig = {
-  active: { label: 'Ativa', color: 'bg-green-100 text-green-700', icon: CheckCircle },
-  inactive: { label: 'Inativa', color: 'bg-gray-100 text-gray-700', icon: XCircle },
-  maintenance: { label: 'Manutenção', color: 'bg-yellow-100 text-yellow-700', icon: Wrench },
-  deactivated: { label: 'Desativada', color: 'bg-red-100 text-red-700', icon: AlertTriangle },
+  active:      { label: 'Ativa',       color: 'bg-success-soft text-success',  icon: CheckCircle },
+  inactive:    { label: 'Inativa',     color: 'bg-surface-subtle text-text-tertiary', icon: XCircle },
+  maintenance: { label: 'Manutenção',  color: 'bg-warning-soft text-warning',  icon: Wrench },
+  deactivated: { label: 'Desativada',  color: 'bg-danger-soft text-danger',    icon: AlertTriangle },
 };
 
 export default function MachineDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -250,7 +250,7 @@ export default function MachineDetailPage({ params }: { params: Promise<{ id: st
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                <AlertDialogAction onClick={handleDelete} className="bg-danger hover:bg-danger/90">
                   Desativar
                 </AlertDialogAction>
               </AlertDialogFooter>

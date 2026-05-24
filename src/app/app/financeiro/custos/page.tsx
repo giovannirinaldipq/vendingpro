@@ -198,7 +198,7 @@ function CostsContent() {
                     <TableCell className="text-muted-foreground">{c.description ?? '—'}</TableCell>
                     <TableCell className="text-right font-medium">{fmtBRL(c.amount)}</TableCell>
                     <TableCell>{FREQ_LABEL[c.frequency]}</TableCell>
-                    <TableCell><Button variant="ghost" size="sm" onClick={() => remove(c.id)}><Trash2 className="h-4 w-4 text-red-600" /></Button></TableCell>
+                    <TableCell><Button variant="ghost" size="sm" onClick={() => remove(c.id)}><Trash2 className="h-4 w-4 text-danger" /></Button></TableCell>
                   </TableRow>
                 ))}
               </TableBody>

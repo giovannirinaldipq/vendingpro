@@ -186,15 +186,15 @@ export default function FinanceiroPage() {
                   {summary.per_machine.length === 0 ? (
                     <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Nenhuma máquina ativa com vendas no período.</TableCell></TableRow>
                   ) : summary.per_machine.map(m => (
-                    <TableRow key={m.machine_id} className={m.is_loss ? 'bg-red-50/40' : ''}>
+                    <TableRow key={m.machine_id} className={m.is_loss ? 'bg-danger-soft/30' : ''}>
                       <TableCell className="font-medium">{m.machine_name}</TableCell>
                       <TableCell className="text-right">{fmtBRL(m.revenue)}</TableCell>
                       <TableCell className="text-right text-muted-foreground">{fmtBRL(m.fees)}</TableCell>
                       <TableCell className="text-right text-muted-foreground">{fmtBRL(m.cmv)}</TableCell>
                       <TableCell className="text-right text-muted-foreground">{fmtBRL(m.fixed_costs)}</TableCell>
-                      <TableCell className={`text-right font-semibold ${m.net_result >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                      <TableCell className={`text-right font-mono font-semibold tabular-nums ${m.net_result >= 0 ? 'text-success' : 'text-danger'}`}>
                         {fmtBRL(m.net_result)}
-                        {m.is_loss && <Badge className="ml-2 bg-red-100 text-red-700">Prejuízo</Badge>}
+                        {m.is_loss && <Badge className="ml-2 bg-danger-soft text-danger">Prejuízo</Badge>}
                       </TableCell>
                       <TableCell className="text-right">
                         <Link href={`/app/financeiro/custos?machine_id=${m.machine_id}`}>

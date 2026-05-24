@@ -89,16 +89,16 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stat.value}</div>
-              <div className="flex items-center gap-1 text-xs">
+              <div className="flex items-center gap-1 text-xs tabular-nums">
                 {stat.changeType === 'positive' ? (
-                  <ArrowUpRight className="h-3 w-3 text-green-500" />
+                  <ArrowUpRight className="h-3 w-3 text-brand-amber" strokeWidth={2.5} />
                 ) : (
-                  <ArrowDownRight className="h-3 w-3 text-red-500" />
+                  <ArrowDownRight className="h-3 w-3 text-text-tertiary" strokeWidth={2.5} />
                 )}
-                <span className={stat.changeType === 'positive' ? 'text-green-500' : 'text-red-500'}>
+                <span className={stat.changeType === 'positive' ? 'text-[#92400e] dark:text-brand-amber font-medium' : 'text-text-tertiary'}>
                   {stat.change}
                 </span>
-                <span className="text-muted-foreground">{stat.description}</span>
+                <span className="text-text-tertiary">{stat.description}</span>
               </div>
             </CardContent>
           </Card>
@@ -123,12 +123,12 @@ export default function AdminDashboard() {
                 <span className="font-medium">{metrics?.trial_tenants || 0}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Inadimplentes</span>
-                <span className="font-medium text-yellow-600">{metrics?.overdue_tenants || 0}</span>
+                <span className="text-sm text-text-secondary">Inadimplentes</span>
+                <span className="font-mono font-medium tabular-nums text-warning">{metrics?.overdue_tenants || 0}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Suspensos</span>
-                <span className="font-medium text-red-600">{metrics?.suspended_tenants || 0}</span>
+                <span className="text-sm text-text-secondary">Suspensos</span>
+                <span className="font-mono font-medium tabular-nums text-danger">{metrics?.suspended_tenants || 0}</span>
               </div>
             </div>
           </CardContent>

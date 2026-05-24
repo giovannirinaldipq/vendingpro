@@ -116,7 +116,7 @@ export default function BillingPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
+              <CheckCircle className="h-5 w-5 text-success" />
               <span className="text-sm text-muted-foreground">
                 Última execução: {lastRun}
               </span>
@@ -150,9 +150,9 @@ export default function BillingPage() {
 
       {/* Errors */}
       {lastResult?.errors && lastResult.errors.length > 0 && (
-        <Card className="border-red-200">
+        <Card className="border-danger/30">
           <CardHeader>
-            <CardTitle className="text-red-600">Erros na Execução</CardTitle>
+            <CardTitle className="text-danger">Erros na Execução</CardTitle>
             <CardDescription>
               Os seguintes erros ocorreram durante a execução
             </CardDescription>
@@ -160,7 +160,7 @@ export default function BillingPage() {
           <CardContent>
             <ul className="space-y-2">
               {lastResult.errors.map((error, index) => (
-                <li key={index} className="text-sm text-red-600">
+                <li key={index} className="text-sm text-danger">
                   • {error}
                 </li>
               ))}
@@ -179,7 +179,7 @@ export default function BillingPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-info-soft text-info">
               1
             </div>
             <div>
@@ -192,7 +192,7 @@ export default function BillingPage() {
           </div>
 
           <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-info-soft text-info">
               2
             </div>
             <div>
@@ -205,7 +205,7 @@ export default function BillingPage() {
           </div>
 
           <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-yellow-100 text-yellow-600">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-warning-soft text-warning">
               3
             </div>
             <div>
@@ -218,7 +218,7 @@ export default function BillingPage() {
           </div>
 
           <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 text-red-600">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-danger-soft text-danger">
               4
             </div>
             <div>

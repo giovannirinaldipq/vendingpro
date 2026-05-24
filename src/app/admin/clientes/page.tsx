@@ -43,11 +43,11 @@ import {
 import type { Tenant } from '@/types';
 
 const statusConfig = {
-  active: { label: 'Ativo', className: 'bg-green-100 text-green-700 hover:bg-green-100' },
-  trial: { label: 'Trial', className: 'bg-blue-100 text-blue-700 hover:bg-blue-100' },
-  overdue: { label: 'Inadimplente', className: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-100' },
-  suspended: { label: 'Suspenso', className: 'bg-red-100 text-red-700 hover:bg-red-100' },
-  cancelled: { label: 'Cancelado', className: 'bg-gray-100 text-gray-700 hover:bg-gray-100' },
+  active:    { label: 'Ativo',        className: 'bg-success-soft text-success' },
+  trial:     { label: 'Trial',        className: 'bg-brand-amber/15 text-[#92400e] dark:text-brand-amber' },
+  overdue:   { label: 'Inadimplente', className: 'bg-warning-soft text-warning' },
+  suspended: { label: 'Suspenso',     className: 'bg-danger-soft text-danger' },
+  cancelled: { label: 'Cancelado',    className: 'bg-surface-subtle text-text-tertiary' },
 };
 
 interface TenantsResponse {
@@ -233,7 +233,7 @@ export default function ClientsPage() {
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            className="text-red-600"
+                            variant="destructive"
                             onClick={() => handleDelete(client.id)}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />

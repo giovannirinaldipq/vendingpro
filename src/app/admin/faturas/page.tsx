@@ -99,27 +99,27 @@ const statusConfig = {
   draft: {
     label: 'Rascunho',
     icon: Clock,
-    className: 'bg-gray-100 text-gray-700',
+    className: 'bg-surface-subtle text-text-secondary',
   },
   pending: {
     label: 'Pendente',
     icon: Clock,
-    className: 'bg-yellow-100 text-yellow-700',
+    className: 'bg-info-soft text-info',
   },
   paid: {
     label: 'Pago',
     icon: CheckCircle,
-    className: 'bg-green-100 text-green-700',
+    className: 'bg-success-soft text-success',
   },
   overdue: {
     label: 'Vencida',
     icon: AlertCircle,
-    className: 'bg-red-100 text-red-700',
+    className: 'bg-danger-soft text-danger',
   },
   cancelled: {
     label: 'Cancelada',
     icon: XCircle,
-    className: 'bg-gray-100 text-gray-500',
+    className: 'bg-surface-subtle text-text-tertiary',
   },
 };
 
@@ -273,7 +273,7 @@ export default function InvoicesPage() {
                           {(invoice.status === 'pending' || invoice.status === 'overdue') && (
                             <>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-green-600">
+                              <DropdownMenuItem className="text-success">
                                 <CheckCircle className="mr-2 h-4 w-4" />
                                 Registrar Pagamento
                               </DropdownMenuItem>

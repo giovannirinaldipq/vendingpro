@@ -105,12 +105,12 @@ export default function NovoUsuarioAdminPage() {
             <div className="space-y-2">
               <Label htmlFor="name">Nome</Label>
               <Input id="name" {...register('name')} disabled={loading} />
-              {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
+              {errors.name && <p className="text-xs text-danger mt-1">{errors.name.message}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" {...register('email')} disabled={loading} />
-              {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
+              {errors.email && <p className="text-xs text-danger mt-1">{errors.email.message}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="role">Permissão</Label>
@@ -126,7 +126,7 @@ export default function NovoUsuarioAdminPage() {
             <div className="space-y-2">
               <Label htmlFor="password">Senha (opcional)</Label>
               <Input id="password" type="password" placeholder="Deixe em branco para gerar uma" {...register('password')} disabled={loading} />
-              {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
+              {errors.password && <p className="text-xs text-danger mt-1">{errors.password.message}</p>}
             </div>
             <Button type="submit" disabled={loading} className="w-full">
               {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Criando...</> : 'Criar usuário'}

@@ -66,7 +66,7 @@ export default function NovoRestockerPage() {
             <div className="space-y-2">
               <Label htmlFor="name">Nome completo *</Label>
               <Input id="name" {...register('name')} disabled={loading} />
-              {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
+              {errors.name && <p className="text-xs text-danger mt-1">{errors.name.message}</p>}
             </div>
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -81,7 +81,7 @@ export default function NovoRestockerPage() {
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" {...register('email')} disabled={loading} />
-              {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
+              {errors.email && <p className="text-xs text-danger mt-1">{errors.email.message}</p>}
             </div>
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -96,7 +96,7 @@ export default function NovoRestockerPage() {
             <div className="space-y-2">
               <Label htmlFor="pin_code">PIN de acesso (futuro app mobile)</Label>
               <Input id="pin_code" placeholder="4 a 6 dígitos" {...register('pin_code')} disabled={loading} />
-              {errors.pin_code && <p className="text-sm text-red-500">{errors.pin_code.message}</p>}
+              {errors.pin_code && <p className="text-xs text-danger mt-1">{errors.pin_code.message}</p>}
             </div>
             <Button type="submit" disabled={loading} className="w-full">
               {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</> : 'Cadastrar reabastecedor'}

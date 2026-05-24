@@ -170,7 +170,7 @@ export default function EditMachinePage({ params }: { params: Promise<{ id: stri
                   {...register('code')}
                 />
                 {errors.code && (
-                  <p className="text-sm text-red-500">{errors.code.message}</p>
+                  <p className="text-xs text-danger mt-1">{errors.code.message}</p>
                 )}
               </div>
 
@@ -182,7 +182,7 @@ export default function EditMachinePage({ params }: { params: Promise<{ id: stri
                   {...register('name')}
                 />
                 {errors.name && (
-                  <p className="text-sm text-red-500">{errors.name.message}</p>
+                  <p className="text-xs text-danger mt-1">{errors.name.message}</p>
                 )}
               </div>
             </div>
