@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, Calendar, Monitor, Loader2, TrendingUp, DollarSign, ShoppingCart } from 'lucide-react';
+import { KpiCardHero } from '@/components/ui/kpi-hero';
+import { Calendar, Monitor, Loader2, TrendingUp, DollarSign, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -147,43 +148,38 @@ export default function AnalyticsPage() {
         </Card>
       ) : (
         <>
-          {/* Summary Cards */}
-          <div className="grid gap-4 md:grid-cols-3">
+          {/* Summary Cards — HERO Receita Total + 2 secundários */}
+          <div className="grid gap-4 md:grid-cols-4">
+            <div className="md:col-span-2">
+              <KpiCardHero
+                label="Receita Total"
+                value={`R$ ${data.summary.total_revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                icon={DollarSign}
+                subtitle="no período selecionado"
+              />
+            </div>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Receita Total
-                </CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  R$ {data.summary.total_revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+                <CardTitle className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-tertiary">
                   Total de Vendas
                 </CardTitle>
-                <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                <ShoppingCart className="h-3.5 w-3.5 text-text-tertiary" strokeWidth={2} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className="font-mono text-3xl font-medium tabular-nums text-text-primary">
                   {data.summary.total_sales.toLocaleString('pt-BR')}
                 </div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+                <CardTitle className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-tertiary">
                   Ticket Médio
                 </CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                <TrendingUp className="h-3.5 w-3.5 text-text-tertiary" strokeWidth={2} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className="font-mono text-3xl font-medium tabular-nums text-text-primary">
                   R$ {data.summary.average_ticket.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </div>
               </CardContent>

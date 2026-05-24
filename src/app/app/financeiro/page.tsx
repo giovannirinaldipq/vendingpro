@@ -6,6 +6,7 @@ import { Loader2, TrendingUp, TrendingDown, DollarSign, AlertTriangle, Settings 
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { KpiCardHero } from '@/components/ui/kpi-hero';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -112,29 +113,54 @@ export default function FinanceiroPage() {
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : (
         <>
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-5">
+            {/* HERO Resultado Líquido — métrica decisiva do financeiro */}
+            <div className="md:col-span-2">
+              <KpiCardHero
+                label="Resultado Líquido"
+                value={fmtBRL(summary.total.net_result)}
+                icon={summary.total.net_result >= 0 ? TrendingUp : TrendingDown}
+                subtitle={`${summary.total.sales_count.toLocaleString('pt-BR')} vendas · receita ${fmtBRL(summary.total.revenue)}`}
+              />
+            </div>
             <Card>
-              <CardHeader className="pb-2"><CardDescription className="flex items-center gap-1"><DollarSign className="h-3 w-3" />Receita bruta</CardDescription></CardHeader>
-              <CardContent><div className="text-2xl font-bold">{fmtBRL(summary.total.revenue)}</div></CardContent>
+              <CardHeader className="pb-2">
+                <CardDescription className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-tertiary flex items-center gap-1">
+                  <DollarSign className="h-3 w-3" />Receita bruta
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="font-mono text-3xl font-medium tabular-nums text-text-primary">{fmtBRL(summary.total.revenue)}</div>
+              </CardContent>
             </Card>
             <Card>
-              <CardHeader className="pb-2"><CardDescription>Custos totais</CardDescription></CardHeader>
-              <CardContent><div className="text-2xl font-bold text-orange-600">{fmtBRL(summary.total.fees + summary.total.cmv + summary.total.fixed_costs)}</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  Taxas {fmtBRL(summary.total.fees)} · CMV {fmtBRL(summary.total.cmv)} · Fixos {fmtBRL(summary.total.fixed_costs)}
+              <CardHeader className="pb-2">
+                <CardDescription className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-tertiary">
+                  Custos totais
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="font-mono text-3xl font-medium tabular-nums text-text-primary">{fmtBRL(summary.total.fees + summary.total.cmv + summary.total.fixed_costs)}</div>
+                <div className="text-[11px] text-text-tertiary mt-1.5 leading-relaxed">
+                  Taxas {fmtBRL(summary.total.fees)}<br/>
+                  CMV {fmtBRL(summary.total.cmv)} · Fixos {fmtBRL(summary.total.fixed_costs)}
                 </div>
               </CardContent>
             </Card>
-            <Card className={summary.total.net_result >= 0 ? 'border-green-200' : 'border-red-200'}>
-              <CardHeader className="pb-2"><CardDescription className="flex items-center gap-1">{summary.total.net_result >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}Resultado líquido</CardDescription></CardHeader>
+            <Card className={summary.machines_in_loss > 0 ? 'border-warning/40' : ''}>
+              <CardHeader className="pb-2">
+                <CardDescription className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-tertiary flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3" />Em prejuízo
+                </CardDescription>
+              </CardHeader>
               <CardContent>
-                <div className={`text-2xl font-bold ${summary.total.net_result >= 0 ? 'text-green-600' : 'text-red-600'}`}>{fmtBRL(summary.total.net_result)}</div>
-                <div className="text-xs text-muted-foreground mt-1">{summary.total.sales_count} vendas</div>
+                <div className={`font-mono text-3xl font-medium tabular-nums ${summary.machines_in_loss > 0 ? 'text-warning' : 'text-text-primary'}`}>
+                  {summary.machines_in_loss}
+                </div>
+                <div className="text-[11px] text-text-tertiary mt-1">
+                  {summary.machines_in_loss > 0 ? 'máquinas no negativo' : 'tudo no positivo'}
+                </div>
               </CardContent>
-            </Card>
-            <Card className={summary.machines_in_loss > 0 ? 'border-red-300' : ''}>
-              <CardHeader className="pb-2"><CardDescription className="flex items-center gap-1"><AlertTriangle className="h-3 w-3" />Máquinas no prejuízo</CardDescription></CardHeader>
-              <CardContent><div className={`text-2xl font-bold ${summary.machines_in_loss > 0 ? 'text-red-600' : ''}`}>{summary.machines_in_loss}</div></CardContent>
             </Card>
           </div>
 

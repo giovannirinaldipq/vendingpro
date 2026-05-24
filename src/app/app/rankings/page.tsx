@@ -27,6 +27,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyStateV2 } from '@/components/ui/empty-state-v2';
+import { KpiCardHero } from '@/components/ui/kpi-hero';
 
 interface MachineRanking {
   id: string;
@@ -153,34 +154,39 @@ export default function RankingsPage() {
         </Card>
       ) : (
         <>
-          {/* Summary Cards */}
-          <div className="grid gap-4 md:grid-cols-4">
+          {/* HERO Receita Média + 3 secundários */}
+          <div className="grid gap-4 md:grid-cols-5">
+            <div className="md:col-span-2">
+              <KpiCardHero
+                label="Receita Média por Máquina"
+                value={`R$ ${data.summary.avg_revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                icon={DollarSign}
+                subtitle={`distribuída entre ${data.summary.active_machines} máquinas ativas`}
+              />
+            </div>
             <Card>
               <CardContent className="pt-6">
-                <div className="text-2xl font-bold">{data.summary.total_machines}</div>
-                <p className="text-sm text-muted-foreground">Total de Máquinas</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-tertiary">Total</p>
+                <div className="font-mono text-3xl font-medium tabular-nums text-text-primary mt-1">{data.summary.total_machines}</div>
+                <p className="text-xs text-text-tertiary mt-1">máquinas no cadastro</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-6">
-                <div className="text-2xl font-bold">{data.summary.active_machines}</div>
-                <p className="text-sm text-muted-foreground">Máquinas Ativas</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-tertiary">Ativas</p>
+                <div className="font-mono text-3xl font-medium tabular-nums text-text-primary mt-1">{data.summary.active_machines}</div>
+                <p className="text-xs text-text-tertiary mt-1">operacionais agora</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-6">
-                <div className="text-2xl font-bold">
-                  R$ {data.summary.avg_revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </div>
-                <p className="text-sm text-muted-foreground">Receita Média</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className={`text-2xl font-bold ${data.summary.machines_with_issues > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-tertiary">Atenção</p>
+                <div className={`font-mono text-3xl font-medium tabular-nums mt-1 ${data.summary.machines_with_issues > 0 ? 'text-warning' : 'text-text-primary'}`}>
                   {data.summary.machines_with_issues}
                 </div>
-                <p className="text-sm text-muted-foreground">Precisam de Atenção</p>
+                <p className="text-xs text-text-tertiary mt-1">
+                  {data.summary.machines_with_issues > 0 ? 'precisam de cuidado' : 'tudo bem'}
+                </p>
               </CardContent>
             </Card>
           </div>

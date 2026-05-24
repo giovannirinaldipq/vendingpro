@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Pill } from '@/components/ui/pill';
+import { KpiCardHero } from '@/components/ui/kpi-hero';
 import {
   Table,
   TableBody,
@@ -170,58 +171,53 @@ export default function InventoryPage() {
         </Link>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards — HERO Valor em Estoque + 3 secundários */}
       {data?.stats && (
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-5">
+          <div className="md:col-span-2">
+            <KpiCardHero
+              label="Valor em Estoque"
+              value={`R$ ${data.stats.total_value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+              icon={DollarSign}
+              subtitle={`${data.stats.products_count} SKUs · ${data.stats.total_items.toLocaleString('pt-BR')} unidades`}
+            />
+          </div>
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Produtos em Estoque
+              <CardTitle className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-tertiary">
+                SKUs
               </CardTitle>
-              <Boxes className="h-4 w-4 text-muted-foreground" />
+              <Boxes className="h-3.5 w-3.5 text-text-tertiary" strokeWidth={2} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{data.stats.products_count}</div>
+              <div className="font-mono text-3xl font-medium tabular-nums text-text-primary">{data.stats.products_count}</div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total de Itens
+              <CardTitle className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-tertiary">
+                Unidades
               </CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
+              <Package className="h-3.5 w-3.5 text-text-tertiary" strokeWidth={2} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="font-mono text-3xl font-medium tabular-nums text-text-primary">
                 {data.stats.total_items.toLocaleString('pt-BR')}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Valor em Estoque
-              </CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                R$ {data.stats.total_value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
             </CardContent>
           </Card>
 
           <Card className={data.stats.low_stock_count > 0 ? 'border-warning/40' : ''}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+              <CardTitle className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-tertiary">
                 Estoque Baixo
               </CardTitle>
-              <TrendingDown className={`h-4 w-4 ${data.stats.low_stock_count > 0 ? 'text-warning' : 'text-muted-foreground'}`} />
+              <TrendingDown className={`h-3.5 w-3.5 ${data.stats.low_stock_count > 0 ? 'text-warning' : 'text-text-tertiary'}`} strokeWidth={2} />
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${data.stats.low_stock_count > 0 ? 'text-warning' : ''}`}>
+              <div className={`font-mono text-3xl font-medium tabular-nums ${data.stats.low_stock_count > 0 ? 'text-warning' : 'text-text-primary'}`}>
                 {data.stats.low_stock_count}
               </div>
             </CardContent>
