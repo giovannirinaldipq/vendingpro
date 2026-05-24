@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
 import { Moon, Sun, Monitor } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
@@ -15,16 +16,17 @@ export function ThemeToggle() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger>
-        <Button variant="ghost" size="icon" aria-label="Mudar tema">
-          {mounted && theme === 'dark' ? (
-            <Moon className="h-4 w-4" />
-          ) : mounted && theme === 'light' ? (
-            <Sun className="h-4 w-4" />
-          ) : (
-            <Monitor className="h-4 w-4" />
-          )}
-        </Button>
+      <DropdownMenuTrigger
+        className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }))}
+        aria-label="Mudar tema"
+      >
+        {mounted && theme === 'dark' ? (
+          <Moon className="h-4 w-4" />
+        ) : mounted && theme === 'light' ? (
+          <Sun className="h-4 w-4" />
+        ) : (
+          <Monitor className="h-4 w-4" />
+        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-36">
         <DropdownMenuItem onClick={() => setTheme('light')}>

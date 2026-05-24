@@ -13,10 +13,11 @@ import { PageHeader } from '@/components/shell/PageHeader';
 import { KpiCard } from '@/components/ui/kpi-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Pill } from '@/components/ui/pill';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { KpiSkeleton, ChartSkeleton, TableSkeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { OnboardingChecklist } from '@/components/onboarding/OnboardingChecklist';
+import { cn } from '@/lib/utils';
 
 interface DashboardMetrics {
   total_revenue: number;
@@ -36,12 +37,13 @@ interface AnalyticsResponse {
 
 interface RankingsResponse {
   machines: Array<{
-    machine_id: string;
+    id: string;
     name: string;
     code: string;
-    location_name?: string | null;
-    total_revenue: number;
-    total_sales: number;
+    location?: string | null;
+    revenue: number;
+    sales: number;
+    ticket?: number;
     health_score?: number;
   }>;
 }
@@ -181,10 +183,11 @@ export default function AppDashboard() {
               <CardTitle>Top 5 máquinas — últimos 30 dias</CardTitle>
               <p className="mt-0.5 text-sm text-text-secondary">Ordenado por receita bruta</p>
             </div>
-            <Link href="/app/rankings">
-              <Button variant="ghost" size="sm" className="gap-1">
-                Ver todas <ArrowRight className="h-3.5 w-3.5" />
-              </Button>
+            <Link
+              href="/app/rankings"
+              className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'gap-1')}
+            >
+              Ver todas <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
         </CardHeader>
@@ -359,7 +362,7 @@ function ActiveAlertsCard({ alerts, loading }: { alerts: Alert[]; loading: boole
 }
 
 function TopMachinesTable({ machines }: { machines: RankingsResponse['machines'] }) {
-  const max = Math.max(...machines.map(m => m.total_revenue));
+  const max = Math.max(...machines.map(m => m.revenue ?? 0));
   return (
     <div>
       <div className="grid grid-cols-12 gap-3 px-6 py-2 border-b border-border-default bg-surface-subtle/40 text-[10px] font-semibold uppercase tracking-[0.05em] text-text-tertiary">
@@ -370,24 +373,24 @@ function TopMachinesTable({ machines }: { machines: RankingsResponse['machines']
       </div>
       <ul className="divide-y divide-border-default">
         {machines.map((m, i) => (
-          <li key={m.machine_id} className="grid grid-cols-12 gap-3 px-6 py-3 hover:bg-surface-subtle/60 transition-colors">
+          <li key={m.id} className="grid grid-cols-12 gap-3 px-6 py-3 hover:bg-surface-subtle/60 transition-colors">
             <div className="col-span-1 font-mono-num text-sm text-text-tertiary">{(i + 1).toString().padStart(2, '0')}</div>
             <div className="col-span-5 min-w-0">
-              <Link href={`/app/maquinas/${m.machine_id}`} className="text-sm font-medium text-text-primary hover:text-brand-navy truncate block">
+              <Link href={`/app/maquinas/${m.id}`} className="text-sm font-medium text-text-primary hover:text-brand-navy truncate block">
                 {m.name}
               </Link>
-              {m.location_name && (
-                <div className="text-xs text-text-tertiary truncate">{m.location_name}</div>
+              {m.location && (
+                <div className="text-xs text-text-tertiary truncate">{m.location}</div>
               )}
             </div>
-            <div className="col-span-3 text-right font-mono-num text-sm text-text-secondary self-center">{fmtInt(m.total_sales)}</div>
+            <div className="col-span-3 text-right font-mono-num text-sm text-text-secondary self-center">{fmtInt(m.sales ?? 0)}</div>
             <div className="col-span-3 text-right self-center">
-              <div className="font-mono-num text-sm font-medium text-text-primary">{fmtBRLFull(m.total_revenue)}</div>
+              <div className="font-mono-num text-sm font-medium text-text-primary">{fmtBRLFull(m.revenue ?? 0)}</div>
               {max > 0 && (
                 <div className="mt-1 h-1 rounded-full bg-surface-subtle overflow-hidden">
                   <div
                     className="h-full bg-brand-navy"
-                    style={{ width: `${(m.total_revenue / max) * 100}%` }}
+                    style={{ width: `${((m.revenue ?? 0) / max) * 100}%` }}
                   />
                 </div>
               )}
