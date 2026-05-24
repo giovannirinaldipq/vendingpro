@@ -114,7 +114,19 @@ export function parseVMPayFile(buffer: ArrayBuffer): VMPayParseResult {
     const sheet = workbook.Sheets[sheetName];
     const data = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 });
 
-    // Encontrar linha do cabeçalho (procura por "Operador" na primeira coluna)
+    // Detecção: formato CASHLESS AGREGADO (Transações cashless agrupado por Dia/Local/Máquina)
+    const titleCell = String((data[0] as unknown[])?.[0] ?? '').toLowerCase().trim();
+    const sheetNameLower = sheetName.toLowerCase();
+    const isCashlessAggregated =
+      titleCell === 'transações cashless' ||
+      titleCell === 'transacoes cashless' ||
+      sheetNameLower.includes('cashless');
+
+    if (isCashlessAggregated) {
+      return parseVMPayCashlessAggregated(data, workbook.SheetNames);
+    }
+
+    // Formato VENDAS (linha por transação): encontrar linha do cabeçalho
     let headerRowIndex = -1;
     for (let i = 0; i < Math.min(30, data.length); i++) {
       const row = data[i];
@@ -264,6 +276,147 @@ export function parseVMPayFile(buffer: ArrayBuffer): VMPayParseResult {
 }
 
 /**
+ * Parser do relatório CASHLESS do VMPay agrupado por Dia/Local/Máquina.
+ *
+ * Estrutura:
+ * - Linha 0: "Transações cashless" (título)
+ * - Linhas 2-9 (aprox): filtros (Operador, Período, Máquina, etc)
+ * - Linha "Agrupamento" + "Dia, Local, Máquina"
+ * - Linha "Número de registros | N"
+ * - Header: "Dia | Local | Máquina | Valor (R$) | % | Desconto (R$) | % | Quantidade | %"
+ * - Linhas de dados: 1 linha = total de UM dia em UMA máquina
+ * - Última linha: "Total | | | <soma>"
+ *
+ * Cada linha vira uma Sale agregada (product_name = "Vendas do dia (cashless agregado)").
+ */
+function parseVMPayCashlessAggregated(
+  data: unknown[][],
+  sheetNames: string[]
+): VMPayParseResult {
+  const errors: string[] = [];
+  const sales: ParsedSale[] = [];
+  const machinesSet = new Set<string>();
+  let minDate = '';
+  let maxDate = '';
+  let totalRevenue = 0;
+  let skippedRecords = 0;
+  let totalRecords = 0;
+
+  // Encontra header procurando célula "Dia" + "Local" + "Máquina" + "Valor"
+  let headerRowIndex = -1;
+  for (let i = 0; i < Math.min(40, data.length); i++) {
+    const row = data[i];
+    if (!Array.isArray(row)) continue;
+    const c0 = String(row[0] ?? '').trim().toLowerCase();
+    const c1 = String(row[1] ?? '').trim().toLowerCase();
+    const c2 = String(row[2] ?? '').trim().toLowerCase();
+    const c3 = String(row[3] ?? '').trim().toLowerCase();
+    if (
+      (c0 === 'dia' || c0.startsWith('dia')) &&
+      (c1 === 'local' || c1.startsWith('local')) &&
+      (c2 === 'máquina' || c2 === 'maquina') &&
+      c3.startsWith('valor')
+    ) {
+      headerRowIndex = i;
+      break;
+    }
+  }
+
+  if (headerRowIndex === -1) {
+    return {
+      success: false,
+      sales: [],
+      summary: {
+        total_records: 0,
+        valid_records: 0,
+        skipped_records: 0,
+        machines: [],
+        date_range: { start: '', end: '' },
+        total_revenue: 0,
+      },
+      errors: [
+        'Detectamos um relatório CASHLESS do VMPay, mas o cabeçalho esperado (Dia | Local | Máquina | Valor) não foi encontrado.',
+        'No VMPay, ao exportar o relatório cashless, escolha o agrupamento "Dia, Local, Máquina" e tente novamente.',
+        sheetNames.length > 1 ? `Abas detectadas: ${sheetNames.join(', ')}` : '',
+      ].filter(Boolean),
+    };
+  }
+
+  // Processa linhas de dados (header + 1 até "Total" ou fim)
+  for (let i = headerRowIndex + 1; i < data.length; i++) {
+    const row = data[i];
+    if (!Array.isArray(row) || row.length === 0) continue;
+
+    // Linha de totalização final ("Total | | | <valor>")
+    const c0Str = String(row[0] ?? '').trim().toLowerCase();
+    if (c0Str === 'total' || c0Str.startsWith('total ')) continue;
+
+    // Dia em Excel serial (numérico) — se não for número, pula
+    const diaSerial = Number(row[0]);
+    if (!Number.isFinite(diaSerial) || diaSerial <= 0) {
+      skippedRecords++;
+      continue;
+    }
+
+    totalRecords++;
+
+    const local = String(row[1] ?? '').trim();
+    const machineCode = String(row[2] ?? '').trim();
+    const valor = Number(row[3] ?? 0);
+    const desconto = Number(row[5] ?? 0);
+    const quantidade = Number(row[7] ?? 0);
+
+    if (!machineCode || !Number.isFinite(valor) || valor <= 0 || !Number.isFinite(quantidade) || quantidade <= 0) {
+      skippedRecords++;
+      continue;
+    }
+
+    const saleDate = excelDateToJS(diaSerial);
+    const saleDateStr = saleDate.toISOString().split('T')[0];
+
+    if (!minDate || saleDateStr < minDate) minDate = saleDateStr;
+    if (!maxDate || saleDateStr > maxDate) maxDate = saleDateStr;
+    machinesSet.add(machineCode);
+    totalRevenue += valor;
+
+    sales.push({
+      machine_code: machineCode,
+      sale_date: saleDateStr,
+      sale_time: '00:00:00',
+      sale_datetime: `${saleDateStr}T00:00:00`,
+      product_name: 'Vendas do dia (cashless agregado)',
+      product_code: '',
+      barcode: null,
+      category: 'Agregado VMPay',
+      quantity: quantidade,
+      unit_price: quantidade > 0 ? Math.round((valor / quantidade) * 100) / 100 : valor,
+      total_price: valor,
+      payment_method: 'cashless',
+      raw_data: {
+        row_index: i,
+        format: 'vmpay_cashless_aggregated',
+        local,
+        desconto,
+      },
+    });
+  }
+
+  return {
+    success: true,
+    sales,
+    summary: {
+      total_records: totalRecords,
+      valid_records: sales.length,
+      skipped_records: skippedRecords,
+      machines: Array.from(machinesSet).sort(),
+      date_range: { start: minDate, end: maxDate },
+      total_revenue: Math.round(totalRevenue * 100) / 100,
+    },
+    errors,
+  };
+}
+
+/**
  * Inspeciona as primeiras linhas do arquivo e tenta deduzir o formato.
  * Devolve uma lista de mensagens contextuais (em vez de "cabeçalho não encontrado").
  */
@@ -295,10 +448,11 @@ function diagnoseFormat(data: unknown[][], sheetNames: string[]): string[] {
     return out;
   }
 
+  // Cashless já é tratado pelo parser principal — se caiu aqui, é porque o
+  // arquivo se identifica como cashless mas a estrutura interna não bate.
   if (looksLikeVMPayCashless) {
-    out.push('Detectamos um relatório CASHLESS do VMPay — esse tipo ainda não é suportado.');
-    out.push('Esta versão só importa o relatório de VENDAS do VMPay (cabeçalho "Operador" + "CNPJ Operador").');
-    out.push('Exporte o relatório "Vendas" no portal VMPay e tente novamente.');
+    out.push('Detectamos um relatório CASHLESS do VMPay mas não conseguimos identificar o agrupamento.');
+    out.push('No VMPay, exporte com agrupamento "Dia, Local, Máquina" e tente novamente.');
     return out;
   }
 
