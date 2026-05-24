@@ -17,6 +17,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Pill } from '@/components/ui/pill';
+import { EmptyStateV2 } from '@/components/ui/empty-state-v2';
 import { cn } from '@/lib/utils';
 import {
   Table,
@@ -133,16 +134,13 @@ export default function ProductsPage() {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : data?.products.length === 0 ? (
-            <div className="flex h-48 flex-col items-center justify-center text-center">
-              <Package className="h-12 w-12 text-muted-foreground/50" />
-              <p className="mt-2 text-muted-foreground">Nenhum produto cadastrado</p>
-              <Link href="/app/produtos/novo">
-                <Button variant="outline" className="mt-4">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Cadastrar primeiro produto
-                </Button>
-              </Link>
-            </div>
+            <EmptyStateV2
+              illustration="no-machines"
+              title="Catálogo vazio"
+              description="Cadastre seus produtos pra começar a montar os preços por máquina e ver o que mais vende."
+              ctaLabel="Cadastrar primeiro produto"
+              ctaHref="/app/produtos/novo"
+            />
           ) : (
             <Table>
               <TableHeader>

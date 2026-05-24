@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { EmptyStateV2 } from '@/components/ui/empty-state-v2';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -62,13 +63,13 @@ export default function RestockersPage() {
           {loading ? (
             <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
           ) : rows.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <User className="h-12 w-12 mx-auto mb-2 opacity-30" />
-              <p>Nenhum reabastecedor cadastrado.</p>
-              <Link href="/app/reabastecedores/novo" className="text-primary hover:underline text-sm mt-2 inline-block">
-                Cadastrar o primeiro
-              </Link>
-            </div>
+            <EmptyStateV2
+              illustration="no-machines"
+              title="Sua equipe ainda não está cadastrada"
+              description="Cadastre reabastecedores pra atribuir máquinas, mandar convites por email e acompanhar visitas com foto antes/depois."
+              ctaLabel="Cadastrar primeiro reabastecedor"
+              ctaHref="/app/reabastecedores/novo"
+            />
           ) : (
             <Table>
               <TableHeader>

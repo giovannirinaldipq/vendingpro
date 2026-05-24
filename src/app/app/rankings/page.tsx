@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { EmptyStateV2 } from '@/components/ui/empty-state-v2';
 
 interface MachineRanking {
   id: string;
@@ -142,16 +143,13 @@ export default function RankingsPage() {
         </div>
       ) : !hasData ? (
         <Card>
-          <CardContent className="flex h-64 flex-col items-center justify-center text-center">
-            <Trophy className="h-12 w-12 text-muted-foreground/50" />
-            <p className="mt-4 text-sm font-medium">Sem dados para exibir</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Cadastre máquinas e importe dados para ver os rankings
-            </p>
-            <a href="/app/importar">
-              <Button variant="outline" className="mt-4">Importar Dados</Button>
-            </a>
-          </CardContent>
+          <EmptyStateV2
+            illustration="no-data"
+            title="Sem ranking nesse período"
+            description="Cadastre máquinas e importe planilhas. Em segundos suas máquinas vão estar disputando o topo da tabela."
+            ctaLabel="Importar dados"
+            ctaHref="/app/importar"
+          />
         </Card>
       ) : (
         <>

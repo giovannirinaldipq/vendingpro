@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { EmptyStateV2 } from '@/components/ui/empty-state-v2';
 import {
   Table,
   TableBody,
@@ -309,13 +310,12 @@ export default function AlertsPage() {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : data?.alerts.length === 0 ? (
-            <div className="flex h-48 flex-col items-center justify-center text-center">
-              <Bell className="h-12 w-12 text-muted-foreground/50" />
-              <p className="mt-2 text-muted-foreground">Nenhum alerta encontrado</p>
-              <p className="text-xs text-muted-foreground">
-                Os alertas aparecerão aqui quando forem gerados
-              </p>
-            </div>
+            <EmptyStateV2
+              illustration="no-alerts"
+              positive
+              title="Tudo respirando bem por aqui ✦"
+              description="Nenhum alerta no filtro selecionado. O motor inteligente checa as máquinas a cada 15 minutos."
+            />
           ) : (
             <Table>
               <TableHeader>

@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { EmptyStateV2 } from '@/components/ui/empty-state-v2';
 import {
   Table,
   TableBody,
@@ -149,16 +150,13 @@ export default function LocationsPage() {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : data?.locations.length === 0 ? (
-            <div className="flex h-48 flex-col items-center justify-center text-center">
-              <MapPin className="h-12 w-12 text-muted-foreground/50" />
-              <p className="mt-2 text-muted-foreground">Nenhum local cadastrado</p>
-              <Link href="/app/locais/novo">
-                <Button variant="outline" className="mt-4">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Cadastrar primeiro local
-                </Button>
-              </Link>
-            </div>
+            <EmptyStateV2
+              illustration="no-machines"
+              title="Sem locais ainda"
+              description="Locais (ponto comercial) é onde suas máquinas ficam. Cadastrar o local primeiro facilita a vida na hora de adicionar máquinas."
+              ctaLabel="Cadastrar primeiro local"
+              ctaHref="/app/locais/novo"
+            />
           ) : (
             <Table>
               <TableHeader>

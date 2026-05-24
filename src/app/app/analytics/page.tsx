@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Heatmap } from '@/components/charts/heatmap';
+import { EmptyStateV2 } from '@/components/ui/empty-state-v2';
 import {
   BarChart,
   Bar,
@@ -136,16 +137,13 @@ export default function AnalyticsPage() {
         </div>
       ) : !hasData ? (
         <Card>
-          <CardContent className="flex h-64 flex-col items-center justify-center text-center">
-            <BarChart3 className="h-12 w-12 text-muted-foreground/50" />
-            <p className="mt-4 text-sm font-medium">Sem dados para exibir</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Importe dados de vendas para visualizar as análises
-            </p>
-            <a href="/app/importar">
-              <Button variant="outline" className="mt-4">Importar Dados</Button>
-            </a>
-          </CardContent>
+          <EmptyStateV2
+            illustration="no-data"
+            title="Sem dados no período selecionado"
+            description="Aumente o período acima ou importe uma planilha pra ver mapa de calor, top produtos e evolução de vendas."
+            ctaLabel="Importar planilha agora"
+            ctaHref="/app/importar"
+          />
         </Card>
       ) : (
         <>
