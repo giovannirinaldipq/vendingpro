@@ -19,7 +19,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Pill } from '@/components/ui/pill';
 import {
   Table,
   TableBody,
@@ -213,15 +213,15 @@ export default function InventoryPage() {
             </CardContent>
           </Card>
 
-          <Card className={data.stats.low_stock_count > 0 ? 'border-yellow-500' : ''}>
+          <Card className={data.stats.low_stock_count > 0 ? 'border-warning/40' : ''}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Estoque Baixo
               </CardTitle>
-              <TrendingDown className={`h-4 w-4 ${data.stats.low_stock_count > 0 ? 'text-yellow-500' : 'text-muted-foreground'}`} />
+              <TrendingDown className={`h-4 w-4 ${data.stats.low_stock_count > 0 ? 'text-warning' : 'text-muted-foreground'}`} />
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${data.stats.low_stock_count > 0 ? 'text-yellow-600' : ''}`}>
+              <div className={`text-2xl font-bold ${data.stats.low_stock_count > 0 ? 'text-warning' : ''}`}>
                 {data.stats.low_stock_count}
               </div>
             </CardContent>
@@ -295,41 +295,43 @@ export default function InventoryPage() {
               </TableHeader>
               <TableBody>
                 {data?.inventory.map((item) => (
-                  <TableRow key={item.id} className={isLowStock(item) ? 'bg-yellow-50' : ''}>
+                  <TableRow key={item.id} className={isLowStock(item) ? 'bg-warning-soft/40' : ''}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${isLowStock(item) ? 'bg-yellow-100' : 'bg-primary/10'}`}>
-                          <Package className={`h-5 w-5 ${isLowStock(item) ? 'text-yellow-600' : 'text-primary'}`} />
+                        <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${isLowStock(item) ? 'bg-warning-soft' : 'bg-brand-navy/10'}`}>
+                          <Package className={`h-5 w-5 ${isLowStock(item) ? 'text-warning' : 'text-brand-navy'}`} />
                         </div>
                         <div>
                           <p className="font-medium">{item.product.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {item.product.barcode || 'Sem código'}
-                          </p>
+                          {item.product.category && (
+                            <p className="text-xs text-text-tertiary">
+                              {item.product.category}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{item.product.category || 'Sem categoria'}</Badge>
+                      <Pill tone="outline">{item.product.category || 'Sem categoria'}</Pill>
                     </TableCell>
                     <TableCell className="text-center">
-                      <span className={`font-medium ${isLowStock(item) ? 'text-yellow-600' : ''}`}>
+                      <span className={`font-medium tabular-nums ${isLowStock(item) ? 'text-warning' : ''}`}>
                         {item.current_quantity}
                       </span>
                     </TableCell>
-                    <TableCell className="text-center text-muted-foreground">
+                    <TableCell className="text-center text-text-tertiary tabular-nums">
                       {item.minimum_quantity}
                     </TableCell>
                     <TableCell>
                       {isLowStock(item) ? (
-                        <Badge className="bg-yellow-100 text-yellow-700">
-                          <AlertTriangle className="mr-1 h-3 w-3" />
+                        <Pill tone="warning" dot>
+                          <AlertTriangle className="h-3 w-3" />
                           Baixo
-                        </Badge>
+                        </Pill>
                       ) : (
-                        <Badge className="bg-green-100 text-green-700">
+                        <Pill tone="success" dot>
                           Normal
-                        </Badge>
+                        </Pill>
                       )}
                     </TableCell>
                     <TableCell className="text-right">
@@ -378,19 +380,19 @@ export default function InventoryPage() {
                 <SelectContent>
                   <SelectItem value="in">
                     <div className="flex items-center">
-                      <Plus className="mr-2 h-4 w-4 text-green-600" />
+                      <Plus className="mr-2 h-4 w-4 text-success" />
                       Entrada
                     </div>
                   </SelectItem>
                   <SelectItem value="out">
                     <div className="flex items-center">
-                      <Minus className="mr-2 h-4 w-4 text-red-600" />
+                      <Minus className="mr-2 h-4 w-4 text-danger" />
                       Saída
                     </div>
                   </SelectItem>
                   <SelectItem value="adjustment">
                     <div className="flex items-center">
-                      <RefreshCw className="mr-2 h-4 w-4 text-blue-600" />
+                      <RefreshCw className="mr-2 h-4 w-4 text-info" />
                       Ajuste (definir quantidade)
                     </div>
                   </SelectItem>

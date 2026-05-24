@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Pill } from '@/components/ui/pill';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -166,10 +166,10 @@ export default function ImportPage() {
                 <SelectTrigger className="w-full sm:w-[250px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="vmpay">
-                    <div className="flex items-center gap-2"><FileSpreadsheet className="h-4 w-4 text-blue-500" />VM PAY (Excel)</div>
+                    <div className="flex items-center gap-2"><FileSpreadsheet className="h-4 w-4 text-info" />VM PAY (Excel)</div>
                   </SelectItem>
                   <SelectItem value="vendpago">
-                    <div className="flex items-center gap-2"><FileSpreadsheet className="h-4 w-4 text-green-500" />VendPago (CSV)</div>
+                    <div className="flex items-center gap-2"><FileSpreadsheet className="h-4 w-4 text-success" />VendPago (CSV)</div>
                   </SelectItem>
                 </SelectContent>
               </Select>
@@ -222,10 +222,10 @@ export default function ImportPage() {
 
       {step === 'wizard' && preview && (
         <>
-          <Card className="border-blue-200 bg-blue-50/40">
+          <Card className="border-info/30 bg-info-soft/40">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <Calendar className="h-5 w-5 text-blue-700" />Confirme o que você está importando
+                <Calendar className="h-5 w-5 text-info" />Confirme o que você está importando
               </CardTitle>
               <CardDescription>Esta é a &ldquo;prova real&rdquo; do arquivo. Confira antes de prosseguir.</CardDescription>
             </CardHeader>
@@ -236,7 +236,7 @@ export default function ImportPage() {
                 <KpiInline label="Receita total" value={fmtBRL(preview.summary.total_revenue)} sub={preview.summary.cnpj_operador ? `CNPJ ${preview.summary.cnpj_operador}` : undefined} />
               </div>
               {preview.summary.periodo && (
-                <p className="text-xs text-muted-foreground mt-3">📄 {preview.summary.periodo}</p>
+                <p className="text-xs text-text-tertiary mt-3">📄 {preview.summary.periodo}</p>
               )}
             </CardContent>
           </Card>
@@ -244,7 +244,7 @@ export default function ImportPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <Sparkles className="h-5 w-5 text-violet-600" />
+                <Sparkles className="h-5 w-5 text-brand-navy" />
                 Mapear máquinas do arquivo às suas máquinas cadastradas
               </CardTitle>
               <CardDescription>
@@ -254,9 +254,9 @@ export default function ImportPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {preview.available_machines.length === 0 ? (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
-                  <p className="font-medium text-amber-900">Você ainda não tem máquinas cadastradas.</p>
-                  <p className="text-amber-800 mt-1">Cadastre suas máquinas primeiro para conseguir importar vendas.</p>
+                <div className="rounded-lg border border-warning/30 bg-warning-soft p-4 text-sm">
+                  <p className="font-medium text-warning">Você ainda não tem máquinas cadastradas.</p>
+                  <p className="text-text-secondary mt-1">Cadastre suas máquinas primeiro para conseguir importar vendas.</p>
                   <Link href="/app/maquinas/nova" className="inline-block mt-3">
                     <Button size="sm"><Plus className="mr-2 h-4 w-4" />Cadastrar primeira máquina</Button>
                   </Link>
@@ -276,12 +276,12 @@ export default function ImportPage() {
                         <TableCell>
                           <div className="font-mono text-xs">{m.external_name}</div>
                           {m.mapped_machine_id && (
-                            <Badge variant="secondary" className="mt-1 bg-emerald-100 text-emerald-700 text-xs">
+                            <Pill tone="success" size="sm" dot className="mt-1">
                               Mapeamento salvo
-                            </Badge>
+                            </Pill>
                           )}
                         </TableCell>
-                        <TableCell className="text-right text-sm font-medium">{m.sales_count}</TableCell>
+                        <TableCell className="text-right text-sm font-medium tabular-nums">{m.sales_count}</TableCell>
                         <TableCell>
                           <Select
                             value={selections[m.external_name] ?? ''}
@@ -295,12 +295,12 @@ export default function ImportPage() {
                             <SelectContent>
                               {preview.available_machines.map(am => (
                                 <SelectItem key={am.id} value={am.id}>
-                                  {am.name} <span className="text-muted-foreground text-xs ml-1">({am.code})</span>
+                                  {am.name} <span className="text-text-tertiary text-xs ml-1">({am.code})</span>
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
-                          <Link href="/app/maquinas/nova" target="_blank" className="text-xs text-primary hover:underline mt-1 inline-block">
+                          <Link href="/app/maquinas/nova" target="_blank" className="text-xs text-brand-navy hover:underline mt-1 inline-block">
                             + Cadastrar nova máquina
                           </Link>
                         </TableCell>
@@ -310,11 +310,11 @@ export default function ImportPage() {
                 </Table>
               )}
 
-              <div className="flex items-center justify-between border-t pt-4">
-                <div className="text-sm text-muted-foreground">
-                  {mappedCount}/{totalCount} máquinas mapeadas
+              <div className="flex items-center justify-between border-t border-border-default pt-4">
+                <div className="text-sm text-text-secondary">
+                  <span className="font-medium tabular-nums">{mappedCount}/{totalCount}</span> máquinas mapeadas
                   {mappedCount < totalCount && (
-                    <span className="ml-2 text-amber-700">— vendas das não-mapeadas serão ignoradas</span>
+                    <span className="ml-2 text-warning">— vendas das não-mapeadas serão ignoradas</span>
                   )}
                 </div>
                 <div className="flex gap-2">
@@ -332,10 +332,10 @@ export default function ImportPage() {
       )}
 
       {step === 'done' && result && (
-        <Card className={result.unmapped_machines.length > 0 ? 'border-amber-200' : 'border-green-200'}>
+        <Card className={result.unmapped_machines.length > 0 ? 'border-warning/40' : 'border-success/40'}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              {result.unmapped_machines.length > 0 ? <AlertTriangle className="h-5 w-5 text-amber-500" /> : <CheckCircle className="h-5 w-5 text-green-500" />}
+              {result.unmapped_machines.length > 0 ? <AlertTriangle className="h-5 w-5 text-warning" /> : <CheckCircle className="h-5 w-5 text-success" />}
               Importação concluída
             </CardTitle>
           </CardHeader>
@@ -346,14 +346,14 @@ export default function ImportPage() {
               <KpiInline label="Receita" value={fmtBRL(result.total_revenue)} />
             </div>
             {result.aliases_saved > 0 && (
-              <div className="text-sm text-muted-foreground">✨ {result.aliases_saved} mapeamento(s) salvo(s) — próximas importações serão automáticas.</div>
+              <div className="text-sm text-text-secondary">✨ {result.aliases_saved} mapeamento(s) salvo(s) — próximas importações serão automáticas.</div>
             )}
             {result.unmapped_machines.length > 0 && (
-              <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
-                <p className="font-medium text-amber-900">Máquinas não mapeadas (vendas ignoradas)</p>
+              <div className="rounded-lg bg-warning-soft border border-warning/30 p-4">
+                <p className="font-medium text-warning">Máquinas não mapeadas (vendas ignoradas)</p>
                 <div className="mt-2 flex flex-wrap gap-1">
                   {result.unmapped_machines.map(n => (
-                    <Badge key={n} variant="outline" className="bg-white text-amber-800 text-xs">{n}</Badge>
+                    <Pill key={n} tone="outline" size="sm">{n}</Pill>
                   ))}
                 </div>
               </div>
@@ -371,7 +371,11 @@ export default function ImportPage() {
 
 function StepDot({ active, done, children }: { active?: boolean; done?: boolean; children: React.ReactNode }) {
   return (
-    <span className={`px-2 py-1 rounded ${done ? 'bg-green-100 text-green-700' : active ? 'bg-blue-100 text-blue-700 font-medium' : 'bg-gray-100 text-gray-500'}`}>
+    <span className={
+      done ? 'px-2 py-1 rounded bg-success-soft text-success'
+      : active ? 'px-2 py-1 rounded bg-brand-navy/10 text-brand-navy font-medium'
+      : 'px-2 py-1 rounded bg-surface-subtle text-text-tertiary'
+    }>
       {children}
     </span>
   );
@@ -379,10 +383,10 @@ function StepDot({ active, done, children }: { active?: boolean; done?: boolean;
 
 function KpiInline({ label, value, sub, variant }: { label: string; value: string; sub?: string; variant?: 'success' }) {
   return (
-    <div className="rounded-lg border bg-white p-3">
-      <div className="text-xs text-muted-foreground uppercase tracking-wide">{label}</div>
-      <div className={`text-lg font-semibold mt-1 ${variant === 'success' ? 'text-green-700' : 'text-foreground'}`}>{value}</div>
-      {sub && <div className="text-xs text-muted-foreground mt-1">{sub}</div>}
+    <div className="rounded-lg border border-border-default bg-surface-card p-3">
+      <div className="text-[10px] text-text-tertiary uppercase tracking-[0.08em] font-semibold">{label}</div>
+      <div className={`text-lg font-semibold mt-1 tabular-nums ${variant === 'success' ? 'text-success' : 'text-text-primary'}`}>{value}</div>
+      {sub && <div className="text-xs text-text-tertiary mt-1">{sub}</div>}
     </div>
   );
 }

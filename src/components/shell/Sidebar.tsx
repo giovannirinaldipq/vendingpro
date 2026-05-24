@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
@@ -12,7 +11,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 
 interface NavItem {
   name: string;
@@ -125,21 +124,9 @@ export function Sidebar() {
       )}>
         <Link href="/app" className="flex items-center" aria-label="Vending Pro — Dashboard">
           {collapsed ? (
-            <Image
-              src="/brand/06-vending-pro-icon-light.svg"
-              alt="Vending Pro"
-              width={32}
-              height={32}
-              priority
-            />
+            <BrandLogo variant="icon" height={32} priority />
           ) : (
-            <Image
-              src="/brand/04-vending-pro-horizontal-light.svg"
-              alt="Vending Pro"
-              width={128}
-              height={32}
-              priority
-            />
+            <BrandLogo variant="horizontal" height={32} priority />
           )}
         </Link>
       </div>
@@ -185,17 +172,33 @@ export function Sidebar() {
         ))}
       </nav>
 
-      {/* Collapse toggle */}
-      <div className={cn('border-t border-border-default p-2', collapsed && 'flex justify-center')}>
-        <Button
-          variant="ghost"
-          size="icon-sm"
+      {/* Collapse toggle — mais visível: barra inteira clicável + label */}
+      <div className="border-t border-border-default p-2">
+        <button
           onClick={() => setCollapsed(c => !c)}
           aria-label={collapsed ? 'Expandir sidebar' : 'Recolher sidebar'}
-          title="Cmd+B"
+          title={collapsed ? 'Expandir (Cmd+B)' : 'Recolher (Cmd+B)'}
+          className={cn(
+            'group flex w-full items-center rounded-md text-xs font-medium transition-colors',
+            'border border-border-default bg-surface-base hover:bg-surface-subtle hover:border-border-strong',
+            'text-text-secondary hover:text-text-primary',
+            collapsed ? 'h-9 justify-center' : 'h-9 px-3 gap-2 justify-between'
+          )}
         >
-          {collapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
-        </Button>
+          {collapsed ? (
+            <PanelLeft className="h-4 w-4" />
+          ) : (
+            <>
+              <span className="flex items-center gap-2">
+                <PanelLeftClose className="h-4 w-4" />
+                Recolher
+              </span>
+              <kbd className="hidden sm:inline-flex items-center rounded border border-border-default bg-surface-card px-1.5 h-5 text-[10px] font-mono text-text-tertiary">
+                ⌘B
+              </kbd>
+            </>
+          )}
+        </button>
       </div>
     </aside>
   );

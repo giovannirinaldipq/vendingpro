@@ -24,6 +24,10 @@ import {
   Line,
 } from 'recharts';
 
+const CHART_PRIMARY = '#1e40af';   // brand-navy-700
+const CHART_ACCENT  = '#fbbf24';   // brand-amber-400
+const CHART_GRID    = 'currentColor';
+
 interface AnalyticsData {
   heatmap: Array<{ day: number; hour: number; value: number }>;
   daily_sales: Array<{ date: string; revenue: number; count: number }>;
@@ -195,20 +199,29 @@ export default function AnalyticsPage() {
                 <CardDescription>Receita diária no período</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-64">
+                <div className="h-64 text-text-tertiary">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={data.daily_sales}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <LineChart data={data.daily_sales} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} strokeOpacity={0.15} />
                       <XAxis
                         dataKey="date"
-                        tick={{ fontSize: 12 }}
+                        tick={{ fontSize: 11, fill: 'currentColor' }}
+                        stroke="currentColor"
+                        strokeOpacity={0.3}
                         tickFormatter={(value) => {
                           const date = new Date(value);
                           return `${date.getDate()}/${date.getMonth() + 1}`;
                         }}
                       />
-                      <YAxis tick={{ fontSize: 12 }} />
+                      <YAxis tick={{ fontSize: 11, fill: 'currentColor' }} stroke="currentColor" strokeOpacity={0.3} />
                       <Tooltip
+                        contentStyle={{
+                          background: 'var(--surface-card)',
+                          border: '1px solid var(--border-default)',
+                          borderRadius: 8,
+                          fontSize: 12,
+                          color: 'var(--text-primary)',
+                        }}
                         formatter={(value) => [`R$ ${Number(value).toFixed(2)}`, 'Receita']}
                         labelFormatter={(label) => {
                           const date = new Date(label);
@@ -218,7 +231,7 @@ export default function AnalyticsPage() {
                       <Line
                         type="monotone"
                         dataKey="revenue"
-                        stroke="hsl(var(--primary))"
+                        stroke={CHART_PRIMARY}
                         strokeWidth={2}
                         dot={false}
                       />
@@ -235,16 +248,24 @@ export default function AnalyticsPage() {
                 <CardDescription>Distribuição semanal</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-64">
+                <div className="h-64 text-text-tertiary">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={data.weekday_sales}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                      <XAxis dataKey="day" tick={{ fontSize: 12 }} />
-                      <YAxis tick={{ fontSize: 12 }} />
+                    <BarChart data={data.weekday_sales} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} strokeOpacity={0.15} />
+                      <XAxis dataKey="day" tick={{ fontSize: 11, fill: 'currentColor' }} stroke="currentColor" strokeOpacity={0.3} />
+                      <YAxis tick={{ fontSize: 11, fill: 'currentColor' }} stroke="currentColor" strokeOpacity={0.3} />
                       <Tooltip
+                        contentStyle={{
+                          background: 'var(--surface-card)',
+                          border: '1px solid var(--border-default)',
+                          borderRadius: 8,
+                          fontSize: 12,
+                          color: 'var(--text-primary)',
+                        }}
+                        cursor={{ fill: 'currentColor', fillOpacity: 0.05 }}
                         formatter={(value) => [`R$ ${Number(value).toFixed(2)}`, 'Receita']}
                       />
-                      <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="revenue" fill={CHART_PRIMARY} radius={[6, 6, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -259,22 +280,32 @@ export default function AnalyticsPage() {
               <CardDescription>Produtos mais vendidos por receita</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-80">
+              <div className="h-80 text-text-tertiary">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data.top_products} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis type="number" tick={{ fontSize: 12 }} />
+                  <BarChart data={data.top_products} layout="vertical" margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} strokeOpacity={0.15} />
+                    <XAxis type="number" tick={{ fontSize: 11, fill: 'currentColor' }} stroke="currentColor" strokeOpacity={0.3} />
                     <YAxis
                       type="category"
                       dataKey="name"
-                      tick={{ fontSize: 11 }}
+                      tick={{ fontSize: 11, fill: 'currentColor' }}
+                      stroke="currentColor"
+                      strokeOpacity={0.3}
                       width={150}
                       tickFormatter={(value) => value.length > 20 ? value.slice(0, 20) + '...' : value}
                     />
                     <Tooltip
+                      contentStyle={{
+                        background: 'var(--surface-card)',
+                        border: '1px solid var(--border-default)',
+                        borderRadius: 8,
+                        fontSize: 12,
+                        color: 'var(--text-primary)',
+                      }}
+                      cursor={{ fill: 'currentColor', fillOpacity: 0.05 }}
                       formatter={(value) => [`R$ ${Number(value).toFixed(2)}`, 'Receita']}
                     />
-                    <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="revenue" fill={CHART_ACCENT} radius={[0, 6, 6, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
