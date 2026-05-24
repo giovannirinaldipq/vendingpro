@@ -65,6 +65,7 @@ export default function ImportPage() {
   const [preview, setPreview] = useState<PreviewData | null>(null);
   const [selections, setSelections] = useState<Record<string, string>>({});
   const [result, setResult] = useState<ConfirmResult | null>(null);
+  const [parseErrors, setParseErrors] = useState<string[] | null>(null);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault(); e.stopPropagation();
@@ -83,6 +84,7 @@ export default function ImportPage() {
   async function doPreview() {
     if (!file) return;
     setBusy(true);
+    setParseErrors(null);
     try {
       const fd = new FormData();
       fd.append('file', file);
@@ -90,7 +92,9 @@ export default function ImportPage() {
       const res = await fetch('/api/app/import/preview', { method: 'POST', body: fd });
       const json = await res.json();
       if (!res.ok) {
-        toast.error(Array.isArray(json.details) ? json.details.join('; ') : (json.error ?? 'Falha no parse'));
+        const details = Array.isArray(json.details) ? json.details : [json.error ?? 'Falha ao processar arquivo'];
+        setParseErrors(details);
+        toast.error('Não foi possível processar a planilha — veja os detalhes abaixo', { duration: 5000 });
         return;
       }
       setPreview(json.data);
@@ -134,6 +138,7 @@ export default function ImportPage() {
     setPreview(null);
     setSelections({});
     setResult(null);
+    setParseErrors(null);
   }
 
   const mappedCount = preview ? preview.machines.filter(m => selections[m.external_name]).length : 0;
@@ -224,7 +229,7 @@ export default function ImportPage() {
               </div>
               {file && (
                 <div className="mt-4 flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setFile(null)}>Trocar arquivo</Button>
+                  <Button variant="outline" onClick={() => { setFile(null); setParseErrors(null); }}>Trocar arquivo</Button>
                   <Button onClick={doPreview} disabled={busy}>
                     {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Analisando...</> : <><Wand2 className="mr-2 h-4 w-4" />Pré-visualizar</>}
                   </Button>
@@ -232,6 +237,38 @@ export default function ImportPage() {
               )}
             </CardContent>
           </Card>
+
+          {parseErrors && parseErrors.length > 0 && (
+            <Card className="border-danger/40">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base text-danger">
+                  <AlertTriangle className="h-5 w-5" />
+                  Não conseguimos ler esta planilha
+                </CardTitle>
+                <CardDescription>
+                  Veja o diagnóstico abaixo e tente novamente após corrigir o arquivo ou trocar o sistema.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-1.5 text-sm">
+                  {parseErrors.map((msg, i) => {
+                    const isPreviewLine = /^Linha \d+:/.test(msg);
+                    return (
+                      <li
+                        key={i}
+                        className={isPreviewLine
+                          ? 'pl-4 text-xs text-text-tertiary font-mono'
+                          : 'flex gap-2 text-text-secondary'}
+                      >
+                        {!isPreviewLine && <span className="text-text-tertiary shrink-0">•</span>}
+                        <span>{msg}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
         </>
       )}
 

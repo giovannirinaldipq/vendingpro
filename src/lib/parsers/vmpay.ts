@@ -125,6 +125,8 @@ export function parseVMPayFile(buffer: ArrayBuffer): VMPayParseResult {
     }
 
     if (headerRowIndex === -1) {
+      // Diagnóstico contextual: detecta possíveis formatos
+      const diagnosis = diagnoseFormat(data, workbook.SheetNames);
       return {
         success: false,
         sales: [],
@@ -136,7 +138,7 @@ export function parseVMPayFile(buffer: ArrayBuffer): VMPayParseResult {
           date_range: { start: '', end: '' },
           total_revenue: 0,
         },
-        errors: ['Formato de arquivo não reconhecido. Cabeçalho não encontrado.'],
+        errors: diagnosis,
       };
     }
 
@@ -259,4 +261,80 @@ export function parseVMPayFile(buffer: ArrayBuffer): VMPayParseResult {
       errors: [`Erro ao processar arquivo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`],
     };
   }
+}
+
+/**
+ * Inspeciona as primeiras linhas do arquivo e tenta deduzir o formato.
+ * Devolve uma lista de mensagens contextuais (em vez de "cabeçalho não encontrado").
+ */
+function diagnoseFormat(data: unknown[][], sheetNames: string[]): string[] {
+  const out: string[] = [];
+
+  // Coleta primeiras 10 linhas que tenham algum conteúdo
+  const peek = data
+    .slice(0, 15)
+    .filter(r => Array.isArray(r) && r.some(c => c !== null && c !== undefined && String(c).trim() !== ''))
+    .slice(0, 8);
+
+  if (peek.length === 0) {
+    out.push('A planilha está vazia ou todas as linhas iniciais estão em branco.');
+    return out;
+  }
+
+  // Heurísticas de detecção
+  const allText = peek.flat().map(c => String(c ?? '').toLowerCase()).join(' | ');
+  const looksLikeVMPaySales = /operador.*cnpj operador/i.test(allText) ||
+    (allText.includes('máquina') && allText.includes('valor') && allText.includes('estado'));
+  const looksLikeVMPayCashless = /cashless|saldo carteira|recarga|usuário cashless/i.test(allText);
+  const looksLikeVendpago = /vendpago|"vendas de\s+\d{2}\/\d{2}/i.test(allText);
+  const looksLikeBankStatement = /(saldo|extrato|crédito|débito|histórico)/i.test(allText) && !allText.includes('máquina');
+
+  if (looksLikeVendpago) {
+    out.push('Detectamos um arquivo do Vendpago, mas você está importando como VMPay.');
+    out.push('Volte ao passo anterior e troque o sistema de telemetria para "VendPago".');
+    return out;
+  }
+
+  if (looksLikeVMPayCashless) {
+    out.push('Detectamos um relatório CASHLESS do VMPay — esse tipo ainda não é suportado.');
+    out.push('Esta versão só importa o relatório de VENDAS do VMPay (cabeçalho "Operador" + "CNPJ Operador").');
+    out.push('Exporte o relatório "Vendas" no portal VMPay e tente novamente.');
+    return out;
+  }
+
+  if (looksLikeBankStatement) {
+    out.push('Este parece ser um extrato bancário, não uma planilha de vendas de máquinas.');
+    out.push('Vá em Financeiro → Conciliação para importar extratos bancários.');
+    return out;
+  }
+
+  if (looksLikeVMPaySales) {
+    out.push('Arquivo parece ser do VMPay mas o cabeçalho não está nas primeiras 30 linhas.');
+    out.push('Confira se você não exportou um arquivo com filtros ou cabeçalho personalizado.');
+  } else {
+    out.push('Formato não reconhecido. Esperamos uma planilha do VMPay com cabeçalho "Operador" + "CNPJ Operador".');
+  }
+
+  // Adiciona preview das primeiras 3 linhas
+  const previewRows = peek.slice(0, 3).map((r, i) => {
+    const cells = (r as unknown[])
+      .slice(0, 6)
+      .map(c => {
+        const v = String(c ?? '').trim();
+        return v.length > 25 ? v.slice(0, 25) + '…' : v;
+      })
+      .filter(Boolean)
+      .join(' | ');
+    return `Linha ${i + 1}: ${cells || '(vazia)'}`;
+  });
+  if (previewRows.length > 0) {
+    out.push('Conteúdo detectado nas primeiras linhas:');
+    out.push(...previewRows);
+  }
+
+  if (sheetNames.length > 1) {
+    out.push(`A planilha tem múltiplas abas (${sheetNames.join(', ')}). Apenas a primeira é lida.`);
+  }
+
+  return out;
 }
