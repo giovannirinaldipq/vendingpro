@@ -76,7 +76,7 @@ export default function SecurityPage() {
         } else if (j.data.skipped) {
           toast.warning(j.data.message, { duration: 6000 });
           if (j.data.dev_code) {
-            // eslint-disable-next-line no-console
+             
             console.info('[2FA-WA dev] Código:', j.data.dev_code);
           }
         } else {

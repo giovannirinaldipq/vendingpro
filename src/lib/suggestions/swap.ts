@@ -6,9 +6,7 @@ const supabaseAdmin = createClient(
 );
 
 const LOOKBACK_DAYS = 30;
-const KEEP_THRESHOLD_PCTL = 0.7;    // top 30% = manter
 const SWAP_THRESHOLD_DAILY = 0.3;   // < 0.3 vendas/dia = candidato a trocar
-const STALE_DAYS_MIN = 21;          // ao menos 21 dias na máquina pra sugerir trocar
 
 export interface ProductSwapSuggestion {
   machine_id: string;

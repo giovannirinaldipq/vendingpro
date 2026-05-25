@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { KpiCardHero } from '@/components/ui/kpi-hero';
 import { Calendar, Monitor, Loader2, TrendingUp, DollarSign, ShoppingCart } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,

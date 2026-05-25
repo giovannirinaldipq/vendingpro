@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { parseVMPayFile, type ParsedSale } from '@/lib/parsers/vmpay';
+import { parseVMPayFile } from '@/lib/parsers/vmpay';
 import { parseVendPagoFile } from '@/lib/parsers/vendpago';
 
 async function getTenantId(supabase: Awaited<ReturnType<typeof createClient>>) {
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     }> = [];
 
     const unmappedMachines = new Set<string>();
-    let duplicatesSkipped = 0;
+    const duplicatesSkipped = 0;
 
     for (const sale of parseResult.sales) {
       const machineId = machineMap.get(sale.machine_code);

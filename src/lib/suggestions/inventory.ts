@@ -18,6 +18,13 @@ export interface InventoryPrediction {
   status: 'ok' | 'low' | 'critical' | 'depleted';
 }
 
+/**
+ * Refatorado para 2 queries totais (não N+1):
+ *   1. inventory rows do tenant (com nome do produto via join)
+ *   2. todas vendas dos últimos LOOKBACK_DAYS pra esses produtos
+ *
+ * Antes: tenant com 50 produtos = 51 queries. Agora: 2.
+ */
 export async function predictInventoryRunout(tenantId: string): Promise<InventoryPrediction[]> {
   const since = new Date(Date.now() - LOOKBACK_DAYS * 86400000).toISOString();
 
@@ -28,19 +35,31 @@ export async function predictInventoryRunout(tenantId: string): Promise<Inventor
 
   if (!inv?.length) return [];
 
+  const productIds = inv.map(r => r.product_id);
+
+  // Query 2: TODAS as vendas desses produtos no período
+  const { data: salesRaw } = await supabaseAdmin
+    .from('sales')
+    .select('product_id, quantity')
+    .eq('tenant_id', tenantId)
+    .in('product_id', productIds)
+    .gte('sale_datetime', since);
+
+  // Agregação por product_id em memória
+  const salesByProduct = new Map<string, number>();
+  for (const s of salesRaw ?? []) {
+    if (!s.product_id) continue;
+    salesByProduct.set(s.product_id, (salesByProduct.get(s.product_id) ?? 0) + Number(s.quantity ?? 0));
+  }
+
   const out: InventoryPrediction[] = [];
 
   for (const row of inv) {
-    const productName = Array.isArray(row.products) ? row.products[0]?.name : (row.products as { name?: string } | null)?.name ?? 'produto';
+    const productName = Array.isArray(row.products)
+      ? row.products[0]?.name
+      : (row.products as { name?: string } | null)?.name ?? 'produto';
 
-    const { data: sales } = await supabaseAdmin
-      .from('sales')
-      .select('quantity')
-      .eq('tenant_id', tenantId)
-      .eq('product_id', row.product_id)
-      .gte('sale_datetime', since);
-
-    const totalQty = (sales ?? []).reduce((s, x) => s + Number(x.quantity ?? 0), 0);
+    const totalQty = salesByProduct.get(row.product_id) ?? 0;
     const avgDaily = totalQty / LOOKBACK_DAYS;
     const current = Number(row.current_quantity);
     const minimum = Number(row.minimum_quantity ?? 0);

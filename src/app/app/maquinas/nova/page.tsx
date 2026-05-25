@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
@@ -88,7 +88,19 @@ export default function NewMachinePage() {
   const [newLocType, setNewLocType] = useState<string>('company');
   const [creatingLoc, setCreatingLoc] = useState(false);
 
-  async function loadLocations(selectId?: string) {
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<MachineFormData>({
+    resolver: zodResolver(machineSchema),
+    defaultValues: {
+      status: 'active',
+    },
+  });
+
+  const loadLocations = useCallback(async (selectId?: string) => {
     const r = await fetch('/api/app/locations');
     const j = await r.json();
     if (j.success) {
@@ -98,12 +110,11 @@ export default function NewMachinePage() {
         setValue('location_id', selectId);
       }
     }
-  }
+  }, [setValue]);
 
   useEffect(() => {
     loadLocations();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadLocations]);
 
   async function createLocationInline() {
     if (!newLocName.trim() || newLocName.trim().length < 2) {
@@ -134,18 +145,6 @@ export default function NewMachinePage() {
       setCreatingLoc(false);
     }
   }
-
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    formState: { errors },
-  } = useForm<MachineFormData>({
-    resolver: zodResolver(machineSchema),
-    defaultValues: {
-      status: 'active',
-    },
-  });
 
   async function onSubmit(data: MachineFormData) {
     setIsLoading(true);

@@ -46,6 +46,13 @@ function TableSkeleton({ rows = 5, cols = 5 }: { rows?: number; cols?: number })
   )
 }
 
+/**
+ * Heights determinísticas (não-aleatórias) pro chart skeleton —
+ * evita Math.random durante render (regra react-hooks/purity)
+ * e garante mesma altura em SSR e CSR (sem hydration mismatch).
+ */
+const CHART_SKELETON_HEIGHTS = [55, 72, 45, 88, 62, 78, 50, 95, 68, 82, 58, 75];
+
 /** Chart placeholder */
 function ChartSkeleton({ height = 240 }: { height?: number }) {
   return (
@@ -53,11 +60,11 @@ function ChartSkeleton({ height = 240 }: { height?: number }) {
       <Skeleton className="h-4 w-32" />
       <Skeleton className="mt-1 h-3 w-48" />
       <div className="mt-6 flex items-end gap-2" style={{ height }}>
-        {Array.from({ length: 12 }).map((_, i) => (
+        {CHART_SKELETON_HEIGHTS.map((h, i) => (
           <Skeleton
             key={i}
             className="flex-1"
-            style={{ height: `${30 + Math.random() * 70}%` }}
+            style={{ height: `${h}%` }}
           />
         ))}
       </div>

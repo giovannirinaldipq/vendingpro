@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
   const salesCount = salesCountByExternalName(parsed.sales);
 
   // Busca aliases já cadastrados para este tenant/sistema/nomes
-  let aliasMap = new Map<string, { machine_id: string; machine_name: string }>();
+  const aliasMap = new Map<string, { machine_id: string; machine_name: string }>();
   if (externalNames.length > 0) {
     const { data: aliases } = await ctx.supabase
       .from('machine_aliases')

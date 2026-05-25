@@ -45,10 +45,8 @@ export async function GET(req: NextRequest) {
   const { data: catalogItems, error } = await q;
   if (error) return NextResponse.json({ success: false, error: { code: 'DB_ERROR', message: error.message } }, { status: 500 });
 
-  // Marca quais já estão importados (match por barcode OU por name+unit_size)
-  const barcodes = (catalogItems ?? []).map(c => c.barcode).filter(Boolean) as string[];
-  const nameUnits = (catalogItems ?? []).map(c => `${c.name}|${c.unit_size}`);
-
+  // Marca quais já estão importados (match por barcode OU por name+unit_size).
+  // Set construído a partir dos products do tenant; checagem feita logo abaixo.
   const { data: existing } = await supabaseAdmin
     .from('products')
     .select('id, name, barcode, unit_size')

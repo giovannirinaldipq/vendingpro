@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
       `Vending Pro: seu código de verificação é ${code}. Válido por 10 minutos.`
     );
   } else {
-    // eslint-disable-next-line no-console
+     
     console.info(`[2FA-WA dev] Código para ${phone}: ${code}`);
     sendResult = { ok: false, skipped: true, error: 'whatsapp_not_configured' };
   }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Loader2, MapPin, CheckCircle2, AlertCircle, Clock, Camera } from 'lucide-react';
+import { Loader2, MapPin, AlertCircle, Clock, Camera } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Pill } from '@/components/ui/pill';
 import { EmptyStateV2 } from '@/components/ui/empty-state-v2';

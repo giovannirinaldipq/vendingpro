@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   DollarSign, ShoppingCart, TrendingUp, Monitor,
-  AlertTriangle, Bell, ArrowRight, Activity,
+  Bell, ArrowRight, Activity,
 } from 'lucide-react';
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,

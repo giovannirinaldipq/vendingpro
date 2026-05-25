@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { Loader2, TrendingUp, TrendingDown, DollarSign, AlertTriangle, Settings as SettingsIcon, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
@@ -56,9 +56,7 @@ export default function FinanceiroPage() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [period, setPeriod] = useState('30');
 
-  useEffect(() => { loadAll(); }, [period]);
-
-  async function loadAll() {
+  const loadAll = useCallback(async () => {
     setLoading(true);
     try {
       const [s, fs] = await Promise.all([
@@ -70,7 +68,9 @@ export default function FinanceiroPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [period]);
+
+  useEffect(() => { loadAll(); }, [loadAll]);
 
   async function saveSettings() {
     if (!settings) return;
