@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Buscar estoque com produtos
-  let query = supabase
+  const query = supabase
     .from('inventory')
     .select(`
       *,

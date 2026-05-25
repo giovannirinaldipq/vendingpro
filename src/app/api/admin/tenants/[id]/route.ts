@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { updateTenantSchema } from '@/lib/validators';
+import { requireAdmin } from '@/lib/admin/auth';
+import { logAudit, extractRequestMeta } from '@/lib/admin/audit';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return NextResponse.json({ success: false, error: { code: auth.error, message: auth.error } }, { status: auth.status });
   const { id } = await params;
   const supabase = await createClient();
 
@@ -32,6 +36,9 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdmin(['super_admin', 'commercial', 'financial']);
+  if (!auth.ok) return NextResponse.json({ success: false, error: { code: auth.error, message: auth.error } }, { status: auth.status });
+
   const { id } = await params;
   const supabase = await createClient();
   const body = await request.json();
@@ -55,6 +62,17 @@ export async function PATCH(
     return NextResponse.json({ success: false, error: { code: 'DB_ERROR', message: error.message } }, { status: 500 });
   }
 
+  const meta = extractRequestMeta(request);
+  await logAudit({
+    adminUserId: auth.admin.id,
+    action: 'tenant.updated',
+    entityType: 'tenants',
+    entityId: id,
+    newValues: validation.data as unknown as Record<string, unknown>,
+    ipAddress: meta.ipAddress,
+    userAgent: meta.userAgent,
+  });
+
   return NextResponse.json({ success: true, data });
 }
 
@@ -62,6 +80,9 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdmin(['super_admin']);
+  if (!auth.ok) return NextResponse.json({ success: false, error: { code: auth.error, message: auth.error } }, { status: auth.status });
+
   const { id } = await params;
   const supabase = await createClient();
 
@@ -78,6 +99,16 @@ export async function DELETE(
   if (error) {
     return NextResponse.json({ success: false, error: { code: 'DB_ERROR', message: error.message } }, { status: 500 });
   }
+
+  const meta = extractRequestMeta(request);
+  await logAudit({
+    adminUserId: auth.admin.id,
+    action: 'tenant.cancelled',
+    entityType: 'tenants',
+    entityId: id,
+    ipAddress: meta.ipAddress,
+    userAgent: meta.userAgent,
+  });
 
   return NextResponse.json({ success: true, data: { message: 'Cliente cancelado com sucesso' } });
 }

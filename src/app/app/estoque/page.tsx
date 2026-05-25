@@ -19,7 +19,8 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Pill } from '@/components/ui/pill';
+import { KpiCardHero } from '@/components/ui/kpi-hero';
 import {
   Table,
   TableBody,
@@ -170,58 +171,53 @@ export default function InventoryPage() {
         </Link>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards — HERO Valor em Estoque + 3 secundários */}
       {data?.stats && (
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-5">
+          <div className="md:col-span-2">
+            <KpiCardHero
+              label="Valor em Estoque"
+              value={`R$ ${data.stats.total_value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+              icon={DollarSign}
+              subtitle={`${data.stats.products_count} SKUs · ${data.stats.total_items.toLocaleString('pt-BR')} unidades`}
+            />
+          </div>
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Produtos em Estoque
+              <CardTitle className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-tertiary">
+                SKUs
               </CardTitle>
-              <Boxes className="h-4 w-4 text-muted-foreground" />
+              <Boxes className="h-3.5 w-3.5 text-text-tertiary" strokeWidth={2} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{data.stats.products_count}</div>
+              <div className="font-mono text-3xl font-medium tabular-nums text-text-primary">{data.stats.products_count}</div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total de Itens
+              <CardTitle className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-tertiary">
+                Unidades
               </CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
+              <Package className="h-3.5 w-3.5 text-text-tertiary" strokeWidth={2} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="font-mono text-3xl font-medium tabular-nums text-text-primary">
                 {data.stats.total_items.toLocaleString('pt-BR')}
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className={data.stats.low_stock_count > 0 ? 'border-warning/40' : ''}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Valor em Estoque
-              </CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                R$ {data.stats.total_value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className={data.stats.low_stock_count > 0 ? 'border-yellow-500' : ''}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+              <CardTitle className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-tertiary">
                 Estoque Baixo
               </CardTitle>
-              <TrendingDown className={`h-4 w-4 ${data.stats.low_stock_count > 0 ? 'text-yellow-500' : 'text-muted-foreground'}`} />
+              <TrendingDown className={`h-3.5 w-3.5 ${data.stats.low_stock_count > 0 ? 'text-warning' : 'text-text-tertiary'}`} strokeWidth={2} />
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${data.stats.low_stock_count > 0 ? 'text-yellow-600' : ''}`}>
+              <div className={`font-mono text-3xl font-medium tabular-nums ${data.stats.low_stock_count > 0 ? 'text-warning' : 'text-text-primary'}`}>
                 {data.stats.low_stock_count}
               </div>
             </CardContent>
@@ -239,7 +235,7 @@ export default function InventoryPage() {
                 placeholder="Buscar por produto, código ou categoria..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
+                className="h-10 pl-9"
               />
             </div>
             <div className="flex items-center space-x-2">
@@ -295,41 +291,43 @@ export default function InventoryPage() {
               </TableHeader>
               <TableBody>
                 {data?.inventory.map((item) => (
-                  <TableRow key={item.id} className={isLowStock(item) ? 'bg-yellow-50' : ''}>
+                  <TableRow key={item.id} className={isLowStock(item) ? 'bg-warning-soft/40' : ''}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${isLowStock(item) ? 'bg-yellow-100' : 'bg-primary/10'}`}>
-                          <Package className={`h-5 w-5 ${isLowStock(item) ? 'text-yellow-600' : 'text-primary'}`} />
+                        <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${isLowStock(item) ? 'bg-warning-soft' : 'bg-brand-navy/10'}`}>
+                          <Package className={`h-5 w-5 ${isLowStock(item) ? 'text-warning' : 'text-brand-navy'}`} />
                         </div>
                         <div>
                           <p className="font-medium">{item.product.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {item.product.barcode || 'Sem código'}
-                          </p>
+                          {item.product.category && (
+                            <p className="text-xs text-text-tertiary">
+                              {item.product.category}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{item.product.category || 'Sem categoria'}</Badge>
+                      <Pill tone="outline">{item.product.category || 'Sem categoria'}</Pill>
                     </TableCell>
                     <TableCell className="text-center">
-                      <span className={`font-medium ${isLowStock(item) ? 'text-yellow-600' : ''}`}>
+                      <span className={`font-medium tabular-nums ${isLowStock(item) ? 'text-warning' : ''}`}>
                         {item.current_quantity}
                       </span>
                     </TableCell>
-                    <TableCell className="text-center text-muted-foreground">
+                    <TableCell className="text-center text-text-tertiary tabular-nums">
                       {item.minimum_quantity}
                     </TableCell>
                     <TableCell>
                       {isLowStock(item) ? (
-                        <Badge className="bg-yellow-100 text-yellow-700">
-                          <AlertTriangle className="mr-1 h-3 w-3" />
+                        <Pill tone="warning" dot>
+                          <AlertTriangle className="h-3 w-3" />
                           Baixo
-                        </Badge>
+                        </Pill>
                       ) : (
-                        <Badge className="bg-green-100 text-green-700">
+                        <Pill tone="success" dot>
                           Normal
-                        </Badge>
+                        </Pill>
                       )}
                     </TableCell>
                     <TableCell className="text-right">
@@ -378,19 +376,19 @@ export default function InventoryPage() {
                 <SelectContent>
                   <SelectItem value="in">
                     <div className="flex items-center">
-                      <Plus className="mr-2 h-4 w-4 text-green-600" />
+                      <Plus className="mr-2 h-4 w-4 text-success" />
                       Entrada
                     </div>
                   </SelectItem>
                   <SelectItem value="out">
                     <div className="flex items-center">
-                      <Minus className="mr-2 h-4 w-4 text-red-600" />
+                      <Minus className="mr-2 h-4 w-4 text-danger" />
                       Saída
                     </div>
                   </SelectItem>
                   <SelectItem value="adjustment">
                     <div className="flex items-center">
-                      <RefreshCw className="mr-2 h-4 w-4 text-blue-600" />
+                      <RefreshCw className="mr-2 h-4 w-4 text-info" />
                       Ajuste (definir quantidade)
                     </div>
                   </SelectItem>

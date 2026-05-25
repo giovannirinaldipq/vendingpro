@@ -25,7 +25,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { EmptyStateV2 } from '@/components/ui/empty-state-v2';
+import { KpiCardHero } from '@/components/ui/kpi-hero';
 
 interface MachineRanking {
   id: string;
@@ -70,15 +71,15 @@ interface RankingsData {
 }
 
 function getScoreColor(score: number): string {
-  if (score >= 70) return 'text-green-600 bg-green-100';
-  if (score >= 50) return 'text-yellow-600 bg-yellow-100';
-  return 'text-red-600 bg-red-100';
+  if (score >= 70) return 'text-success bg-success-soft';
+  if (score >= 50) return 'text-warning bg-warning-soft';
+  return 'text-danger bg-danger-soft';
 }
 
 function getScoreIcon(score: number) {
-  if (score >= 70) return <CheckCircle className="h-4 w-4 text-green-600" />;
-  if (score >= 50) return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
-  return <XCircle className="h-4 w-4 text-red-600" />;
+  if (score >= 70) return <CheckCircle className="h-4 w-4 text-success" />;
+  if (score >= 50) return <AlertTriangle className="h-4 w-4 text-warning" />;
+  return <XCircle className="h-4 w-4 text-danger" />;
 }
 
 export default function RankingsPage() {
@@ -114,13 +115,24 @@ export default function RankingsPage() {
           </p>
         </div>
         <Select value={period} onValueChange={(v) => v && setPeriod(v)}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue />
+          <SelectTrigger className="w-[170px]">
+            <SelectValue>
+              {period === '7d' ? 'Últimos 7 dias'
+               : period === '30d' ? 'Últimos 30 dias'
+               : period === '90d' ? 'Últimos 90 dias'
+               : period === '180d' ? 'Últimos 180 dias'
+               : period === '365d' ? 'Último ano'
+               : period === 'all' ? 'Todo o histórico'
+               : period}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="7d">Últimos 7 dias</SelectItem>
             <SelectItem value="30d">Últimos 30 dias</SelectItem>
             <SelectItem value="90d">Últimos 90 dias</SelectItem>
+            <SelectItem value="180d">Últimos 180 dias</SelectItem>
+            <SelectItem value="365d">Último ano</SelectItem>
+            <SelectItem value="all">Todo o histórico</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -131,47 +143,49 @@ export default function RankingsPage() {
         </div>
       ) : !hasData ? (
         <Card>
-          <CardContent className="flex h-64 flex-col items-center justify-center text-center">
-            <Trophy className="h-12 w-12 text-muted-foreground/50" />
-            <p className="mt-4 text-sm font-medium">Sem dados para exibir</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Cadastre máquinas e importe dados para ver os rankings
-            </p>
-            <a href="/app/importar">
-              <Button variant="outline" className="mt-4">Importar Dados</Button>
-            </a>
-          </CardContent>
+          <EmptyStateV2
+            illustration="no-data"
+            title="Sem ranking nesse período"
+            description="Cadastre máquinas e importe planilhas. Em segundos suas máquinas vão estar disputando o topo da tabela."
+            ctaLabel="Importar dados"
+            ctaHref="/app/importar"
+          />
         </Card>
       ) : (
         <>
-          {/* Summary Cards */}
-          <div className="grid gap-4 md:grid-cols-4">
+          {/* HERO Receita Média + 3 secundários */}
+          <div className="grid gap-4 md:grid-cols-5">
+            <div className="md:col-span-2">
+              <KpiCardHero
+                label="Receita Média por Máquina"
+                value={`R$ ${data.summary.avg_revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                icon={DollarSign}
+                subtitle={`distribuída entre ${data.summary.active_machines} máquinas ativas`}
+              />
+            </div>
             <Card>
               <CardContent className="pt-6">
-                <div className="text-2xl font-bold">{data.summary.total_machines}</div>
-                <p className="text-sm text-muted-foreground">Total de Máquinas</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-tertiary">Total</p>
+                <div className="font-mono text-3xl font-medium tabular-nums text-text-primary mt-1">{data.summary.total_machines}</div>
+                <p className="text-xs text-text-tertiary mt-1">máquinas no cadastro</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-6">
-                <div className="text-2xl font-bold">{data.summary.active_machines}</div>
-                <p className="text-sm text-muted-foreground">Máquinas Ativas</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-tertiary">Ativas</p>
+                <div className="font-mono text-3xl font-medium tabular-nums text-text-primary mt-1">{data.summary.active_machines}</div>
+                <p className="text-xs text-text-tertiary mt-1">operacionais agora</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-6">
-                <div className="text-2xl font-bold">
-                  R$ {data.summary.avg_revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </div>
-                <p className="text-sm text-muted-foreground">Receita Média</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className={`text-2xl font-bold ${data.summary.machines_with_issues > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-tertiary">Atenção</p>
+                <div className={`font-mono text-3xl font-medium tabular-nums mt-1 ${data.summary.machines_with_issues > 0 ? 'text-warning' : 'text-text-primary'}`}>
                   {data.summary.machines_with_issues}
                 </div>
-                <p className="text-sm text-muted-foreground">Precisam de Atenção</p>
+                <p className="text-xs text-text-tertiary mt-1">
+                  {data.summary.machines_with_issues > 0 ? 'precisam de cuidado' : 'tudo bem'}
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -200,7 +214,7 @@ export default function RankingsPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle className="flex items-center gap-2">
-                        <Trophy className="h-5 w-5 text-yellow-500" />
+                        <Trophy className="h-5 w-5 text-brand-amber" strokeWidth={2} />
                         Ranking de Máquinas
                       </CardTitle>
                       <CardDescription>
@@ -236,36 +250,33 @@ export default function RankingsPage() {
                       {data.machines.map((machine, index) => (
                         <TableRow key={machine.id}>
                           <TableCell className="font-medium">
-                            {index < 3 ? (
-                              <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full ${
-                                index === 0 ? 'bg-yellow-100 text-yellow-700' :
-                                index === 1 ? 'bg-gray-100 text-gray-700' :
-                                'bg-orange-100 text-orange-700'
-                              }`}>
-                                {index + 1}
-                              </span>
-                            ) : (
-                              index + 1
-                            )}
+                            <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
+                              index === 0 ? 'bg-warning-soft text-warning' :
+                              index === 1 ? 'bg-surface-subtle text-text-secondary' :
+                              index === 2 ? 'bg-brand-amber/15 text-brand-amber' :
+                              'text-text-tertiary'
+                            }`}>
+                              {index + 1}
+                            </span>
                           </TableCell>
                           <TableCell>
                             <div>
                               <p className="font-medium">{machine.name}</p>
-                              <p className="text-xs text-muted-foreground">{machine.code}</p>
+                              <p className="text-xs text-text-tertiary">{machine.code}</p>
                             </div>
                           </TableCell>
                           <TableCell>{machine.location}</TableCell>
-                          <TableCell className="text-right font-medium">
+                          <TableCell className="text-right font-medium tabular-nums">
                             R$ {machine.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </TableCell>
-                          <TableCell className="text-right">{machine.sales}</TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="text-right tabular-nums">{machine.sales}</TableCell>
+                          <TableCell className="text-right tabular-nums">
                             R$ {machine.ticket.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </TableCell>
                           <TableCell className="text-center">
-                            <Badge className={getScoreColor(machine.health_score)}>
+                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${getScoreColor(machine.health_score)}`}>
                               {machine.health_score}
-                            </Badge>
+                            </span>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -280,7 +291,7 @@ export default function RankingsPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Trophy className="h-5 w-5 text-yellow-500" />
+                    <Trophy className="h-5 w-5 text-brand-amber" strokeWidth={2} />
                     Ranking de Produtos
                   </CardTitle>
                   <CardDescription>
@@ -303,17 +314,14 @@ export default function RankingsPage() {
                       {data.products.map((product, index) => (
                         <TableRow key={product.name}>
                           <TableCell className="font-medium">
-                            {index < 3 ? (
-                              <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full ${
-                                index === 0 ? 'bg-yellow-100 text-yellow-700' :
-                                index === 1 ? 'bg-gray-100 text-gray-700' :
-                                'bg-orange-100 text-orange-700'
-                              }`}>
-                                {index + 1}
-                              </span>
-                            ) : (
-                              index + 1
-                            )}
+                            <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-mono font-semibold tabular-nums ${
+                              index === 0 ? 'bg-brand-amber/20 text-[#92400e] dark:text-brand-amber' :
+                              index === 1 ? 'bg-surface-subtle text-text-secondary' :
+                              index === 2 ? 'bg-brand-navy/10 text-brand-navy' :
+                              'text-text-tertiary'
+                            }`}>
+                              {index + 1}
+                            </span>
                           </TableCell>
                           <TableCell className="font-medium max-w-[200px] truncate">
                             {product.name}

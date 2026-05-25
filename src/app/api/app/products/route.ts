@@ -4,8 +4,10 @@ import { z } from 'zod';
 
 const productSchema = z.object({
   name: z.string().min(2),
+  /** @deprecated — mantido por compat de parser; UI não envia mais */
   barcode: z.string().optional(),
-  category: z.string().optional(),
+  category: z.string().max(60).optional(),
+  unit_size: z.string().max(20).optional(),
   default_sale_price: z.number().positive().optional(),
   default_cost_price: z.number().positive().optional(),
   is_active: z.boolean().default(true),

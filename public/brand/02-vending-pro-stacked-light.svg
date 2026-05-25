@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 380" role="img" aria-label="Vending Pro">
+  <title>Vending Pro</title>
+  <rect x="198.00" y="58.00" width="30" height="30" rx="6.30" fill="#1e40af"/>
+  <rect x="245.00" y="58.00" width="30" height="30" rx="6.30" fill="#1e40af" fill-opacity="0.18"/>
+  <rect x="292.00" y="58.00" width="30" height="30" rx="6.30" fill="#1e40af"/>
+  <rect x="198.00" y="105.00" width="30" height="30" rx="6.30" fill="#1e40af" fill-opacity="0.18"/>
+  <rect x="245.00" y="105.00" width="30" height="30" rx="6.30" fill="#1e40af"/>
+  <rect x="292.00" y="105.00" width="30" height="30" rx="6.30" fill="#1e40af" fill-opacity="0.18"/>
+  <rect x="198.00" y="152.00" width="30" height="30" rx="6.30" fill="#1e40af" fill-opacity="0.18"/>
+  <rect x="245.00" y="152.00" width="30" height="30" rx="6.30" fill="#1e40af" fill-opacity="0.18"/>
+  <rect x="292.00" y="152.00" width="30" height="30" rx="6.30" fill="#1e40af" fill-opacity="0.18"/>
+  <text x="135.2" y="275" font-family="'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'DejaVu Sans', sans-serif" font-size="42" font-weight="500" fill="#1e40af">Vending</text>
+  <text x="318.1" y="275" font-family="'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'DejaVu Sans', sans-serif" font-size="42" font-weight="500" fill="#fbbf24">Pro</text>
+  <text x="260.0" y="312" text-anchor="middle" font-family="'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'DejaVu Sans', sans-serif" font-size="11" fill="#64748b" letter-spacing="4">SISTEMA DE GESTÃO</text>
+</svg>

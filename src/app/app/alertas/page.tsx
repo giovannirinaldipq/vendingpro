@@ -12,12 +12,16 @@ import {
   Eye,
   Monitor,
   Filter,
+  Cpu,
+  Hand,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { EmptyStateV2 } from '@/components/ui/empty-state-v2';
+import { KpiCardHero } from '@/components/ui/kpi-hero';
 import {
   Table,
   TableBody,
@@ -58,8 +62,10 @@ interface Alert {
   message: string;
   data?: Record<string, unknown>;
   status: 'active' | 'acknowledged' | 'resolved' | 'dismissed';
+  source?: 'auto' | 'manual';
   acknowledged_at?: string;
   resolved_at?: string;
+  notified_email?: boolean;
   created_at: string;
 }
 
@@ -79,17 +85,17 @@ interface AlertsResponse {
 }
 
 const severityConfig = {
-  critical: { label: 'Crítico', color: 'bg-red-100 text-red-700 border-red-200', icon: AlertTriangle },
-  high: { label: 'Alto', color: 'bg-orange-100 text-orange-700 border-orange-200', icon: AlertCircle },
-  medium: { label: 'Médio', color: 'bg-yellow-100 text-yellow-700 border-yellow-200', icon: Info },
-  low: { label: 'Baixo', color: 'bg-blue-100 text-blue-700 border-blue-200', icon: Info },
+  critical: { label: 'Crítico', color: 'bg-danger-soft text-danger border-danger/30', icon: AlertTriangle },
+  high:     { label: 'Alto',    color: 'bg-warning-soft text-warning border-warning/30', icon: AlertCircle },
+  medium:   { label: 'Médio',   color: 'bg-brand-amber/15 text-[#92400e] dark:text-brand-amber border-brand-amber/30', icon: Info },
+  low:      { label: 'Baixo',   color: 'bg-info-soft text-info border-info/30', icon: Info },
 };
 
 const statusConfig = {
-  active: { label: 'Ativo', color: 'bg-red-100 text-red-700' },
-  acknowledged: { label: 'Reconhecido', color: 'bg-yellow-100 text-yellow-700' },
-  resolved: { label: 'Resolvido', color: 'bg-green-100 text-green-700' },
-  dismissed: { label: 'Dispensado', color: 'bg-gray-100 text-gray-700' },
+  active:       { label: 'Ativo',       color: 'bg-warning-soft text-warning' },
+  acknowledged: { label: 'Reconhecido', color: 'bg-info-soft text-info' },
+  resolved:     { label: 'Resolvido',   color: 'bg-success-soft text-success' },
+  dismissed:    { label: 'Dispensado',  color: 'bg-surface-subtle text-text-tertiary' },
 };
 
 const alertTypeLabels: Record<string, string> = {
@@ -187,72 +193,21 @@ export default function AlertsPage() {
 
       {/* Stats Cards */}
       {data?.stats && (
-        <div className="grid gap-4 md:grid-cols-5">
-          <Card className={data.stats.active > 0 ? 'border-red-200' : ''}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Ativos
-              </CardTitle>
-              <Bell className={`h-4 w-4 ${data.stats.active > 0 ? 'text-red-500' : 'text-muted-foreground'}`} />
-            </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold ${data.stats.active > 0 ? 'text-red-600' : ''}`}>
-                {data.stats.active}
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid gap-4 md:grid-cols-6">
+          {/* HERO Ativos — total que precisa de atenção agora */}
+          <div className="md:col-span-2">
+            <KpiCardHero
+              label="Alertas Ativos"
+              value={String(data.stats.active)}
+              icon={Bell}
+              subtitle={data.stats.active > 0 ? 'precisam de atenção' : 'tudo sob controle'}
+            />
+          </div>
 
-          <Card className={data.stats.critical > 0 ? 'border-red-500' : ''}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Críticos
-              </CardTitle>
-              <AlertTriangle className={`h-4 w-4 ${data.stats.critical > 0 ? 'text-red-500' : 'text-muted-foreground'}`} />
-            </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold ${data.stats.critical > 0 ? 'text-red-600' : ''}`}>
-                {data.stats.critical}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className={data.stats.high > 0 ? 'border-orange-300' : ''}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Altos
-              </CardTitle>
-              <AlertCircle className={`h-4 w-4 ${data.stats.high > 0 ? 'text-orange-500' : 'text-muted-foreground'}`} />
-            </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold ${data.stats.high > 0 ? 'text-orange-600' : ''}`}>
-                {data.stats.high}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Médios
-              </CardTitle>
-              <Info className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{data.stats.medium}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Baixos
-              </CardTitle>
-              <Info className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{data.stats.low}</div>
-            </CardContent>
-          </Card>
+          <SeverityCard label="Críticos" value={data.stats.critical} icon={AlertTriangle} tone="danger" />
+          <SeverityCard label="Altos"    value={data.stats.high}     icon={AlertCircle}   tone="warning" />
+          <SeverityCard label="Médios"   value={data.stats.medium}   icon={Info}          tone="amber" />
+          <SeverityCard label="Baixos"   value={data.stats.low}      icon={Info}          tone="neutral" />
         </div>
       )}
 
@@ -305,19 +260,19 @@ export default function AlertsPage() {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : data?.alerts.length === 0 ? (
-            <div className="flex h-48 flex-col items-center justify-center text-center">
-              <Bell className="h-12 w-12 text-muted-foreground/50" />
-              <p className="mt-2 text-muted-foreground">Nenhum alerta encontrado</p>
-              <p className="text-xs text-muted-foreground">
-                Os alertas aparecerão aqui quando forem gerados
-              </p>
-            </div>
+            <EmptyStateV2
+              illustration="no-alerts"
+              positive
+              title="Tudo respirando bem por aqui ✦"
+              description="Nenhum alerta no filtro selecionado. O motor inteligente checa as máquinas a cada 15 minutos."
+            />
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Severidade</TableHead>
                   <TableHead>Alerta</TableHead>
+                  <TableHead>Origem</TableHead>
                   <TableHead>Máquina</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Status</TableHead>
@@ -329,7 +284,7 @@ export default function AlertsPage() {
                 {data?.alerts.map((alert) => {
                   const Icon = SeverityIcon(alert.severity);
                   return (
-                    <TableRow key={alert.id} className={alert.status === 'active' ? 'bg-red-50/50' : ''}>
+                    <TableRow key={alert.id} className={alert.status === 'active' ? 'bg-warning-soft/30' : ''}>
                       <TableCell>
                         <Badge className={severityConfig[alert.severity]?.color}>
                           <Icon className="mr-1 h-3 w-3" />
@@ -343,6 +298,17 @@ export default function AlertsPage() {
                             {alert.message}
                           </p>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {alert.source === 'auto' ? (
+                          <Badge variant="secondary" className="bg-violet-100 text-violet-700">
+                            <Cpu className="mr-1 h-3 w-3" />Auto
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="bg-gray-100 text-gray-700">
+                            <Hand className="mr-1 h-3 w-3" />Manual
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell>
                         {alert.machine ? (
@@ -495,5 +461,38 @@ export default function AlertsPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function SeverityCard({
+  label, value, icon: Icon, tone,
+}: {
+  label: string;
+  value: number;
+  icon: typeof Info;
+  tone: 'danger' | 'warning' | 'amber' | 'neutral';
+}) {
+  const active = value > 0;
+  const iconClass = active && tone === 'danger'  ? 'text-danger'
+                  : active && tone === 'warning' ? 'text-warning'
+                  : active && tone === 'amber'   ? 'text-brand-amber'
+                  : 'text-text-tertiary';
+  const valueClass = active && tone === 'danger'  ? 'text-danger'
+                   : active && tone === 'warning' ? 'text-warning'
+                   : 'text-text-primary';
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-tertiary">
+          {label}
+        </CardTitle>
+        <Icon className={`h-3.5 w-3.5 ${iconClass}`} strokeWidth={2} />
+      </CardHeader>
+      <CardContent>
+        <div className={`font-mono text-3xl font-medium tabular-nums ${valueClass}`}>
+          {value}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

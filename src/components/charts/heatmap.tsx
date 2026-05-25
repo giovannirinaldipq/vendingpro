@@ -16,14 +16,23 @@ interface HeatmapProps {
 const DAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
-function getColor(value: number, max: number): string {
-  if (value === 0) return 'bg-gray-100';
-  const intensity = value / max;
-  if (intensity < 0.2) return 'bg-green-100';
-  if (intensity < 0.4) return 'bg-green-200';
-  if (intensity < 0.6) return 'bg-green-400';
-  if (intensity < 0.8) return 'bg-green-500';
-  return 'bg-green-600';
+/**
+ * Heatmap usando escala de calor brand-amber, theme-aware:
+ * - célula vazia: surface-subtle
+ * - intensidade cresce com opacity sobre amber → permanece legível em light & dark
+ */
+function intensityStyle(value: number, max: number): { className: string; style?: React.CSSProperties } {
+  if (value === 0) {
+    return { className: 'bg-surface-subtle' };
+  }
+  const intensity = Math.min(1, value / max);
+  // Stops discretos pra cair em 5 níveis e não ficar gradient demais
+  const stops = [0.15, 0.35, 0.55, 0.75, 1.0];
+  const opacity = stops.find(s => intensity <= s) ?? 1.0;
+  return {
+    className: '',
+    style: { backgroundColor: `rgb(251 191 36 / ${opacity})` }, // brand-amber-400
+  };
 }
 
 export function Heatmap({ data, maxValue }: HeatmapProps) {
@@ -50,7 +59,7 @@ export function Heatmap({ data, maxValue }: HeatmapProps) {
           {HOURS.map((hour) => (
             <div
               key={hour}
-              className="flex-1 text-center text-xs text-muted-foreground"
+              className="flex-1 text-center text-[10px] text-text-tertiary tabular-nums"
             >
               {hour}h
             </div>
@@ -60,15 +69,17 @@ export function Heatmap({ data, maxValue }: HeatmapProps) {
         {/* Grid */}
         {DAYS.map((day, dayIndex) => (
           <div key={day} className="flex items-center">
-            <div className="w-12 shrink-0 text-xs font-medium text-muted-foreground">
+            <div className="w-12 shrink-0 text-xs font-medium text-text-tertiary">
               {day}
             </div>
             {HOURS.map((hour) => {
               const value = grid[dayIndex][hour];
+              const { className, style } = intensityStyle(value, max);
               return (
                 <div
                   key={`${dayIndex}-${hour}`}
-                  className={`flex-1 aspect-square m-0.5 rounded-sm ${getColor(value, max)} transition-colors cursor-pointer hover:ring-2 hover:ring-primary hover:ring-offset-1`}
+                  className={`flex-1 aspect-square m-0.5 rounded-sm transition-all cursor-pointer hover:ring-2 hover:ring-brand-navy hover:ring-offset-1 hover:ring-offset-surface-card ${className}`}
+                  style={style}
                   title={`${day} ${hour}h: ${value} vendas`}
                 />
               );
@@ -77,15 +88,13 @@ export function Heatmap({ data, maxValue }: HeatmapProps) {
         ))}
 
         {/* Legend */}
-        <div className="mt-4 flex items-center justify-end gap-2 text-xs text-muted-foreground">
+        <div className="mt-4 flex items-center justify-end gap-2 text-xs text-text-tertiary">
           <span>Menos</span>
           <div className="flex gap-1">
-            <div className="w-4 h-4 rounded-sm bg-gray-100" />
-            <div className="w-4 h-4 rounded-sm bg-green-100" />
-            <div className="w-4 h-4 rounded-sm bg-green-200" />
-            <div className="w-4 h-4 rounded-sm bg-green-400" />
-            <div className="w-4 h-4 rounded-sm bg-green-500" />
-            <div className="w-4 h-4 rounded-sm bg-green-600" />
+            <div className="w-4 h-4 rounded-sm bg-surface-subtle" />
+            {[0.15, 0.35, 0.55, 0.75, 1.0].map(op => (
+              <div key={op} className="w-4 h-4 rounded-sm" style={{ backgroundColor: `rgb(251 191 36 / ${op})` }} />
+            ))}
           </div>
           <span>Mais</span>
         </div>

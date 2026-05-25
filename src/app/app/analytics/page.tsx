@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, Calendar, Monitor, Loader2, TrendingUp, DollarSign, ShoppingCart } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { KpiCardHero } from '@/components/ui/kpi-hero';
+import { Calendar, Monitor, Loader2, TrendingUp, DollarSign, ShoppingCart } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -12,6 +12,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Heatmap } from '@/components/charts/heatmap';
+import { EmptyStateV2 } from '@/components/ui/empty-state-v2';
+import { PaymentBreakdownCard } from '@/components/analytics/payment-breakdown-card';
 import {
   BarChart,
   Bar,
@@ -23,6 +25,10 @@ import {
   LineChart,
   Line,
 } from 'recharts';
+
+const CHART_PRIMARY = '#1e40af';   // brand-navy-700
+const CHART_ACCENT  = '#fbbf24';   // brand-amber-400
+const CHART_GRID    = 'currentColor';
 
 interface AnalyticsData {
   heatmap: Array<{ day: number; hour: number; value: number }>;
@@ -84,20 +90,35 @@ export default function AnalyticsPage() {
         </div>
         <div className="flex gap-2">
           <Select value={period} onValueChange={(v) => v && setPeriod(v)}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-[170px]">
               <Calendar className="mr-2 h-4 w-4" />
-              <SelectValue />
+              <SelectValue>
+                {period === '7d' ? 'Últimos 7 dias'
+                 : period === '30d' ? 'Últimos 30 dias'
+                 : period === '90d' ? 'Últimos 90 dias'
+                 : period === '180d' ? 'Últimos 180 dias'
+                 : period === '365d' ? 'Último ano'
+                 : period === 'all' ? 'Todo o histórico'
+                 : period}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="7d">Últimos 7 dias</SelectItem>
               <SelectItem value="30d">Últimos 30 dias</SelectItem>
               <SelectItem value="90d">Últimos 90 dias</SelectItem>
+              <SelectItem value="180d">Últimos 180 dias</SelectItem>
+              <SelectItem value="365d">Último ano</SelectItem>
+              <SelectItem value="all">Todo o histórico</SelectItem>
             </SelectContent>
           </Select>
           <Select value={machineId} onValueChange={(v) => v && setMachineId(v)}>
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-[220px]">
               <Monitor className="mr-2 h-4 w-4" />
-              <SelectValue />
+              <SelectValue>
+                {machineId === 'all'
+                  ? 'Todas as máquinas'
+                  : (machines.find(m => m.id === machineId)?.name ?? 'Selecione')}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas as máquinas</SelectItem>
@@ -117,56 +138,48 @@ export default function AnalyticsPage() {
         </div>
       ) : !hasData ? (
         <Card>
-          <CardContent className="flex h-64 flex-col items-center justify-center text-center">
-            <BarChart3 className="h-12 w-12 text-muted-foreground/50" />
-            <p className="mt-4 text-sm font-medium">Sem dados para exibir</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Importe dados de vendas para visualizar as análises
-            </p>
-            <a href="/app/importar">
-              <Button variant="outline" className="mt-4">Importar Dados</Button>
-            </a>
-          </CardContent>
+          <EmptyStateV2
+            illustration="no-data"
+            title="Sem dados no período selecionado"
+            description="Aumente o período acima ou importe uma planilha pra ver mapa de calor, top produtos e evolução de vendas."
+            ctaLabel="Importar planilha agora"
+            ctaHref="/app/importar"
+          />
         </Card>
       ) : (
         <>
-          {/* Summary Cards */}
-          <div className="grid gap-4 md:grid-cols-3">
+          {/* Summary Cards — HERO Receita Total + 2 secundários */}
+          <div className="grid gap-4 md:grid-cols-4">
+            <div className="md:col-span-2">
+              <KpiCardHero
+                label="Receita Total"
+                value={`R$ ${data.summary.total_revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                icon={DollarSign}
+                subtitle="no período selecionado"
+              />
+            </div>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Receita Total
-                </CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  R$ {data.summary.total_revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+                <CardTitle className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-tertiary">
                   Total de Vendas
                 </CardTitle>
-                <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                <ShoppingCart className="h-3.5 w-3.5 text-text-tertiary" strokeWidth={2} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className="font-mono text-3xl font-medium tabular-nums text-text-primary">
                   {data.summary.total_sales.toLocaleString('pt-BR')}
                 </div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+                <CardTitle className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-tertiary">
                   Ticket Médio
                 </CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                <TrendingUp className="h-3.5 w-3.5 text-text-tertiary" strokeWidth={2} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className="font-mono text-3xl font-medium tabular-nums text-text-primary">
                   R$ {data.summary.average_ticket.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </div>
               </CardContent>
@@ -195,20 +208,29 @@ export default function AnalyticsPage() {
                 <CardDescription>Receita diária no período</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-64">
+                <div className="h-64 text-text-tertiary">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={data.daily_sales}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <LineChart data={data.daily_sales} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} strokeOpacity={0.15} />
                       <XAxis
                         dataKey="date"
-                        tick={{ fontSize: 12 }}
+                        tick={{ fontSize: 11, fill: 'currentColor' }}
+                        stroke="currentColor"
+                        strokeOpacity={0.3}
                         tickFormatter={(value) => {
                           const date = new Date(value);
                           return `${date.getDate()}/${date.getMonth() + 1}`;
                         }}
                       />
-                      <YAxis tick={{ fontSize: 12 }} />
+                      <YAxis tick={{ fontSize: 11, fill: 'currentColor' }} stroke="currentColor" strokeOpacity={0.3} />
                       <Tooltip
+                        contentStyle={{
+                          background: 'var(--surface-card)',
+                          border: '1px solid var(--border-default)',
+                          borderRadius: 8,
+                          fontSize: 12,
+                          color: 'var(--text-primary)',
+                        }}
                         formatter={(value) => [`R$ ${Number(value).toFixed(2)}`, 'Receita']}
                         labelFormatter={(label) => {
                           const date = new Date(label);
@@ -218,7 +240,7 @@ export default function AnalyticsPage() {
                       <Line
                         type="monotone"
                         dataKey="revenue"
-                        stroke="hsl(var(--primary))"
+                        stroke={CHART_PRIMARY}
                         strokeWidth={2}
                         dot={false}
                       />
@@ -235,16 +257,24 @@ export default function AnalyticsPage() {
                 <CardDescription>Distribuição semanal</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-64">
+                <div className="h-64 text-text-tertiary">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={data.weekday_sales}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                      <XAxis dataKey="day" tick={{ fontSize: 12 }} />
-                      <YAxis tick={{ fontSize: 12 }} />
+                    <BarChart data={data.weekday_sales} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} strokeOpacity={0.15} />
+                      <XAxis dataKey="day" tick={{ fontSize: 11, fill: 'currentColor' }} stroke="currentColor" strokeOpacity={0.3} />
+                      <YAxis tick={{ fontSize: 11, fill: 'currentColor' }} stroke="currentColor" strokeOpacity={0.3} />
                       <Tooltip
+                        contentStyle={{
+                          background: 'var(--surface-card)',
+                          border: '1px solid var(--border-default)',
+                          borderRadius: 8,
+                          fontSize: 12,
+                          color: 'var(--text-primary)',
+                        }}
+                        cursor={{ fill: 'currentColor', fillOpacity: 0.05 }}
                         formatter={(value) => [`R$ ${Number(value).toFixed(2)}`, 'Receita']}
                       />
-                      <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="revenue" fill={CHART_PRIMARY} radius={[6, 6, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -259,27 +289,43 @@ export default function AnalyticsPage() {
               <CardDescription>Produtos mais vendidos por receita</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-80">
+              <div className="h-80 text-text-tertiary">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data.top_products} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis type="number" tick={{ fontSize: 12 }} />
+                  <BarChart data={data.top_products} layout="vertical" margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} strokeOpacity={0.15} />
+                    <XAxis type="number" tick={{ fontSize: 11, fill: 'currentColor' }} stroke="currentColor" strokeOpacity={0.3} />
                     <YAxis
                       type="category"
                       dataKey="name"
-                      tick={{ fontSize: 11 }}
+                      tick={{ fontSize: 11, fill: 'currentColor' }}
+                      stroke="currentColor"
+                      strokeOpacity={0.3}
                       width={150}
                       tickFormatter={(value) => value.length > 20 ? value.slice(0, 20) + '...' : value}
                     />
                     <Tooltip
+                      contentStyle={{
+                        background: 'var(--surface-card)',
+                        border: '1px solid var(--border-default)',
+                        borderRadius: 8,
+                        fontSize: 12,
+                        color: 'var(--text-primary)',
+                      }}
+                      cursor={{ fill: 'currentColor', fillOpacity: 0.05 }}
                       formatter={(value) => [`R$ ${Number(value).toFixed(2)}`, 'Receita']}
                     />
-                    <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="revenue" fill={CHART_ACCENT} radius={[0, 6, 6, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </CardContent>
           </Card>
+
+          {/* Payment Breakdown — diferencial competitivo: ver o que mais sai */}
+          <PaymentBreakdownCard
+            days={period === 'all' ? 'all' : parseInt(period.replace('d', ''), 10) || 30}
+            machineId={machineId === 'all' ? undefined : machineId}
+          />
         </>
       )}
     </div>

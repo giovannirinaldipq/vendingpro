@@ -153,7 +153,7 @@ export default function PlansPage() {
                   <Button variant="ghost" size="icon" className="h-8 w-8">
                     <Edit className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-danger">
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -207,7 +207,7 @@ export default function PlansPage() {
                   {Object.keys(featureLabels).map((feature) => (
                     <div key={feature} className="flex items-center gap-2 text-sm">
                       {plan.features.includes(feature) ? (
-                        <Check className="h-4 w-4 text-green-500" />
+                        <Check className="h-4 w-4 text-brand-amber" strokeWidth={2.5} />
                       ) : (
                         <X className="h-4 w-4 text-muted-foreground" />
                       )}

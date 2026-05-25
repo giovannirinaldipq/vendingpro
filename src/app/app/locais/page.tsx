@@ -2,14 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Plus,
   Search,
   MoreHorizontal,
   Eye,
-  Edit,
   Trash2,
-  MapPin,
   Loader2,
   Building,
 } from 'lucide-react';
@@ -19,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { EmptyStateV2 } from '@/components/ui/empty-state-v2';
 import {
   Table,
   TableBody,
@@ -54,6 +54,7 @@ interface LocationsResponse {
 }
 
 export default function LocationsPage() {
+  const router = useRouter();
   const [search, setSearch] = useState('');
   const [data, setData] = useState<LocationsResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -129,7 +130,7 @@ export default function LocationsPage() {
               placeholder="Buscar por nome ou endereço..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
+              className="h-10 pl-9"
             />
           </div>
         </CardContent>
@@ -149,16 +150,13 @@ export default function LocationsPage() {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : data?.locations.length === 0 ? (
-            <div className="flex h-48 flex-col items-center justify-center text-center">
-              <MapPin className="h-12 w-12 text-muted-foreground/50" />
-              <p className="mt-2 text-muted-foreground">Nenhum local cadastrado</p>
-              <Link href="/app/locais/novo">
-                <Button variant="outline" className="mt-4">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Cadastrar primeiro local
-                </Button>
-              </Link>
-            </div>
+            <EmptyStateV2
+              illustration="no-machines"
+              title="Sem locais ainda"
+              description="Locais (ponto comercial) é onde suas máquinas ficam. Cadastrar o local primeiro facilita a vida na hora de adicionar máquinas."
+              ctaLabel="Cadastrar primeiro local"
+              ctaHref="/app/locais/novo"
+            />
           ) : (
             <Table>
               <TableHeader>
@@ -172,14 +170,14 @@ export default function LocationsPage() {
               </TableHeader>
               <TableBody>
                 {data?.locations.map((location) => (
-                  <TableRow key={location.id}>
-                    <TableCell>
+                  <TableRow key={location.id} className="cursor-pointer hover:bg-surface-subtle/60">
+                    <TableCell onClick={() => router.push(`/app/locais/${location.id}`)}>
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                           <Building className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <p className="font-medium">{location.name}</p>
+                          <p className="font-medium hover:underline">{location.name}</p>
                           <p className="text-xs text-muted-foreground">{location.contact_name}</p>
                         </div>
                       </div>
@@ -216,17 +214,13 @@ export default function LocationsPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => router.push(`/app/locais/${location.id}`)}>
                             <Eye className="mr-2 h-4 w-4" />
-                            Visualizar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Editar
+                            Visualizar / Editar
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            className="text-red-600"
+                            variant="destructive"
                             onClick={() => handleDelete(location.id)}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />

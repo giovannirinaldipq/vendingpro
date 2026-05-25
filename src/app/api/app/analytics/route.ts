@@ -36,26 +36,26 @@ export async function GET(request: NextRequest) {
 
   // Calcular data inicial baseado no período
   const now = new Date();
-  let startDate: Date;
-  switch (period) {
-    case '7d':
-      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      break;
-    case '90d':
-      startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-      break;
-    default: // 30d
-      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  }
+  const DAY = 24 * 60 * 60 * 1000;
+  const PERIOD_DAYS: Record<string, number | 'all'> = {
+    '7d': 7, '30d': 30, '90d': 90, '180d': 180, '365d': 365, 'all': 'all',
+  };
+  const periodDays = PERIOD_DAYS[period] ?? 30;
+  const startDate: Date | null = periodDays === 'all'
+    ? null
+    : new Date(now.getTime() - periodDays * DAY);
 
-  const startDateStr = startDate.toISOString().split('T')[0];
+  const startDateStr = startDate ? startDate.toISOString().split('T')[0] : null;
 
   // Query base
   let query = supabase
     .from('sales')
     .select('sale_date, sale_time, total_price, quantity, product_name')
-    .eq('tenant_id', tenantId)
-    .gte('sale_date', startDateStr);
+    .eq('tenant_id', tenantId);
+
+  if (startDateStr) {
+    query = query.gte('sale_date', startDateStr);
+  }
 
   if (machineId) {
     query = query.eq('machine_id', machineId);

@@ -24,7 +24,7 @@ import {
 const machineSchema = z.object({
   code: z.string().min(1, 'Código é obrigatório'),
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  machine_type: z.enum(['snack', 'beverage', 'combo', 'coffee', 'other']),
+  machine_type: z.enum(['snack_beverage', 'coffee', 'other']),
   location_id: z.string().optional(),
   status: z.enum(['active', 'inactive', 'maintenance']),
 });
@@ -53,7 +53,7 @@ export default function EditMachinePage({ params }: { params: Promise<{ id: stri
   } = useForm<MachineFormData>({
     resolver: zodResolver(machineSchema),
     defaultValues: {
-      machine_type: 'snack',
+      machine_type: 'snack_beverage',
       status: 'active',
     },
   });
@@ -81,7 +81,9 @@ export default function EditMachinePage({ params }: { params: Promise<{ id: stri
           reset({
             code: machine.code,
             name: machine.name,
-            machine_type: machine.machine_type || 'snack',
+            machine_type: ['snack', 'beverage', 'combo'].includes(machine.machine_type)
+            ? 'snack_beverage'
+            : (machine.machine_type || 'snack_beverage'),
             location_id: machine.location_id || '',
             status: machine.status || 'active',
           });
@@ -168,7 +170,7 @@ export default function EditMachinePage({ params }: { params: Promise<{ id: stri
                   {...register('code')}
                 />
                 {errors.code && (
-                  <p className="text-sm text-red-500">{errors.code.message}</p>
+                  <p className="text-xs text-danger mt-1">{errors.code.message}</p>
                 )}
               </div>
 
@@ -180,7 +182,7 @@ export default function EditMachinePage({ params }: { params: Promise<{ id: stri
                   {...register('name')}
                 />
                 {errors.name && (
-                  <p className="text-sm text-red-500">{errors.name.message}</p>
+                  <p className="text-xs text-danger mt-1">{errors.name.message}</p>
                 )}
               </div>
             </div>
@@ -190,15 +192,18 @@ export default function EditMachinePage({ params }: { params: Promise<{ id: stri
                 <Label>Tipo</Label>
                 <Select
                   value={currentType}
-                  onValueChange={(value) => setValue('machine_type', value as MachineFormData['machine_type'])}
+                  onValueChange={(value) => setValue('machine_type', (value ?? 'snack_beverage') as MachineFormData['machine_type'])}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo" />
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione o tipo">
+                      {currentType === 'snack_beverage' ? 'Snacks e Bebidas'
+                       : currentType === 'coffee' ? 'Café'
+                       : currentType === 'other' ? 'Outro'
+                       : null}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="snack">Snacks</SelectItem>
-                    <SelectItem value="beverage">Bebidas</SelectItem>
-                    <SelectItem value="combo">Combo</SelectItem>
+                    <SelectItem value="snack_beverage">Snacks e Bebidas</SelectItem>
                     <SelectItem value="coffee">Café</SelectItem>
                     <SelectItem value="other">Outro</SelectItem>
                   </SelectContent>
@@ -209,10 +214,15 @@ export default function EditMachinePage({ params }: { params: Promise<{ id: stri
                 <Label>Status</Label>
                 <Select
                   value={currentStatus}
-                  onValueChange={(value) => setValue('status', value as MachineFormData['status'])}
+                  onValueChange={(value) => setValue('status', (value ?? 'active') as MachineFormData['status'])}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o status" />
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione o status">
+                      {currentStatus === 'active' ? 'Ativa'
+                       : currentStatus === 'inactive' ? 'Inativa'
+                       : currentStatus === 'maintenance' ? 'Em Manutenção'
+                       : null}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="active">Ativa</SelectItem>
@@ -229,11 +239,14 @@ export default function EditMachinePage({ params }: { params: Promise<{ id: stri
                 value={currentLocation || ''}
                 onValueChange={(value) => setValue('location_id', value || undefined)}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o local" />
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecione o local">
+                    {currentLocation
+                      ? locations.find(l => l.id === currentLocation)?.name
+                      : null}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sem local</SelectItem>
                   {locations.map((location) => (
                     <SelectItem key={location.id} value={location.id}>
                       {location.name}

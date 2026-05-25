@@ -88,10 +88,10 @@ const payments = [
 ];
 
 const paymentMethodConfig = {
-  pix: { label: 'PIX', icon: QrCode, className: 'bg-green-100 text-green-700' },
-  boleto: { label: 'Boleto', icon: Banknote, className: 'bg-blue-100 text-blue-700' },
-  credit_card: { label: 'Cartão', icon: CreditCard, className: 'bg-purple-100 text-purple-700' },
-  transfer: { label: 'Transferência', icon: Banknote, className: 'bg-gray-100 text-gray-700' },
+  pix:         { label: 'PIX',           icon: QrCode,     className: 'bg-success-soft text-success' },
+  boleto:      { label: 'Boleto',        icon: Banknote,   className: 'bg-info-soft text-info' },
+  credit_card: { label: 'Cartão',        icon: CreditCard, className: 'bg-brand-navy/10 text-brand-navy' },
+  transfer:    { label: 'Transferência', icon: Banknote,   className: 'bg-surface-subtle text-text-secondary' },
 };
 
 const stats = [

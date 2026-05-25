@@ -111,7 +111,7 @@ export default function NewClientPage() {
                   {...register('company_name')}
                 />
                 {errors.company_name && (
-                  <p className="text-sm text-red-500">{errors.company_name.message}</p>
+                  <p className="text-xs text-danger mt-1">{errors.company_name.message}</p>
                 )}
               </div>
 
@@ -156,7 +156,7 @@ export default function NewClientPage() {
                   {...register('document_number')}
                 />
                 {errors.document_number && (
-                  <p className="text-sm text-red-500">{errors.document_number.message}</p>
+                  <p className="text-xs text-danger mt-1">{errors.document_number.message}</p>
                 )}
               </div>
             </div>
@@ -179,7 +179,7 @@ export default function NewClientPage() {
                   {...register('contact_name')}
                 />
                 {errors.contact_name && (
-                  <p className="text-sm text-red-500">{errors.contact_name.message}</p>
+                  <p className="text-xs text-danger mt-1">{errors.contact_name.message}</p>
                 )}
               </div>
 
@@ -202,7 +202,7 @@ export default function NewClientPage() {
                 {...register('contact_email')}
               />
               {errors.contact_email && (
-                <p className="text-sm text-red-500">{errors.contact_email.message}</p>
+                <p className="text-xs text-danger mt-1">{errors.contact_email.message}</p>
               )}
             </div>
 

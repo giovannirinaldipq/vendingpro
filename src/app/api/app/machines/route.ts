@@ -6,7 +6,7 @@ const machineSchema = z.object({
   code: z.string().min(1),
   name: z.string().min(2),
   location_id: z.string().uuid().optional().nullable(),
-  machine_type: z.enum(['snack', 'beverage', 'combo', 'coffee', 'other']).optional(),
+  machine_type: z.enum(['snack_beverage', 'coffee', 'other']).optional(),
   manufacturer: z.string().optional(),
   model: z.string().optional(),
   total_slots: z.number().int().positive().optional(),

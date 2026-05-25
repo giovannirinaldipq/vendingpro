@@ -15,10 +15,12 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Pill } from '@/components/ui/pill';
+import { StatusDot, machineDbStatusToDot } from '@/components/ui/status-dot';
+import { EmptyStateV2 } from '@/components/ui/empty-state-v2';
 import {
   Table,
   TableBody,
@@ -41,20 +43,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 import type { Machine, Location } from '@/types';
 
-const statusConfig = {
-  active: { label: 'Ativa', className: 'bg-green-100 text-green-700' },
-  inactive: { label: 'Inativa', className: 'bg-gray-100 text-gray-700' },
-  maintenance: { label: 'Manutenção', className: 'bg-yellow-100 text-yellow-700' },
-  installing: { label: 'Instalando', className: 'bg-blue-100 text-blue-700' },
-  deactivated: { label: 'Desativada', className: 'bg-red-100 text-red-700' },
-};
-
 const typeLabels: Record<string, string> = {
-  snack: 'Snacks',
-  beverage: 'Bebidas',
-  combo: 'Combo',
+  snack_beverage: 'Snacks e Bebidas',
+  // Compat com dados legados que ainda não foram normalizados:
+  snack: 'Snacks e Bebidas',
+  beverage: 'Snacks e Bebidas',
+  combo: 'Snacks e Bebidas',
   coffee: 'Café',
   other: 'Outro',
 };
@@ -136,20 +133,26 @@ export default function MachinesPage() {
       {/* Filters */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-col gap-4 sm:flex-row">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Buscar por código, nome ou local..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
+                className="h-10 pl-9"
               />
             </div>
             <Select value={statusFilter} onValueChange={(v) => v && setStatusFilter(v)}>
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger className="h-10 w-full sm:w-[180px]">
                 <Filter className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Status" />
+                <SelectValue>
+                  {statusFilter === 'all' ? 'Todos'
+                   : statusFilter === 'active' ? 'Ativas'
+                   : statusFilter === 'inactive' ? 'Inativas'
+                   : statusFilter === 'maintenance' ? 'Manutenção'
+                   : 'Status'}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
@@ -176,16 +179,13 @@ export default function MachinesPage() {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : data?.machines.length === 0 ? (
-            <div className="flex h-48 flex-col items-center justify-center text-center">
-              <Monitor className="h-12 w-12 text-muted-foreground/50" />
-              <p className="mt-2 text-muted-foreground">Nenhuma máquina cadastrada</p>
-              <Link href="/app/maquinas/nova">
-                <Button variant="outline" className="mt-4">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Cadastrar primeira máquina
-                </Button>
-              </Link>
-            </div>
+            <EmptyStateV2
+              illustration="no-machines"
+              title="Nada por aqui ainda"
+              description="Cadastre sua primeira máquina pra começar a importar vendas, gerar relatórios e atribuir reabastecedores."
+              ctaLabel="Cadastrar primeira máquina"
+              ctaHref="/app/maquinas/nova"
+            />
           ) : (
             <Table>
               <TableHeader>
@@ -202,12 +202,12 @@ export default function MachinesPage() {
                   <TableRow key={machine.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                          <Monitor className="h-5 w-5 text-primary" />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-navy/10">
+                          <Monitor className="h-5 w-5 text-brand-navy" strokeWidth={1.75} />
                         </div>
                         <div>
                           <p className="font-medium">{machine.name}</p>
-                          <p className="text-xs text-muted-foreground">Código: {machine.code}</p>
+                          <p className="text-xs text-text-tertiary tabular-nums font-mono">{machine.code}</p>
                         </div>
                       </div>
                     </TableCell>
@@ -215,46 +215,42 @@ export default function MachinesPage() {
                       {machine.location ? (
                         <p className="text-sm">{machine.location.name}</p>
                       ) : (
-                        <span className="text-muted-foreground">Sem local</span>
+                        <span className="text-text-tertiary text-sm">Sem local</span>
                       )}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">
+                      <Pill tone="outline" size="sm">
                         {typeLabels[machine.machine_type || 'other']}
-                      </Badge>
+                      </Pill>
                     </TableCell>
                     <TableCell>
-                      <Badge className={statusConfig[machine.status as keyof typeof statusConfig]?.className}>
-                        {statusConfig[machine.status as keyof typeof statusConfig]?.label}
-                      </Badge>
+                      <StatusDot status={machineDbStatusToDot(machine.status)} label />
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
-                        <DropdownMenuTrigger>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
+                        <DropdownMenuTrigger
+                          className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }))}
+                          aria-label={`Ações de ${machine.name}`}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <Link href={`/app/maquinas/${machine.id}`}>
-                            <DropdownMenuItem>
-                              <Eye className="mr-2 h-4 w-4" />
-                              Visualizar
-                            </DropdownMenuItem>
-                          </Link>
-                          <Link href={`/app/maquinas/${machine.id}/editar`}>
-                            <DropdownMenuItem>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Editar
-                            </DropdownMenuItem>
-                          </Link>
+                          <DropdownMenuItem>
+                            <Link href={`/app/maquinas/${machine.id}`} className="flex items-center gap-2 w-full">
+                              <Eye className="h-4 w-4" />Visualizar
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Link href={`/app/maquinas/${machine.id}/editar`} className="flex items-center gap-2 w-full">
+                              <Edit className="h-4 w-4" />Editar
+                            </Link>
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            className="text-red-600"
+                            variant="destructive"
                             onClick={() => handleDelete(machine.id)}
                           >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Desativar
+                            <Trash2 className="mr-2 h-4 w-4" />Desativar
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
