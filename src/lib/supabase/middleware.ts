@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { IMPERSONATION_SESSION_COOKIE } from '@/lib/admin/impersonate';
 
 async function isAdminUser(userId: string): Promise<boolean> {
   const { data } = await supabaseAdmin
@@ -11,6 +12,18 @@ async function isAdminUser(userId: string): Promise<boolean> {
     .eq('is_active', true)
     .maybeSingle();
   return !!data;
+}
+
+async function isImpersonatingActive(sessionId: string, adminUserId: string): Promise<boolean> {
+  const { data } = await supabaseAdmin
+    .schema('admin')
+    .from('impersonation_sessions')
+    .select('id, ended_at, expires_at')
+    .eq('id', sessionId)
+    .eq('admin_user_id', adminUserId)
+    .maybeSingle();
+  if (!data || data.ended_at) return false;
+  return new Date(data.expires_at) > new Date();
 }
 
 async function isRestockerUser(userId: string): Promise<boolean> {
@@ -98,13 +111,17 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
-  // Admin tentando /app/* → redireciona pra /admin (admin não tem tenant; ver /admin/clientes/<id>/imitar pra impersonar)
+  // Admin tentando /app/* → redireciona pra /admin, A MENOS que haja sessão de impersonação ativa
   if (user && pathname.startsWith('/app') && !pathname.startsWith('/api/')) {
     const admin = await isAdminUser(user.id);
     if (admin) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/admin';
-      return NextResponse.redirect(url);
+      const sessionId = request.cookies.get(IMPERSONATION_SESSION_COOKIE)?.value;
+      const impersonating = sessionId ? await isImpersonatingActive(sessionId, user.id) : false;
+      if (!impersonating) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/admin';
+        return NextResponse.redirect(url);
+      }
     }
   }
 

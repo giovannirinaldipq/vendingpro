@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, Users, Package, FileText, CreditCard, Zap,
-  Settings, ShieldCheck, PanelLeftClose, PanelLeft,
+  Settings, ShieldCheck, PanelLeftClose, PanelLeft, History,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -46,6 +46,7 @@ const navigation: NavSection[] = [
   {
     title: 'Sistema',
     items: [
+      { name: 'Auditoria',     href: '/admin/auditoria',     icon: History },
       { name: 'Configurações', href: '/admin/configuracoes', icon: Settings },
     ],
   },

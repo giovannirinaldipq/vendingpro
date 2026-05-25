@@ -1,180 +1,116 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
+import { toast } from 'sonner';
 import {
-  Search,
-  Filter,
-  Download,
-  Eye,
-  Send,
-  MoreHorizontal,
-  CheckCircle,
-  Clock,
-  AlertCircle,
-  XCircle,
+  Search, Filter, Eye, Send, MoreHorizontal, CheckCircle, Clock,
+  AlertCircle, XCircle, Plus, Loader2,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-// Dados mockados
-const invoices = [
-  {
-    id: '1',
-    invoice_number: 'FAT-2026-0001',
-    client: 'Vending Solutions Ltda',
-    reference_month: '2026-05',
-    due_date: '2026-05-10',
-    total: 348.00,
-    status: 'paid',
-    paid_at: '2026-05-08',
-  },
-  {
-    id: '2',
-    invoice_number: 'FAT-2026-0002',
-    client: 'Mega Vending Corp',
-    reference_month: '2026-05',
-    due_date: '2026-05-15',
-    total: 1092.00,
-    status: 'paid',
-    paid_at: '2026-05-14',
-  },
-  {
-    id: '3',
-    invoice_number: 'FAT-2026-0003',
-    client: 'Snack Express',
-    reference_month: '2026-05',
-    due_date: '2026-05-20',
-    total: 435.00,
-    status: 'pending',
-    paid_at: null,
-  },
-  {
-    id: '4',
-    invoice_number: 'FAT-2026-0004',
-    client: 'City Vending',
-    reference_month: '2026-05',
-    due_date: '2026-05-10',
-    total: 152.00,
-    status: 'overdue',
-    paid_at: null,
-  },
-  {
-    id: '5',
-    invoice_number: 'FAT-2026-0005',
-    client: 'Quick Snacks ME',
-    reference_month: '2026-05',
-    due_date: '2026-05-25',
-    total: 99.00,
-    status: 'draft',
-    paid_at: null,
-  },
-];
+interface Invoice {
+  id: string;
+  invoice_number: string;
+  reference_month: string;
+  due_date: string;
+  total: number;
+  status: string;
+  paid_at: string | null;
+  tenant: { company_name: string; contact_name: string } | null;
+}
 
-const statusConfig = {
-  draft: {
-    label: 'Rascunho',
-    icon: Clock,
-    className: 'bg-surface-subtle text-text-secondary',
-  },
-  pending: {
-    label: 'Pendente',
-    icon: Clock,
-    className: 'bg-info-soft text-info',
-  },
-  paid: {
-    label: 'Pago',
-    icon: CheckCircle,
-    className: 'bg-success-soft text-success',
-  },
-  overdue: {
-    label: 'Vencida',
-    icon: AlertCircle,
-    className: 'bg-danger-soft text-danger',
-  },
-  cancelled: {
-    label: 'Cancelada',
-    icon: XCircle,
-    className: 'bg-surface-subtle text-text-tertiary',
-  },
-};
+const STATUS_META = {
+  draft:     { label: 'Rascunho',  icon: Clock,       className: 'bg-surface-subtle text-text-secondary' },
+  pending:   { label: 'Pendente',  icon: Clock,       className: 'bg-info-soft text-info' },
+  paid:      { label: 'Pago',      icon: CheckCircle, className: 'bg-success-soft text-success' },
+  overdue:   { label: 'Vencida',   icon: AlertCircle, className: 'bg-danger-soft text-danger' },
+  cancelled: { label: 'Cancelada', icon: XCircle,     className: 'bg-surface-subtle text-text-tertiary' },
+} as const;
 
-const stats = [
-  { label: 'Total Faturado', value: 'R$ 12.450,00', description: 'Este mês' },
-  { label: 'Recebido', value: 'R$ 10.560,00', description: '84.8%' },
-  { label: 'Pendente', value: 'R$ 1.890,00', description: '4 faturas' },
-  { label: 'Vencido', value: 'R$ 580,00', description: '2 faturas' },
-];
+function formatBRL(v: number) {
+  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
 
 export default function InvoicesPage() {
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [loading, setLoading] = useState(true);
 
-  const filteredInvoices = invoices.filter((invoice) => {
-    const matchesSearch =
-      invoice.invoice_number.toLowerCase().includes(search.toLowerCase()) ||
-      invoice.client.toLowerCase().includes(search.toLowerCase());
+  const load = useCallback(async () => {
+    setLoading(true);
+    const params = new URLSearchParams({ per_page: '100' });
+    if (search) params.set('search', search);
+    if (statusFilter !== 'all') params.set('status', statusFilter);
+    try {
+      const res = await fetch(`/api/admin/invoices?${params}`);
+      const json = await res.json();
+      if (json.success) {
+        setInvoices(json.data.invoices);
+        setTotal(json.data.total);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [search, statusFilter]);
 
-    const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
+  useEffect(() => {
+    const t = setTimeout(load, 200);
+    return () => clearTimeout(t);
+  }, [load]);
 
-    return matchesSearch && matchesStatus;
-  });
+  async function resend(id: string, template: 'reminder' | 'overdue' | 'suspension_warning') {
+    const res = await fetch(`/api/admin/invoices/${id}/resend`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ template }),
+    });
+    const json = await res.json();
+    if (json.success) toast.success('Email enviado');
+    else toast.error(json.error?.message ?? 'Falha ao enviar');
+  }
+
+  // KPIs derivadas da página visível
+  const totalAmount = invoices.reduce((acc, i) => acc + Number(i.total), 0);
+  const paidAmount = invoices.filter(i => i.status === 'paid').reduce((acc, i) => acc + Number(i.total), 0);
+  const pendingAmount = invoices.filter(i => i.status === 'pending').reduce((acc, i) => acc + Number(i.total), 0);
+  const overdueAmount = invoices.filter(i => i.status === 'overdue').reduce((acc, i) => acc + Number(i.total), 0);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Faturas</h1>
-        <p className="text-muted-foreground">
-          Gerencie as faturas dos clientes
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Faturas</h1>
+          <p className="text-muted-foreground">Gerencie as faturas da plataforma</p>
+        </div>
+        <Link href="/admin/faturas/manual">
+          <Button><Plus className="mr-2 h-4 w-4" />Fatura manual</Button>
+        </Link>
       </div>
 
-      {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
-        {stats.map((stat) => (
-          <Card key={stat.label}>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-sm text-muted-foreground">{stat.label}</p>
-              <p className="text-xs text-muted-foreground">{stat.description}</p>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="grid gap-3 md:grid-cols-4">
+        <KpiCard label="Total na página" value={formatBRL(totalAmount)} hint={`${invoices.length} faturas`} />
+        <KpiCard label="Pagas" value={formatBRL(paidAmount)} tone="success" />
+        <KpiCard label="Pendentes" value={formatBRL(pendingAmount)} tone="info" />
+        <KpiCard label="Vencidas" value={formatBRL(overdueAmount)} tone="danger" />
       </div>
 
-      {/* Filters */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-col gap-4 sm:flex-row">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Buscar por número ou cliente..."
+                placeholder="Buscar por número da fatura…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9"
@@ -183,7 +119,7 @@ export default function InvoicesPage() {
             <Select value={statusFilter} onValueChange={(v) => v && setStatusFilter(v)}>
               <SelectTrigger className="w-full sm:w-[180px]">
                 <Filter className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Status" />
+                <SelectValue>{statusFilter === 'all' ? 'Todos' : STATUS_META[statusFilter as keyof typeof STATUS_META]?.label}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
@@ -198,97 +134,93 @@ export default function InvoicesPage() {
         </CardContent>
       </Card>
 
-      {/* Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Faturas</CardTitle>
-          <CardDescription>
-            {filteredInvoices.length} fatura(s) encontrada(s)
-          </CardDescription>
+          <CardTitle>Lista de faturas</CardTitle>
+          <CardDescription>{loading ? 'Carregando…' : `${total.toLocaleString('pt-BR')} fatura(s) no total`}</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Número</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Referência</TableHead>
-                <TableHead>Vencimento</TableHead>
-                <TableHead className="text-right">Valor</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredInvoices.map((invoice) => {
-                const status = statusConfig[invoice.status as keyof typeof statusConfig];
-                const StatusIcon = status.icon;
-
-                return (
-                  <TableRow key={invoice.id}>
-                    <TableCell className="font-medium">
-                      {invoice.invoice_number}
-                    </TableCell>
-                    <TableCell>{invoice.client}</TableCell>
-                    <TableCell>
-                      {new Date(invoice.reference_month + '-01').toLocaleDateString('pt-BR', {
-                        month: 'long',
-                        year: 'numeric',
-                      })}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(invoice.due_date).toLocaleDateString('pt-BR')}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      R$ {invoice.total.toFixed(2)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={status.className}>
-                        <StatusIcon className="mr-1 h-3 w-3" />
-                        {status.label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Eye className="mr-2 h-4 w-4" />
-                            Visualizar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Download className="mr-2 h-4 w-4" />
-                            Baixar PDF
-                          </DropdownMenuItem>
-                          {invoice.status === 'pending' && (
-                            <DropdownMenuItem>
-                              <Send className="mr-2 h-4 w-4" />
-                              Reenviar
-                            </DropdownMenuItem>
-                          )}
-                          {(invoice.status === 'pending' || invoice.status === 'overdue') && (
-                            <>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-success">
-                                <CheckCircle className="mr-2 h-4 w-4" />
-                                Registrar Pagamento
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+          {loading ? (
+            <div className="flex h-48 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+          ) : invoices.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-12">Nenhuma fatura encontrada.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Número</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Vencimento</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {invoices.map(inv => {
+                  const meta = STATUS_META[inv.status as keyof typeof STATUS_META] ?? STATUS_META.draft;
+                  const Icon = meta.icon;
+                  return (
+                    <TableRow key={inv.id}>
+                      <TableCell className="font-medium">{inv.invoice_number}</TableCell>
+                      <TableCell>
+                        <p className="text-sm">{inv.tenant?.company_name ?? '—'}</p>
+                        <p className="text-[11px] text-text-tertiary">{inv.tenant?.contact_name ?? ''}</p>
+                      </TableCell>
+                      <TableCell>{new Date(inv.due_date).toLocaleDateString('pt-BR')}</TableCell>
+                      <TableCell className="text-right font-medium tabular-nums">{formatBRL(Number(inv.total))}</TableCell>
+                      <TableCell>
+                        <Badge className={meta.className}>
+                          <Icon className="mr-1 h-3 w-3" />{meta.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger>
+                            <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem><Eye className="mr-2 h-4 w-4" />Visualizar</DropdownMenuItem>
+                            {(inv.status === 'pending' || inv.status === 'overdue') && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => resend(inv.id, 'reminder')}>
+                                  <Send className="mr-2 h-4 w-4" />Reenviar lembrete
+                                </DropdownMenuItem>
+                                {inv.status === 'overdue' && (
+                                  <DropdownMenuItem onClick={() => resend(inv.id, 'overdue')}>
+                                    <Send className="mr-2 h-4 w-4" />Cobrar vencida
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem onClick={() => resend(inv.id, 'suspension_warning')}>
+                                  <Send className="mr-2 h-4 w-4" />Aviso de suspensão
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function KpiCard({ label, value, hint, tone = 'default' }: { label: string; value: string; hint?: string; tone?: 'default' | 'success' | 'info' | 'danger' }) {
+  const toneClass = tone === 'success' ? 'text-success' : tone === 'info' ? 'text-info' : tone === 'danger' ? 'text-danger' : '';
+  return (
+    <Card>
+      <CardContent className="pt-5">
+        <p className="text-xs uppercase tracking-wide text-text-tertiary font-medium">{label}</p>
+        <div className={`mt-1 text-xl font-bold tabular-nums ${toneClass}`}>{value}</div>
+        {hint && <p className="mt-0.5 text-[11px] text-text-tertiary">{hint}</p>}
+      </CardContent>
+    </Card>
   );
 }

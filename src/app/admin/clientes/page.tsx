@@ -194,7 +194,11 @@ export default function ClientsPage() {
               </TableHeader>
               <TableBody>
                 {data?.tenants.map((client) => (
-                  <TableRow key={client.id}>
+                  <TableRow
+                    key={client.id}
+                    className="cursor-pointer hover:bg-surface-subtle"
+                    onClick={() => { window.location.href = `/admin/clientes/${client.id}`; }}
+                  >
                     <TableCell>
                       <div>
                         <p className="font-medium">{client.company_name}</p>
@@ -215,7 +219,7 @@ export default function ClientsPage() {
                         {statusConfig[client.subscription_status as keyof typeof statusConfig]?.label}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger>
                           <Button variant="ghost" size="icon">
@@ -223,11 +227,11 @@ export default function ClientsPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem render={<Link href={`/admin/clientes/${client.id}`} />}>
                             <Eye className="mr-2 h-4 w-4" />
-                            Visualizar
+                            Ver detalhes
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem render={<Link href={`/admin/clientes/${client.id}/editar`} />}>
                             <Edit className="mr-2 h-4 w-4" />
                             Editar
                           </DropdownMenuItem>
