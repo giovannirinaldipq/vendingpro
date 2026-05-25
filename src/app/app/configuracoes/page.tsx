@@ -10,8 +10,8 @@ import { Switch } from '@/components/ui/switch';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { Pill } from '@/components/ui/pill';
-import { User, Building2, Bell, Shield, Loader2, Save, CreditCard, Plus, Trash2 } from 'lucide-react';
+import { Bell, Shield, Loader2, Save, CreditCard, Plus, Trash2, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 import { toast } from 'sonner';
 
 type Severity = 'low' | 'medium' | 'high' | 'critical';
@@ -450,71 +450,28 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Profile (mock) */}
+      {/* Conta e Segurança — entrada única, sem duplicar funcionalidades */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />Perfil
+            <Shield className="h-5 w-5" />Conta e Segurança
           </CardTitle>
-          <CardDescription>Seus dados pessoais</CardDescription>
+          <CardDescription>
+            Senha, 2FA (App autenticador e WhatsApp) e gerenciamento da conta — tudo em um só lugar.
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome</Label>
-              <Input id="name" placeholder="Seu nome" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="seu@email.com" disabled />
-            </div>
-          </div>
-          <Button disabled>Salvar Alterações</Button>
-          <p className="text-xs text-muted-foreground">Edição de perfil em breve.</p>
-        </CardContent>
-      </Card>
-
-      {/* Company (mock) */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />Empresa
-          </CardTitle>
-          <CardDescription>Dados da sua empresa</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-xs text-muted-foreground">
-            Para alterar dados da empresa, entre em contato com o suporte.
+        <CardContent>
+          <Link href="/app/seguranca">
+            <Button variant="outline" className="w-full sm:w-auto">
+              Ir para Segurança
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </Link>
+          <p className="text-xs text-muted-foreground mt-3">
+            Para alterar dados da empresa ou faturamento, entre em contato com o suporte (
+            <a href="mailto:suporte@vendingpro.com.br" className="text-brand-navy hover:underline">suporte@vendingpro.com.br</a>
+            ).
           </p>
-        </CardContent>
-      </Card>
-
-      {/* Security */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />Segurança
-          </CardTitle>
-          <CardDescription>Configurações de segurança da conta</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Alterar Senha</p>
-              <p className="text-sm text-muted-foreground">Atualize sua senha de acesso</p>
-            </div>
-            <a href="/forgot-password"><Button variant="outline" size="sm">Alterar</Button></a>
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium flex items-center gap-2">
-                Autenticação em 2 fatores (WhatsApp)
-                <Pill tone="amber" size="sm">Em breve</Pill>
-              </p>
-              <p className="text-sm text-muted-foreground">Receba um código no WhatsApp ao fazer login</p>
-            </div>
-            <Button variant="outline" size="sm" disabled>Ativar</Button>
-          </div>
         </CardContent>
       </Card>
     </div>

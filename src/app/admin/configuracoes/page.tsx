@@ -1,354 +1,315 @@
 'use client';
 
-import { useState } from 'react';
-import { Save, Loader2 } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
+import { Save, Loader2, CheckCircle2, XCircle, ExternalLink } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+
+interface Settings {
+  company_name: string | null;
+  company_cnpj: string | null;
+  company_address: string | null;
+  company_email: string | null;
+  company_phone: string | null;
+  default_trial_days: number;
+  billing_reminder_days_before: number;
+  billing_first_overdue_reminder_days: number;
+  billing_suspension_days: number;
+  billing_cancellation_days: number;
+}
+
+interface IntegrationsStatus {
+  asaas: { configured: boolean; env: string | null; webhook_configured: boolean };
+  resend: { configured: boolean; from: string | null };
+  twilio_whatsapp: { configured: boolean; from: string | null };
+  cron: { configured: boolean };
+  supabase: { configured: boolean; url: string | null };
+}
 
 export default function SettingsPage() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const [status, setStatus] = useState<IntegrationsStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  async function handleSave() {
-    setIsLoading(true);
-    // Simular salvamento
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsLoading(false);
-    toast.success('Configurações salvas com sucesso!');
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/platform-settings');
+      const json = await res.json();
+      if (json.success) {
+        setSettings(json.data.settings);
+        setStatus(json.data.integrations_status);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function save() {
+    if (!settings) return;
+    setSaving(true);
+    try {
+      const res = await fetch('/api/admin/platform-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings),
+      });
+      const json = await res.json();
+      if (json.success) toast.success('Configurações salvas');
+      else toast.error(json.error?.message ?? 'Falha ao salvar');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function update<K extends keyof Settings>(key: K, val: Settings[K]) {
+    setSettings(s => s ? ({ ...s, [key]: val }) : s);
+  }
+
+  if (loading || !settings) {
+    return <div className="flex h-96 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Configurações</h1>
-        <p className="text-muted-foreground">
-          Gerencie as configurações do sistema
-        </p>
+        <p className="text-muted-foreground">Ajustes globais da plataforma VendingPro</p>
       </div>
 
       <Tabs defaultValue="general" className="space-y-6">
         <TabsList>
           <TabsTrigger value="general">Geral</TabsTrigger>
           <TabsTrigger value="billing">Cobrança</TabsTrigger>
-          <TabsTrigger value="notifications">Notificações</TabsTrigger>
           <TabsTrigger value="integrations">Integrações</TabsTrigger>
         </TabsList>
 
-        {/* General Settings */}
         <TabsContent value="general" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Informações da Empresa</CardTitle>
-              <CardDescription>
-                Dados que aparecem nas faturas e comunicações
-              </CardDescription>
+              <CardTitle>Informações da empresa</CardTitle>
+              <CardDescription>Aparecem em faturas e emails enviados aos clientes</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="company_name">Nome da Empresa</Label>
-                  <Input id="company_name" defaultValue="VendingPro" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cnpj">CNPJ</Label>
-                  <Input id="cnpj" defaultValue="00.000.000/0001-00" />
-                </div>
+                <Field label="Nome da empresa" value={settings.company_name ?? ''} onChange={v => update('company_name', v)} />
+                <Field label="CNPJ" value={settings.company_cnpj ?? ''} onChange={v => update('company_cnpj', v || null)} />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="address">Endereço</Label>
-                <Input id="address" defaultValue="Rua Exemplo, 123 - São Paulo, SP" />
-              </div>
+              <Field label="Endereço" value={settings.company_address ?? ''} onChange={v => update('company_address', v || null)} />
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email de Contato</Label>
-                  <Input id="email" type="email" defaultValue="contato@vendingpro.com.br" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Telefone</Label>
-                  <Input id="phone" defaultValue="(11) 99999-9999" />
-                </div>
+                <Field label="Email de contato" value={settings.company_email ?? ''} onChange={v => update('company_email', v || null)} type="email" />
+                <Field label="Telefone" value={settings.company_phone ?? ''} onChange={v => update('company_phone', v || null)} />
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Configurações de Trial</CardTitle>
-              <CardDescription>
-                Período de teste para novos clientes
-              </CardDescription>
+              <CardTitle>Trial padrão</CardTitle>
+              <CardDescription>Período de teste oferecido a novos clientes (cada plano pode sobrescrever)</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="trial_days">Dias de Trial</Label>
-                  <Input id="trial_days" type="number" defaultValue="14" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="trial_features">Funcionalidades no Trial</Label>
-                  <Select defaultValue="all">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas (Plano Completo)</SelectItem>
-                      <SelectItem value="pro">Plano Profissional</SelectItem>
-                      <SelectItem value="basic">Plano Essencial</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+            <CardContent>
+              <div className="max-w-xs">
+                <Label htmlFor="trial_days">Dias de trial</Label>
+                <Input
+                  id="trial_days"
+                  type="number"
+                  min="0"
+                  max="365"
+                  value={settings.default_trial_days}
+                  onChange={e => update('default_trial_days', Number(e.target.value))}
+                />
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Billing Settings */}
         <TabsContent value="billing" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Régua de Cobrança</CardTitle>
-              <CardDescription>
-                Configure os prazos de cobrança e suspensão
-              </CardDescription>
+              <CardTitle>Régua de cobrança</CardTitle>
+              <CardDescription>Define quando o sistema envia lembretes e suspende clientes em atraso</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="reminder_before">Lembrete antes do vencimento</Label>
-                  <Select defaultValue="3">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1 dia antes</SelectItem>
-                      <SelectItem value="3">3 dias antes</SelectItem>
-                      <SelectItem value="5">5 dias antes</SelectItem>
-                      <SelectItem value="7">7 dias antes</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="first_reminder">Primeiro lembrete de atraso</Label>
-                  <Select defaultValue="3">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1 dia após</SelectItem>
-                      <SelectItem value="3">3 dias após</SelectItem>
-                      <SelectItem value="5">5 dias após</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <NumField
+                  label="Lembrete antes do vencimento"
+                  hint="Dias antes da data de vencimento"
+                  value={settings.billing_reminder_days_before}
+                  onChange={v => update('billing_reminder_days_before', v)}
+                  min={0} max={30}
+                />
+                <NumField
+                  label="Primeiro lembrete de atraso"
+                  hint="Dias após vencer sem pagar"
+                  value={settings.billing_first_overdue_reminder_days}
+                  onChange={v => update('billing_first_overdue_reminder_days', v)}
+                  min={0} max={30}
+                />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="suspension_days">Suspensão após</Label>
-                  <Select defaultValue="15">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="7">7 dias</SelectItem>
-                      <SelectItem value="15">15 dias</SelectItem>
-                      <SelectItem value="30">30 dias</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cancellation_days">Cancelamento após</Label>
-                  <Select defaultValue="30">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="30">30 dias</SelectItem>
-                      <SelectItem value="60">60 dias</SelectItem>
-                      <SelectItem value="90">90 dias</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <NumField
+                  label="Suspender após (dias de atraso)"
+                  hint="Bloqueia o acesso do cliente ao /app"
+                  value={settings.billing_suspension_days}
+                  onChange={v => update('billing_suspension_days', v)}
+                  min={0} max={180}
+                />
+                <NumField
+                  label="Cancelar após (dias de atraso)"
+                  hint="Marca conta como cancelada (mantém dados)"
+                  value={settings.billing_cancellation_days}
+                  onChange={v => update('billing_cancellation_days', v)}
+                  min={0} max={365}
+                />
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Gateway de Pagamento</CardTitle>
-              <CardDescription>
-                Configurações de integração com o gateway
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="gateway">Gateway</Label>
-                <Select defaultValue="asaas">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="asaas">Asaas</SelectItem>
-                    <SelectItem value="stripe">Stripe</SelectItem>
-                    <SelectItem value="pagseguro">PagSeguro</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="api_key">API Key</Label>
-                <Input id="api_key" type="password" placeholder="••••••••••••••••" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="webhook_secret">Webhook Secret</Label>
-                <Input id="webhook_secret" type="password" placeholder="••••••••••••••••" />
-              </div>
+              <p className="text-xs text-text-tertiary border-t pt-3">
+                A régua é processada pelo cron diariamente em <code>/api/cron/billing</code>. Toda mudança vale para faturas a partir do próximo ciclo.
+              </p>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Notifications Settings */}
-        <TabsContent value="notifications" className="space-y-6">
+        <TabsContent value="integrations" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Email</CardTitle>
+              <CardTitle>Integrações ativas</CardTitle>
               <CardDescription>
-                Configurações de envio de email
+                Estas integrações são configuradas via variáveis de ambiente na Vercel. Aqui você vê o status atual.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email_provider">Provedor</Label>
-                <Select defaultValue="resend">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="resend">Resend</SelectItem>
-                    <SelectItem value="sendgrid">SendGrid</SelectItem>
-                    <SelectItem value="ses">Amazon SES</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email_api_key">API Key</Label>
-                <Input id="email_api_key" type="password" placeholder="••••••••••••••••" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email_from">Email de Envio</Label>
-                <Input id="email_from" type="email" defaultValue="noreply@vendingpro.com.br" />
-              </div>
+            <CardContent className="space-y-3">
+              {status && (
+                <>
+                  <IntegrationStatus
+                    name="Asaas (gateway de pagamento)"
+                    ok={status.asaas.configured}
+                    extra={status.asaas.configured ? `Ambiente: ${status.asaas.env ?? 'desconhecido'}${status.asaas.webhook_configured ? ' · webhook OK' : ' · webhook ausente'}` : 'Defina ASAAS_API_KEY na Vercel'}
+                  />
+                  <IntegrationStatus
+                    name="Resend (envio de email)"
+                    ok={status.resend.configured}
+                    extra={status.resend.configured ? `Remetente: ${status.resend.from ?? '—'}` : 'Defina RESEND_API_KEY na Vercel'}
+                  />
+                  <IntegrationStatus
+                    name="Twilio WhatsApp (2FA + notificações)"
+                    ok={status.twilio_whatsapp.configured}
+                    extra={status.twilio_whatsapp.configured ? `Número: ${status.twilio_whatsapp.from ?? '—'}` : 'Defina TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN'}
+                  />
+                  <IntegrationStatus
+                    name="Cron (cobrança automática, alertas)"
+                    ok={status.cron.configured}
+                    extra={status.cron.configured ? 'CRON_SECRET configurado' : 'Defina CRON_SECRET'}
+                  />
+                  <IntegrationStatus
+                    name="Supabase"
+                    ok={status.supabase.configured}
+                    extra={status.supabase.configured ? status.supabase.url : 'Defina NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY'}
+                  />
+                </>
+              )}
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-info/30 bg-info-soft/30">
             <CardHeader>
-              <CardTitle>WhatsApp</CardTitle>
-              <CardDescription>
-                Configurações de integração com WhatsApp
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="whatsapp_provider">Provedor</Label>
-                <Select defaultValue="none">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Não configurado</SelectItem>
-                    <SelectItem value="official">API Oficial</SelectItem>
-                    <SelectItem value="zapi">Z-API</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="whatsapp_token">Token</Label>
-                <Input id="whatsapp_token" type="password" placeholder="••••••••••••••••" />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Integrations Settings */}
-        <TabsContent value="integrations" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Integrações Disponíveis</CardTitle>
-              <CardDescription>
-                Configure integrações com sistemas externos
-              </CardDescription>
+              <CardTitle className="text-base">Roadmap de integrações</CardTitle>
+              <CardDescription>O que está em estudo para próximas releases. Sem data confirmada.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between rounded-lg border p-4">
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-start gap-2">
+                  <span className="text-text-tertiary">•</span>
                   <div>
-                    <p className="font-medium">VM PAY</p>
-                    <p className="text-sm text-muted-foreground">
-                      Integração direta com sistema de telemetria
-                    </p>
+                    <strong>VM PAY (API direta)</strong> — substituir upload manual de planilha por pull automático D-0.
+                    Depende da API do VM PAY disponibilizar acesso.
                   </div>
-                  <Button variant="outline" disabled>
-                    Em breve
-                  </Button>
-                </div>
-                <div className="flex items-center justify-between rounded-lg border p-4">
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-text-tertiary">•</span>
                   <div>
-                    <p className="font-medium">VendPago</p>
-                    <p className="text-sm text-muted-foreground">
-                      Integração direta com sistema de telemetria
-                    </p>
+                    <strong>VendPago (API direta)</strong> — em avaliação; sem endpoint público anunciado até o momento.
                   </div>
-                  <Button variant="outline" disabled>
-                    Em breve
-                  </Button>
-                </div>
-                <div className="flex items-center justify-between rounded-lg border p-4">
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-text-tertiary">•</span>
                   <div>
-                    <p className="font-medium">Google Sheets</p>
-                    <p className="text-sm text-muted-foreground">
-                      Exportação automática de dados
-                    </p>
+                    <strong>Conectvip / outros sistemas de telemetria</strong> — possível via parser CSV se exportarem.
                   </div>
-                  <Button variant="outline" disabled>
-                    Em breve
-                  </Button>
-                </div>
-              </div>
+                </li>
+              </ul>
+              <p className="text-xs text-text-tertiary mt-3 border-t pt-3">
+                Não comunicar essas integrações aos clientes até existir contrato/teste real.
+              </p>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
 
-      <Separator />
-
-      {/* Save Button */}
       <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={isLoading}>
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Salvando...
-            </>
-          ) : (
-            <>
-              <Save className="mr-2 h-4 w-4" />
-              Salvar Configurações
-            </>
-          )}
+        <Button onClick={save} disabled={saving}>
+          {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando…</> : <><Save className="mr-2 h-4 w-4" />Salvar configurações</>}
         </Button>
       </div>
+    </div>
+  );
+}
+
+function Field({ label, value, onChange, type }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
+  return (
+    <div className="space-y-1.5">
+      <Label>{label}</Label>
+      <Input type={type ?? 'text'} value={value} onChange={e => onChange(e.target.value)} />
+    </div>
+  );
+}
+
+function NumField({ label, hint, value, onChange, min, max }: { label: string; hint?: string; value: number; onChange: (v: number) => void; min?: number; max?: number }) {
+  return (
+    <div className="space-y-1.5">
+      <Label>{label}</Label>
+      <Input type="number" min={min} max={max} value={value} onChange={e => onChange(Number(e.target.value))} />
+      {hint && <p className="text-xs text-text-tertiary">{hint}</p>}
+    </div>
+  );
+}
+
+function IntegrationStatus({ name, ok, extra }: { name: string; ok: boolean; extra?: string | null }) {
+  return (
+    <div className="flex items-start gap-3 rounded-lg border p-3">
+      {ok ? (
+        <CheckCircle2 className="h-5 w-5 text-success shrink-0 mt-0.5" />
+      ) : (
+        <XCircle className="h-5 w-5 text-danger shrink-0 mt-0.5" />
+      )}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="font-medium">{name}</span>
+          {ok ? (
+            <Badge className="bg-success-soft text-success text-xs">Configurado</Badge>
+          ) : (
+            <Badge className="bg-danger-soft text-danger text-xs">Não configurado</Badge>
+          )}
+        </div>
+        {extra && <p className="text-xs text-text-tertiary mt-0.5">{extra}</p>}
+      </div>
+      <a
+        href="https://vercel.com/dashboard"
+        target="_blank"
+        rel="noopener"
+        className="text-xs text-brand-navy hover:underline flex items-center gap-1 shrink-0 mt-1"
+      >
+        Vercel <ExternalLink className="h-3 w-3" />
+      </a>
     </div>
   );
 }

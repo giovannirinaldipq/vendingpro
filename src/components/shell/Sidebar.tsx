@@ -13,6 +13,20 @@ import {
 import { cn } from '@/lib/utils';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 
+interface MeData {
+  kind: string;
+  name: string;
+  email: string;
+  role?: string;
+}
+
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 interface NavItem { name: string; href: string; icon: LucideIcon; }
 interface NavSection { title: string; items: NavItem[]; }
 
@@ -73,11 +87,17 @@ export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [me, setMe] = useState<MeData | null>(null);
 
   useEffect(() => {
     setMounted(true);
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored === '1') setCollapsed(true);
+
+    fetch('/api/me')
+      .then(r => r.json())
+      .then(j => { if (j.success && j.data) setMe(j.data); })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -181,15 +201,21 @@ export function Sidebar() {
         {!collapsed && (
           <div className="flex items-center gap-2.5 px-3 py-2.5">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-navy text-[11px] font-semibold text-white">
-              JS
+              {me ? initialsOf(me.name) : '...'}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="truncate text-xs font-semibold text-text-primary leading-tight">João Silva</p>
-              <p className="truncate text-[10px] text-text-tertiary leading-tight">joao@empresa.com</p>
+              <p className="truncate text-xs font-semibold text-text-primary leading-tight">
+                {me?.name ?? 'Carregando…'}
+              </p>
+              <p className="truncate text-[10px] text-text-tertiary leading-tight">
+                {me?.email ?? ''}
+              </p>
             </div>
-            <span className="inline-flex items-center rounded-full bg-brand-amber/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#92400e] dark:text-brand-amber">
-              Pro
-            </span>
+            {me?.role && (
+              <span className="inline-flex items-center rounded-full bg-brand-amber/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#92400e] dark:text-brand-amber">
+                {me.role === 'owner' ? 'Owner' : me.role === 'admin' ? 'Admin' : me.role === 'manager' ? 'Gestor' : 'Viewer'}
+              </span>
+            )}
           </div>
         )}
 

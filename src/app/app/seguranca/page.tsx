@@ -292,7 +292,7 @@ export default function SecurityPage() {
                 </Button>
               </div>
               <p className="text-xs text-text-tertiary">
-                Você receberá um código de 6 dígitos por WhatsApp a cada login. (Ativação no fluxo de login chega no próximo update.)
+                A cada login você precisará digitar um código de 6 dígitos recebido por WhatsApp. O desafio expira em 12h por sessão.
               </p>
             </div>
           ) : waOtpPending ? (

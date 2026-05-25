@@ -33,7 +33,7 @@ export async function GET(
 
   const { data: visit } = await restockerSupabaseAdmin
     .from('restocking_visits')
-    .select('id, machine_id, checkin_at, checkout_at, checkin_photo_url, checkout_photo_url, notes, is_location_valid, checkin_distance_meters, machine:machines(id, code, name, location:locations(name))')
+    .select('id, machine_id, checkin_at, checkout_at, checkin_photo_url, checkout_photo_url, notes, is_location_valid, checkin_distance_meters, machine:machines(id, code, name, slot_capacity, location:locations(name))')
     .eq('id', visitId)
     .eq('tenant_id', ctx.tenantId)
     .eq('restocker_id', ctx.restockerId)
@@ -47,7 +47,7 @@ export async function GET(
   }
 
   // Picklist: produtos cadastrados na máquina (machine_products) com sugestão
-  // baseada em estoque (se houver) e capacidade do slot
+  // baseada em consumo médio dos últimos 14d × cobertura de 7d
   const { data: machineProducts } = await restockerSupabaseAdmin
     .from('machine_products')
     .select('id, sale_price, slot_code, product:products(id, name, category, unit_size)')
@@ -55,6 +55,21 @@ export async function GET(
     .eq('tenant_id', ctx.tenantId)
     .eq('is_active', true)
     .order('slot_code', { ascending: true, nullsFirst: false });
+
+  // Vendas dos últimos 14d nesta máquina, por produto
+  const since14d = new Date(Date.now() - 14 * 86400000).toISOString();
+  const { data: recentSales } = await restockerSupabaseAdmin
+    .from('sales')
+    .select('product_id, quantity')
+    .eq('machine_id', visit.machine_id)
+    .eq('tenant_id', ctx.tenantId)
+    .gte('sale_date', since14d);
+
+  const salesByProduct = new Map<string, number>();
+  for (const s of recentSales ?? []) {
+    if (!s.product_id) continue;
+    salesByProduct.set(s.product_id, (salesByProduct.get(s.product_id) ?? 0) + (Number(s.quantity) || 1));
+  }
 
   // Items já reabastecidos nesta visita
   const { data: items } = await restockerSupabaseAdmin
@@ -68,15 +83,40 @@ export async function GET(
     if (it.product_id) itemsByProduct.set(it.product_id, it);
   }
 
+  const COVERAGE_DAYS = 7;
+  const FALLBACK_SUGGESTION = 6;
+  const machineForVisit = Array.isArray(visit.machine) ? visit.machine[0] : visit.machine;
+  const slotCapacity: number | null = machineForVisit?.slot_capacity ?? null;
+
   const picklist = (machineProducts ?? []).map(mp => {
     const prod = Array.isArray(mp.product) ? mp.product[0] : mp.product;
     const reposted = prod ? itemsByProduct.get(prod.id) : undefined;
+    const soldLast14d = prod ? (salesByProduct.get(prod.id) ?? 0) : 0;
+    const avgDaily = soldLast14d / 14;
+    const projected = Math.ceil(avgDaily * COVERAGE_DAYS);
+
+    let suggested: number;
+    let reason: 'consumption' | 'capacity' | 'fallback';
+    if (projected > 0) {
+      suggested = slotCapacity ? Math.min(projected, slotCapacity) : projected;
+      reason = 'consumption';
+    } else if (slotCapacity) {
+      suggested = slotCapacity;
+      reason = 'capacity';
+    } else {
+      suggested = FALLBACK_SUGGESTION;
+      reason = 'fallback';
+    }
+
     return {
       machine_product_id: mp.id,
       slot_code: mp.slot_code,
       product: prod,
       already_reposted: reposted?.quantity ?? 0,
-      suggested_quantity: 10, // TODO: derivar de capacidade/consumo
+      suggested_quantity: suggested,
+      suggestion_reason: reason,
+      avg_daily_sales: Math.round(avgDaily * 10) / 10,
+      sales_last_14d: soldLast14d,
     };
   });
 

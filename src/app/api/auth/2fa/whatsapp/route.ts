@@ -31,8 +31,30 @@ export async function DELETE() {
     return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED' } }, { status: 401 });
   }
 
-  await supabaseAdmin.from('user_whatsapp_2fa').delete().eq('user_id', user.id);
-  await supabaseAdmin.from('whatsapp_otp_codes').delete().eq('user_id', user.id);
+  const { error: factorErr } = await supabaseAdmin
+    .from('user_whatsapp_2fa')
+    .delete()
+    .eq('user_id', user.id);
+
+  if (factorErr) {
+    return NextResponse.json(
+      { success: false, error: { code: 'DB_ERROR', message: `Falha ao remover fator 2FA: ${factorErr.message}` } },
+      { status: 500 }
+    );
+  }
+
+  const { error: otpErr } = await supabaseAdmin
+    .from('whatsapp_otp_codes')
+    .delete()
+    .eq('user_id', user.id);
+
+  if (otpErr) {
+    // Fator já foi removido, mas OTPs antigos seguem — não é crítico, mas reporta.
+    return NextResponse.json(
+      { success: false, error: { code: 'PARTIAL', message: `2FA desativado, mas códigos antigos não foram limpos: ${otpErr.message}` } },
+      { status: 207 }
+    );
+  }
 
   return NextResponse.json({ success: true });
 }
