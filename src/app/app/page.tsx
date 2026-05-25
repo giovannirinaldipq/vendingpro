@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   DollarSign, ShoppingCart, TrendingUp, Monitor,
-  Bell, ArrowRight, Activity, Upload, FileSpreadsheet,
+  Bell, ArrowRight, Activity, Upload, FileSpreadsheet, Wallet,
 } from 'lucide-react';
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
@@ -43,6 +43,13 @@ interface DashboardMetrics {
   active_machines: number;
   machines_with_issues: number;
   pending_alerts: number;
+  last_sale_date: string | null;
+}
+
+interface FinanceSummary {
+  period_days: number;
+  total: { revenue: number; fees: number; cmv: number; fixed_costs: number; net_result: number; sales_count: number };
+  machines_in_loss: number;
 }
 
 interface AnalyticsResponse {
@@ -108,6 +115,7 @@ function firstName(full: string | null | undefined): string {
 
 export default function AppDashboard() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [finance, setFinance] = useState<FinanceSummary | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsResponse | null>(null);
   const [topMachines, setTopMachines] = useState<RankingsResponse | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -118,8 +126,9 @@ export default function AppDashboard() {
     let aborted = false;
     (async () => {
       try {
-        const [mRes, aRes, rRes, alRes, meRes] = await Promise.all([
+        const [mRes, fRes, aRes, rRes, alRes, meRes] = await Promise.all([
           fetch('/api/app/dashboard').then(r => r.json()),
+          fetch('/api/app/financeiro/summary?period_days=30').then(r => r.json()),
           fetch('/api/app/analytics?period=30d').then(r => r.json()),
           fetch('/api/app/rankings?period=30d&sort=revenue').then(r => r.json()),
           fetch('/api/app/alerts?status=active').then(r => r.json()),
@@ -127,6 +136,7 @@ export default function AppDashboard() {
         ]);
         if (aborted) return;
         setMetrics(mRes.data ?? mRes);
+        setFinance(fRes.data ?? fRes);
         setAnalytics(aRes.data ?? aRes);
         setTopMachines(rRes.data ?? rRes);
         setAlerts((alRes.data?.alerts ?? alRes.alerts ?? []).slice(0, 5));
@@ -155,30 +165,61 @@ export default function AppDashboard() {
 
       <OnboardingChecklist />
 
-      {/* ───── Daily upload CTA — fluxo principal do operador ─── */}
-      <Card className="mb-6 border-brand-amber/30 bg-gradient-to-r from-brand-amber/[0.06] to-transparent">
-        <CardContent className="flex flex-col sm:flex-row sm:items-center gap-4 py-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-amber/15">
-            <FileSpreadsheet className="h-6 w-6 text-brand-amber" strokeWidth={2} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-base font-semibold text-text-primary">
-              Incluir dados do dia
-            </h3>
-            <p className="text-sm text-text-secondary mt-0.5">
-              Suba a planilha do VMPay/VendPago de ontem pra atualizar receita,
-              estoque e sugestões em tempo real.
-            </p>
-          </div>
-          <Link href="/app/importar" className={cn(buttonVariants({ size: 'lg' }), 'gap-2 shrink-0')}>
-            <Upload className="h-4 w-4" />
-            Subir planilha
-          </Link>
-        </CardContent>
-      </Card>
+      {/* ───── Daily upload CTA — fluxo principal do operador ───
+          Vira AMARELO se faz mais de 36h que não importa (você está
+          olhando dado defasado). Vira VERMELHO se faz mais de 72h. */}
+      {(() => {
+        const lastDate = metrics?.last_sale_date ? new Date(metrics.last_sale_date + 'T00:00:00') : null;
+        const hoursAgo = lastDate ? Math.floor((Date.now() - lastDate.getTime()) / 3600000) : null;
+        const isStale = hoursAgo != null && hoursAgo >= 36;
+        const isCritical = hoursAgo != null && hoursAgo >= 72;
+        const tone = isCritical
+          ? 'border-danger/40 bg-danger-soft/30'
+          : isStale
+            ? 'border-warning/40 bg-warning-soft/30'
+            : 'border-brand-amber/30 bg-gradient-to-r from-brand-amber/[0.06] to-transparent';
+        const iconBg = isCritical
+          ? 'bg-danger/15'
+          : isStale
+            ? 'bg-warning/15'
+            : 'bg-brand-amber/15';
+        const iconColor = isCritical ? 'text-danger' : isStale ? 'text-warning' : 'text-brand-amber';
+        return (
+          <Card className={cn('mb-6', tone)}>
+            <CardContent className="flex flex-col sm:flex-row sm:items-center gap-4 py-4">
+              <div className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-xl', iconBg)}>
+                <FileSpreadsheet className={cn('h-6 w-6', iconColor)} strokeWidth={2} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-semibold text-text-primary">
+                  {isCritical
+                    ? `Dados estão ${Math.floor(hoursAgo / 24)} dia(s) desatualizados`
+                    : isStale
+                      ? 'Subir planilha de hoje'
+                      : 'Incluir dados do dia'}
+                </h3>
+                <p className="text-sm text-text-secondary mt-0.5">
+                  {hoursAgo == null
+                    ? 'Suba a planilha do VMPay/VendPago de ontem pra atualizar receita, estoque e sugestões em tempo real.'
+                    : isCritical
+                      ? `Última venda registrada em ${lastDate!.toLocaleDateString('pt-BR')}. Dashboard, sugestões e financeiro estão atrasados.`
+                      : isStale
+                        ? `Última importação foi há ${Math.floor(hoursAgo / 24) || 1} dia(s). Suba a planilha pra manter o dado atual.`
+                        : `Última importação: ${lastDate!.toLocaleDateString('pt-BR')}. Mantenha o ritmo diário.`}
+                </p>
+              </div>
+              <Link href="/app/importar" className={cn(buttonVariants({ size: 'lg' }), 'gap-2 shrink-0')}>
+                <Upload className="h-4 w-4" />
+                Subir planilha
+              </Link>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
-      {/* ───── ROW 1 — KPIs ──────────────────────────────── */}
-      {/* HERO em col-span-2 + 2 secundários alinhados — assimetria proposital pra criar hierarquia */}
+      {/* ───── ROW 1 — KPIs ────────────────────────────────
+          Hero é Resultado Líquido (não receita bruta) — é o que diferencia
+          VendingPro de telemetria pura. Receita bruta vira KPI secundário. */}
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-4">
         {loading ? (
           <><KpiSkeleton /><KpiSkeleton /><KpiSkeleton /><KpiSkeleton /></>
@@ -186,13 +227,23 @@ export default function AppDashboard() {
           <>
             <div className="sm:col-span-2">
               <KpiCardHero
-                label="Receita 30D"
-                value={fmtBRL(metrics?.total_revenue ?? 0)}
-                deltaPercent={metrics?.revenue_growth}
-                subtitle="vs período anterior"
-                icon={DollarSign}
+                label="Lucro líquido 30D"
+                value={fmtBRL(finance?.total.net_result ?? 0)}
+                subtitle={
+                  finance
+                    ? `Receita ${fmtBRL(finance.total.revenue)} − taxas ${fmtBRL(finance.total.fees)} − CMV ${fmtBRL(finance.total.cmv)} − fixos ${fmtBRL(finance.total.fixed_costs)}`
+                    : 'vs período anterior'
+                }
+                icon={Wallet}
               />
             </div>
+            <KpiCard
+              label="Receita bruta"
+              value={fmtBRL(metrics?.total_revenue ?? 0)}
+              delta={metrics?.revenue_growth}
+              deltaLabel="vs período anterior"
+              icon={DollarSign}
+            />
             <KpiCard
               label="Vendas"
               value={fmtInt(metrics?.total_sales ?? 0)}
@@ -200,16 +251,24 @@ export default function AppDashboard() {
               deltaLabel="vs período anterior"
               icon={ShoppingCart}
             />
-            <KpiCard
-              label="Ticket médio"
-              value={fmtBRLFull(metrics?.average_ticket ?? 0)}
-              delta={metrics?.ticket_growth}
-              deltaLabel="vs período anterior"
-              icon={TrendingUp}
-            />
           </>
         )}
       </div>
+
+      {/* Banner pedagógico explicando a diferença — única vez que aparece
+          (some quando o usuário tem 10+ vendas, já passou da fase de descoberta) */}
+      {!loading && finance && metrics && metrics.total_sales > 0 && metrics.total_sales < 200 && (
+        <div className="mb-4 rounded-lg border border-info/30 bg-info-soft/30 p-3 text-xs text-text-secondary flex gap-3 items-start">
+          <TrendingUp className="h-4 w-4 text-info shrink-0 mt-0.5" />
+          <div>
+            <strong className="text-text-primary">Por que líquido em destaque?</strong>{' '}
+            Telemetria mostra só a receita bruta. O VendingPro desconta as taxas reais por método de pagamento e o CMV de cada produto, e te entrega o lucro real.
+            {finance.machines_in_loss > 0 && (
+              <> Hoje você tem <span className="font-semibold text-warning">{finance.machines_in_loss} máquina(s) no prejuízo</span> — veja em <Link href="/app/financeiro" className="text-brand-navy hover:underline">Financeiro</Link>.</>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ───── ROW 2 — Chart + Alertas ───────────────────── */}
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-12 mb-4">

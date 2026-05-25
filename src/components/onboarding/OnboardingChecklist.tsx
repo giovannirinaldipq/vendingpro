@@ -44,6 +44,9 @@ export function OnboardingChecklist() {
   ];
   const completed = steps.filter(s => s.done).length;
   const progressPercent = (completed / steps.length) * 100;
+  // Só permite dismiss depois de cumprir os 2 primeiros (local + máquina);
+  // antes disso o app fica inútil e não faz sentido esconder o guia.
+  const canDismiss = completed >= 2;
 
   return (
     <Card className="border-brand-amber/30 bg-brand-amber/[0.04] mb-6 relative overflow-hidden">
@@ -88,13 +91,23 @@ export function OnboardingChecklist() {
             />
           </div>
         </div>
-        <button
-          onClick={dismiss}
-          className="text-text-tertiary hover:text-text-primary transition-colors"
-          aria-label="Dispensar onboarding"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        {canDismiss ? (
+          <button
+            onClick={dismiss}
+            className="text-text-tertiary hover:text-text-primary transition-colors"
+            aria-label="Dispensar onboarding"
+            title="Dispensar"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        ) : (
+          <span
+            className="text-[10px] uppercase tracking-wider text-brand-amber font-bold"
+            title="Termine pelo menos local + máquina para continuar"
+          >
+            Setup
+          </span>
+        )}
       </CardHeader>
       <CardContent>
         <div className="space-y-0.5">

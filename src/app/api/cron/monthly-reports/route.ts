@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { buildMonthlyReport, listActiveTenants, renderMonthlyReportPdf } from '@/lib/reports';
 import { sendMonthlyReportEmail } from '@/lib/email/report';
+import { startCronRun, finishCronRun, type Trigger } from '@/lib/admin/cron-log';
 
 const CRON_SECRET = process.env.CRON_SECRET || 'dev-secret';
 
@@ -29,6 +30,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'invalid_month_format' }, { status: 400 });
   }
 
+  const trigger = (req.headers.get('x-cron-trigger') as Trigger) ?? 'schedule';
+  const adminId = req.headers.get('x-cron-admin-id') ?? undefined;
+  const run = await startCronRun('monthly_reports', trigger, adminId);
+
   const tenants = await listActiveTenants();
   const results: Results = { tenants_processed: 0, reports_sent: 0, failed: 0, errors: [] };
 
@@ -49,6 +54,12 @@ export async function POST(req: NextRequest) {
       results.errors.push(`${t.id}: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
+
+  await finishCronRun(run, {
+    success: results.errors.length === 0,
+    summary: { tenants_processed: results.tenants_processed, reports_sent: results.reports_sent, failed: results.failed, month },
+    errors: results.errors,
+  });
 
   return NextResponse.json({ success: true, data: results });
 }

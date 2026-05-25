@@ -49,6 +49,7 @@ export async function GET() {
     lastMonthSales,
     machinesResult,
     alertsResult,
+    lastSaleResult,
   ] = await Promise.all([
     // Vendas do mês atual
     supabase
@@ -77,6 +78,15 @@ export async function GET() {
       .select('id', { count: 'exact', head: true })
       .eq('tenant_id', tenantId)
       .eq('status', 'active'),
+
+    // Última venda importada (pra lembrar de subir planilha do dia)
+    supabase
+      .from('sales')
+      .select('sale_date')
+      .eq('tenant_id', tenantId)
+      .order('sale_date', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   // Calcular métricas do mês atual
@@ -113,6 +123,7 @@ export async function GET() {
       active_machines: activeMachines,
       machines_with_issues: machinesWithIssues,
       pending_alerts: alertsResult.count || 0,
+      last_sale_date: lastSaleResult.data?.sale_date ?? null,
     },
   });
 }

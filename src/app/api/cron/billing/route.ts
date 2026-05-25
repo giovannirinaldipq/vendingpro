@@ -15,6 +15,7 @@ import {
   getPixQrCode,
   isAsaasConfigured,
 } from '@/lib/payments/asaas';
+import { startCronRun, finishCronRun, type Trigger } from '@/lib/admin/cron-log';
 
 const CRON_SECRET = process.env.CRON_SECRET || 'dev-secret';
 
@@ -35,6 +36,10 @@ export async function POST(request: NextRequest) {
   if (authHeader !== `Bearer ${CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  const trigger = (request.headers.get('x-cron-trigger') as Trigger) ?? 'schedule';
+  const adminId = request.headers.get('x-cron-admin-id') ?? undefined;
+  const run = await startCronRun('billing', trigger, adminId);
 
   const results: CronResults = {
     trials_processed: 0,
@@ -57,9 +62,21 @@ export async function POST(request: NextRequest) {
     await sendSuspensionWarnings(results);
     await suspendDelinquentTenants(results);
 
+    await finishCronRun(run, {
+      success: results.errors.length === 0,
+      summary: { ...results, errors: undefined },
+      errors: results.errors,
+    });
+
     return NextResponse.json({ success: true, data: results });
   } catch (error) {
     console.error('Billing cron error:', error);
+    const msg = error instanceof Error ? error.message : String(error);
+    await finishCronRun(run, {
+      success: false,
+      summary: { ...results, errors: undefined },
+      errors: [...results.errors, `Fatal: ${msg}`],
+    });
     return NextResponse.json(
       { success: false, error: 'Internal error', details: results },
       { status: 500 }
