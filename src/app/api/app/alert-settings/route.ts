@@ -2,12 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { getOrCreateAlertSettings } from '@/lib/alerts';
-import { createClient as createAdmin } from '@supabase/supabase-js';
-
-const supabaseAdmin = createAdmin(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 async function getTenantId(): Promise<string | null> {
   const supabase = await createClient();

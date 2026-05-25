@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getTenantContext } from '@/lib/auth/tenant';
-import { createClient as createAdmin } from '@supabase/supabase-js';
-
-const supabaseAdmin = createAdmin(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 const voucherFeeSchema = z.object({
   label: z.string().min(1).max(60),

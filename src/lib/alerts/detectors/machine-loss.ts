@@ -1,12 +1,7 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { createAlertIfNew } from '../create';
 import { calculateMachineResult, getFinanceSettings } from '@/lib/finance';
 import type { AlertSettings, AlertSeverity, DetectorResult } from '../types';
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 export async function detectMachineLoss(
   tenantId: string,

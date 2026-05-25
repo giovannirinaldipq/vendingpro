@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { z } from 'zod';
 import { requireAdmin, ALL_ADMIN_ROLES, type AdminRole } from '@/lib/admin/auth';
 import { logAudit, extractRequestMeta } from '@/lib/admin/audit';
-
-const supabaseAdmin = createSupabaseAdmin(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 const patchSchema = z.object({
   name: z.string().min(2).optional(),
