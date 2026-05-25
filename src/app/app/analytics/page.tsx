@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import { Heatmap } from '@/components/charts/heatmap';
 import { EmptyStateV2 } from '@/components/ui/empty-state-v2';
+import { PaymentBreakdownCard } from '@/components/analytics/payment-breakdown-card';
 import {
   BarChart,
   Bar,
@@ -320,6 +321,12 @@ export default function AnalyticsPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Payment Breakdown — diferencial competitivo: ver o que mais sai */}
+          <PaymentBreakdownCard
+            days={period === 'all' ? 'all' : parseInt(period.replace('d', ''), 10) || 30}
+            machineId={machineId === 'all' ? undefined : machineId}
+          />
         </>
       )}
     </div>

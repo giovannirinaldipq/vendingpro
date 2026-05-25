@@ -14,8 +14,13 @@ export interface RestockScheduleSuggestion {
   best_weekday: number;        // 0 = domingo, 6 = sábado
   best_weekday_label: string;
   best_hour: number;           // 0-23
+  /** Resumo (1 linha) */
   reason: string;
+  /** Bullets explicando o "por quê" da sugestão */
+  reason_detail: string[];
   last_visit_at: string | null;
+  days_since_last_visit: number | null;
+  avg_daily_sales: number;
   next_suggested_date: string; // ISO date
   urgency: 'low' | 'medium' | 'high';
 }
@@ -90,6 +95,28 @@ export async function suggestRestockSchedule(tenantId: string): Promise<RestockS
     const next = new Date(now.getTime() + daysAhead * 86400000);
 
     const locName = Array.isArray(m.location) ? m.location[0]?.name : (m.location as { name?: string } | null)?.name;
+    const avgDailySales = Math.round((totalSales / LOOKBACK_DAYS) * 10) / 10;
+    const bestHourSales = byHour[bestHour];
+    const peakHour = byHour.indexOf(Math.max(...byHour.slice(8, 20)));
+    const peakHourSales = byHour[peakHour];
+
+    // Monta bullets de porquê
+    const reasonDetail: string[] = [
+      `${avgDailySales} venda(s)/dia em média nas últimas ${LOOKBACK_DAYS / 7} semanas`,
+      `${WEEKDAY_LABELS[bestWeekday]} é o dia com menor movimento (${byWeekday[bestWeekday]} vendas no período)`,
+      `Entre ${String(bestHour).padStart(2, '0')}h-${String(bestHour + 1).padStart(2, '0')}h só ${bestHourSales} venda(s) — pico é ${String(peakHour).padStart(2, '0')}h com ${peakHourSales}`,
+    ];
+    if (daysSinceVisit != null) {
+      reasonDetail.push(
+        daysSinceVisit > 14
+          ? `Sem visita há ${daysSinceVisit} dias — possível ruptura de produtos`
+          : daysSinceVisit > 7
+          ? `Última visita há ${daysSinceVisit} dias`
+          : `Última visita recente (${daysSinceVisit}d)`
+      );
+    } else {
+      reasonDetail.push('Nenhuma visita registrada ainda');
+    }
 
     results.push({
       machine_id: m.id,
@@ -98,8 +125,11 @@ export async function suggestRestockSchedule(tenantId: string): Promise<RestockS
       best_weekday: bestWeekday,
       best_weekday_label: WEEKDAY_LABELS[bestWeekday],
       best_hour: bestHour,
-      reason: `Menor movimento às ${WEEKDAY_LABELS[bestWeekday].toLowerCase()}s, ${String(bestHour).padStart(2, '0')}h-${String(bestHour + 1).padStart(2, '0')}h`,
+      reason: `Melhor horário: ${WEEKDAY_LABELS[bestWeekday]} ${String(bestHour).padStart(2, '0')}h`,
+      reason_detail: reasonDetail,
       last_visit_at: lastVisitAt,
+      days_since_last_visit: daysSinceVisit,
+      avg_daily_sales: avgDailySales,
       next_suggested_date: next.toISOString().split('T')[0],
       urgency,
     });

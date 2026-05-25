@@ -87,6 +87,38 @@ export interface VMPayParseResult {
   errors: string[];
 }
 
+/**
+ * Detecta a forma de pagamento granular a partir dos campos VMPay.
+ * Valores padronizados (alinhados com sales_payment_method_check):
+ *   debit, credit, pix, meal_voucher, transport_voucher, other_voucher, cashless, unknown
+ */
+function inferPaymentMethod(input: {
+  autorizador?: unknown;
+  tipoCartao?: unknown;
+  adquirente?: unknown;
+}): string {
+  const autorizador = String(input.autorizador ?? '').toLowerCase();
+  const tipoCartao = String(input.tipoCartao ?? '').toLowerCase();
+  const adquirente = String(input.adquirente ?? '').toLowerCase();
+  const all = `${autorizador} ${tipoCartao} ${adquirente}`;
+
+  if (/pix/.test(all)) return 'pix';
+
+  // Vouchers — específicos primeiro
+  if (/vale[\s-]?aliment|vale[\s-]?ref|sodexo|alelo|vr\b|va\b|ticket[\s-]?(rest|aliment)/i.test(all)) return 'meal_voucher';
+  if (/vale[\s-]?transport|vt\b/i.test(all)) return 'transport_voucher';
+  if (/voucher|vale/i.test(all)) return 'other_voucher';
+
+  // Cartão — débito x crédito
+  if (/débit|debit/.test(tipoCartao) || /débit|debit/.test(all)) return 'debit';
+  if (/crédit|credit/.test(tipoCartao) || /crédit|credit/.test(all)) return 'credit';
+
+  // Adquirente conhecida → assume crédito por default (mais comum em vending)
+  if (/cielo|stone|getnet|rede|safrapay|pagseguro/.test(adquirente)) return 'credit';
+
+  return 'unknown';
+}
+
 // Converte serial date do Excel para Date
 function excelDateToJS(serial: number): Date {
   // Excel usa 1/1/1900 como dia 1, mas tem um bug do ano bissexto de 1900
@@ -199,14 +231,12 @@ export function parseVMPayFile(buffer: ArrayBuffer): VMPayParseResult {
       const valor = Number(row[colIndex.valor] || 0);
       const quantidade = Number(row[colIndex.quantidade] || 1);
 
-      // Determinar método de pagamento
-      let paymentMethod = 'card';
-      const autorizador = row[colIndex.autorizador];
-      if (autorizador && String(autorizador).toLowerCase().includes('pix')) {
-        paymentMethod = 'pix';
-      } else if (row[colIndex.tipo_cartao]) {
-        paymentMethod = String(row[colIndex.tipo_cartao]).toLowerCase().includes('débito') ? 'debit' : 'credit';
-      }
+      // Determinar método de pagamento (granular: debit, credit, pix, meal_voucher, ...)
+      const paymentMethod = inferPaymentMethod({
+        autorizador: row[colIndex.autorizador],
+        tipoCartao: row[colIndex.tipo_cartao],
+        adquirente: row[colIndex.adquirente],
+      });
 
       if (!machineCode || !diaSerial || !produto) {
         skippedRecords++;

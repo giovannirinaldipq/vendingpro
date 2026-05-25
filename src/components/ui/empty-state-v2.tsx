@@ -27,12 +27,16 @@ interface EmptyStateV2Props {
   illustration: Illustration;
   title: string;
   description?: string;
-  /** Texto do CTA. Se omitido, não mostra. */
+  /** Texto do CTA primário. Se omitido, não mostra. */
   ctaLabel?: string;
-  /** Link interno do CTA */
+  /** Link interno do CTA primário */
   ctaHref?: string;
-  /** Callback do CTA quando não é link */
-  onCtaClick?: () => void;
+  /** Callback do CTA primário quando não é link */
+  ctaOnClick?: () => void;
+  /** CTA secundário — link/texto mais discreto */
+  secondaryLabel?: string;
+  secondaryHref?: string;
+  secondaryOnClick?: () => void;
   /** Mensagem positiva — usa tom amber mais celebratório */
   positive?: boolean;
   className?: string;
@@ -40,7 +44,10 @@ interface EmptyStateV2Props {
 }
 
 export function EmptyStateV2({
-  illustration, title, description, ctaLabel, ctaHref, onCtaClick, positive, className, children,
+  illustration, title, description,
+  ctaLabel, ctaHref, ctaOnClick,
+  secondaryLabel, secondaryHref, secondaryOnClick,
+  positive, className, children,
 }: EmptyStateV2Props) {
   const Illu = ILLUSTRATIONS[illustration];
 
@@ -61,25 +68,44 @@ export function EmptyStateV2({
           {description}
         </p>
       )}
-      {ctaLabel && ctaHref && (
-        <Link
-          href={ctaHref}
-          className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-amber hover:underline underline-offset-4"
-        >
-          {ctaLabel}
-          <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.5} />
-        </Link>
-      )}
-      {ctaLabel && !ctaHref && onCtaClick && (
-        <button
-          type="button"
-          onClick={onCtaClick}
-          className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-amber hover:underline underline-offset-4"
-        >
-          {ctaLabel}
-          <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.5} />
-        </button>
-      )}
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-4">
+        {ctaLabel && ctaHref && (
+          <Link
+            href={ctaHref}
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-amber hover:underline underline-offset-4"
+          >
+            {ctaLabel}
+            <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.5} />
+          </Link>
+        )}
+        {ctaLabel && !ctaHref && ctaOnClick && (
+          <button
+            type="button"
+            onClick={ctaOnClick}
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-amber hover:underline underline-offset-4"
+          >
+            {ctaLabel}
+            <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.5} />
+          </button>
+        )}
+        {secondaryLabel && secondaryHref && (
+          <Link
+            href={secondaryHref}
+            className="text-sm text-text-tertiary hover:text-text-secondary hover:underline underline-offset-4"
+          >
+            {secondaryLabel}
+          </Link>
+        )}
+        {secondaryLabel && !secondaryHref && secondaryOnClick && (
+          <button
+            type="button"
+            onClick={secondaryOnClick}
+            className="text-sm text-text-tertiary hover:text-text-secondary hover:underline underline-offset-4"
+          >
+            {secondaryLabel}
+          </button>
+        )}
+      </div>
       {children}
     </div>
   );
