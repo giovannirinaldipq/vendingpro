@@ -5,13 +5,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
-import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { hashCode, MAX_ATTEMPTS } from '@/lib/auth/whatsapp-otp';
-
-const supabaseAdmin = createAdminClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 const schema = z.object({
   code: z.string().regex(/^\d{6}$/, 'Código deve ter 6 dígitos'),

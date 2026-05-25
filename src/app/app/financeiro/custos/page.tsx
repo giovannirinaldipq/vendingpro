@@ -163,14 +163,23 @@ function CostsContent() {
               <div className="space-y-2">
                 <Label>Máquina</Label>
                 <Select value={form.machine_id} onValueChange={v => v && setForm({ ...form, machine_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione">
+                      {(() => {
+                        const m = machines.find(m => m.id === form.machine_id);
+                        return m ? `${m.name} (${m.code})` : null;
+                      })()}
+                    </SelectValue>
+                  </SelectTrigger>
                   <SelectContent>{machines.map(m => <SelectItem key={m.id} value={m.id}>{m.name} ({m.code})</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Tipo</Label>
                 <Select value={form.cost_type} onValueChange={v => v && setForm({ ...form, cost_type: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue>{COST_LABEL[form.cost_type] ?? form.cost_type}</SelectValue>
+                  </SelectTrigger>
                   <SelectContent>{COST_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>

@@ -1,10 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
+import { supabaseAdmin } from '@/lib/supabase/admin';
 const LOOKBACK_DAYS = 30;
 const SWAP_THRESHOLD_DAILY = 0.3;   // < 0.3 vendas/dia = candidato a trocar
 

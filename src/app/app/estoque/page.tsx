@@ -235,7 +235,7 @@ export default function InventoryPage() {
                 placeholder="Buscar por produto, código ou categoria..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
+                className="h-10 pl-9"
               />
             </div>
             <div className="flex items-center space-x-2">

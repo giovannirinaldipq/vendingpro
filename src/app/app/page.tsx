@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   DollarSign, ShoppingCart, TrendingUp, Monitor,
-  Bell, ArrowRight, Activity,
+  Bell, ArrowRight, Activity, Upload, FileSpreadsheet,
 } from 'lucide-react';
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
@@ -154,6 +154,28 @@ export default function AppDashboard() {
       </div>
 
       <OnboardingChecklist />
+
+      {/* ───── Daily upload CTA — fluxo principal do operador ─── */}
+      <Card className="mb-6 border-brand-amber/30 bg-gradient-to-r from-brand-amber/[0.06] to-transparent">
+        <CardContent className="flex flex-col sm:flex-row sm:items-center gap-4 py-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-amber/15">
+            <FileSpreadsheet className="h-6 w-6 text-brand-amber" strokeWidth={2} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-semibold text-text-primary">
+              Incluir dados do dia
+            </h3>
+            <p className="text-sm text-text-secondary mt-0.5">
+              Suba a planilha do VMPay/VendPago de ontem pra atualizar receita,
+              estoque e sugestões em tempo real.
+            </p>
+          </div>
+          <Link href="/app/importar" className={cn(buttonVariants({ size: 'lg' }), 'gap-2 shrink-0')}>
+            <Upload className="h-4 w-4" />
+            Subir planilha
+          </Link>
+        </CardContent>
+      </Card>
 
       {/* ───── ROW 1 — KPIs ──────────────────────────────── */}
       {/* HERO em col-span-2 + 2 secundários alinhados — assimetria proposital pra criar hierarquia */}

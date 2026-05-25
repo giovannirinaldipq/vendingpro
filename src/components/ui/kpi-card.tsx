@@ -33,7 +33,20 @@ function KpiCard({ label, value, delta, deltaLabel, icon: Icon, tone = "default"
         </span>
         {Icon && <Icon className="h-4 w-4 text-text-tertiary" strokeWidth={1.75} />}
       </div>
-      <div className="mt-3 font-mono-num text-[28px] font-medium leading-none text-text-primary">
+      <div
+        className={cn(
+          "mt-3 font-mono-num font-medium leading-none text-text-primary break-words min-w-0",
+          // Auto-shrink: 28px (≤10) → 24px (≤14) → 20px (≤18) → 18px (>18)
+          (() => {
+            const len = String(value).length;
+            if (len <= 10) return "text-[28px]";
+            if (len <= 14) return "text-[24px]";
+            if (len <= 18) return "text-[20px]";
+            return "text-[18px]";
+          })(),
+        )}
+        title={String(value)}
+      >
         {value}
       </div>
       {hint && (

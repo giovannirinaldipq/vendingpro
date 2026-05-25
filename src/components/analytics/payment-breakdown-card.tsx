@@ -21,16 +21,21 @@ interface PaymentBreakdownData {
   days: number | null;
 }
 
-const METHOD_META: Record<string, { label: string; icon: LucideIcon; color: string; bg: string }> = {
-  credit:            { label: 'Crédito',          icon: CreditCard, color: 'text-info',    bg: 'bg-info/15' },
-  debit:             { label: 'Débito',           icon: CreditCard, color: 'text-brand-navy', bg: 'bg-brand-navy/10' },
-  pix:               { label: 'PIX',              icon: Smartphone, color: 'text-success', bg: 'bg-success-soft' },
-  cash:              { label: 'Dinheiro',         icon: Banknote,   color: 'text-warning', bg: 'bg-warning-soft' },
-  meal_voucher:      { label: 'Vale Refeição/Alimentação', icon: Ticket, color: 'text-brand-amber', bg: 'bg-brand-amber/15' },
-  transport_voucher: { label: 'Vale Transporte',  icon: Bus,        color: 'text-text-secondary', bg: 'bg-surface-subtle' },
-  other_voucher:     { label: 'Outros vouchers',  icon: Ticket,     color: 'text-text-secondary', bg: 'bg-surface-subtle' },
-  cashless:          { label: 'Cashless (agregado)', icon: Smartphone, color: 'text-text-tertiary', bg: 'bg-surface-subtle' },
-  unknown:           { label: 'Não identificado', icon: HelpCircle, color: 'text-text-tertiary', bg: 'bg-surface-subtle' },
+/**
+ * Classes Tailwind precisam ser literais (não geradas em runtime via .replace)
+ * pra purga estática enxergar. Por isso `bg` (ícone) e `bar` (barra de share)
+ * são strings completas — não derivar uma da outra.
+ */
+const METHOD_META: Record<string, { label: string; icon: LucideIcon; color: string; bg: string; bar: string }> = {
+  credit:            { label: 'Crédito',                    icon: CreditCard, color: 'text-info',           bg: 'bg-info/15',          bar: 'bg-info/70' },
+  debit:             { label: 'Débito',                     icon: CreditCard, color: 'text-brand-navy',     bg: 'bg-brand-navy/10',    bar: 'bg-brand-navy/70' },
+  pix:               { label: 'PIX',                        icon: Smartphone, color: 'text-success',        bg: 'bg-success-soft',     bar: 'bg-success' },
+  cash:              { label: 'Dinheiro',                   icon: Banknote,   color: 'text-warning',        bg: 'bg-warning-soft',     bar: 'bg-warning' },
+  meal_voucher:      { label: 'Vale Refeição/Alimentação',  icon: Ticket,     color: 'text-brand-amber',    bg: 'bg-brand-amber/15',   bar: 'bg-brand-amber' },
+  transport_voucher: { label: 'Vale Transporte',            icon: Bus,        color: 'text-text-secondary', bg: 'bg-surface-subtle',   bar: 'bg-text-secondary/60' },
+  other_voucher:     { label: 'Outros vouchers',            icon: Ticket,     color: 'text-text-secondary', bg: 'bg-surface-subtle',   bar: 'bg-text-secondary/60' },
+  cashless:          { label: 'Cashless (agregado)',        icon: Smartphone, color: 'text-text-tertiary',  bg: 'bg-surface-subtle',   bar: 'bg-text-tertiary/60' },
+  unknown:           { label: 'Não identificado',           icon: HelpCircle, color: 'text-text-tertiary',  bg: 'bg-surface-subtle',   bar: 'bg-text-tertiary/40' },
 };
 
 const fmtBRL = (n: number) =>
@@ -104,11 +109,11 @@ export function PaymentBreakdownCard({
                       </div>
                     </div>
                   </div>
-                  {/* Barra de share */}
-                  <div className="h-1 w-full rounded-full bg-surface-subtle overflow-hidden ml-11">
+                  {/* Barra de share — usa classe literal de `bar` (Tailwind purge friendly) */}
+                  <div className="h-1.5 w-full rounded-full bg-surface-subtle overflow-hidden ml-11">
                     <div
-                      className={cn('h-full rounded-full', meta.bg.replace('/15', '/60').replace('-soft', ''))}
-                      style={{ width: `${Math.min(100, row.share_percent)}%` }}
+                      className={cn('h-full rounded-full transition-all', meta.bar)}
+                      style={{ width: `${Math.max(2, Math.min(100, row.share_percent))}%` }}
                     />
                   </div>
                 </div>

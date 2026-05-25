@@ -1,11 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
-import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
-
-const supabaseAdmin = createAdminClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 async function isAdminUser(userId: string): Promise<boolean> {
   const { data } = await supabaseAdmin

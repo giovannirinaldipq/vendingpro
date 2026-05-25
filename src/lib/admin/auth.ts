@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import type { AdminRole } from './roles';
 
 export interface AdminProfile {
@@ -9,13 +9,6 @@ export interface AdminProfile {
   role: AdminRole;
   is_active: boolean;
 }
-
-// Service-role client: bypassa RLS pra ler admin.users (que tem policies restritivas).
-// Lookup do perfil é só leitura por ID, validado contra auth.uid() do usuário logado.
-const supabaseAdmin = createAdminClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 export async function getCurrentAdmin(): Promise<AdminProfile | null> {
   // Quem é o usuário logado (cookie do navegador)

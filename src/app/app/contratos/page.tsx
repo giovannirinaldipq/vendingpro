@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Loader2, TrendingDown, TrendingUp, Clock } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Loader2, TrendingDown, TrendingUp, Clock, Plus, Edit, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { EmptyStateV2 } from '@/components/ui/empty-state-v2';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -36,6 +38,7 @@ const STATUS: Record<string, { label: string; color: string }> = {
 const fmtBRL = (n: number) => Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 export default function ContractsPage() {
+  const router = useRouter();
   const [rows, setRows] = useState<ContractRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -51,9 +54,19 @@ export default function ContractsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Contratos</h1>
-        <p className="text-sm text-text-secondary">Rentabilidade real por ponto comercial.</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Contratos</h1>
+          <p className="text-sm text-text-secondary">
+            Rentabilidade real por ponto comercial. Cada contrato é vinculado a um local.
+          </p>
+        </div>
+        <Link href="/app/locais/novo" className="shrink-0">
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Novo contrato (via local)
+          </Button>
+        </Link>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -118,13 +131,24 @@ export default function ContractsPage() {
                   <TableHead className="text-right">Resultado das máquinas</TableHead>
                   <TableHead className="text-right">Aluguel/Comissão</TableHead>
                   <TableHead className="text-right">Rentabilidade</TableHead>
+                  <TableHead className="w-[60px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {rows.map(r => (
-                  <TableRow key={r.location_id} className={!r.is_profitable ? 'bg-danger-soft/30' : ''}>
+                  <TableRow
+                    key={r.location_id}
+                    className={`cursor-pointer transition-colors hover:bg-surface-subtle/50 ${!r.is_profitable ? 'bg-danger-soft/30' : ''}`}
+                    onClick={() => router.push(`/app/locais/${r.location_id}`)}
+                  >
                     <TableCell>
-                      <Link href={`/app/locais`} className="font-medium hover:text-brand-navy hover:underline">{r.location_name}</Link>
+                      <Link
+                        href={`/app/locais/${r.location_id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="font-medium hover:text-brand-navy hover:underline"
+                      >
+                        {r.location_name}
+                      </Link>
                     </TableCell>
                     <TableCell>
                       <Badge className={STATUS[r.status].color}>{STATUS[r.status].label}</Badge>
@@ -148,6 +172,17 @@ export default function ContractsPage() {
                     <TableCell className={`text-right font-mono font-semibold tabular-nums ${r.is_profitable ? 'text-success' : 'text-danger'}`}>
                       {r.is_profitable ? <TrendingUp className="inline h-3 w-3 mr-1" /> : <TrendingDown className="inline h-3 w-3 mr-1" />}
                       {fmtBRL(r.rentability_30d)}
+                    </TableCell>
+                    <TableCell>
+                      <Link
+                        href={`/app/locais/${r.location_id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center gap-1 text-xs text-brand-navy hover:underline"
+                      >
+                        <Edit className="h-3 w-3" />
+                        Editar
+                        <ArrowRight className="h-3 w-3 opacity-60" />
+                      </Link>
                     </TableCell>
                   </TableRow>
                 ))}

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Loader2, CalendarClock, Package2, ShoppingCart, ArrowRight, Sparkles,
-  Info, Repeat, Pin, TrendingUp, TrendingDown,
+  Info, Repeat, Pin, TrendingUp, TrendingDown, FileDown,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Pill } from '@/components/ui/pill';
@@ -134,6 +134,72 @@ export default function SuggestionsPage() {
       setPurchaseDays(n);
       reloadPurchase(n);
     }
+  }
+
+  /**
+   * Gera PDF da lista de compras via window.print() em página dedicada.
+   * Sem dependências externas (jsPDF) — usa o motor de impressão do browser
+   * que oferece "Salvar como PDF" como destino padrão.
+   */
+  function exportPurchaseListPdf() {
+    if (purchase.length === 0) return;
+    const now = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    const totalItems = purchase.reduce((s, p) => s + p.suggested_purchase_quantity, 0);
+    const rows = purchase.map(p => `
+      <tr>
+        <td>${p.product_name}</td>
+        <td class="num">${p.current_quantity}</td>
+        <td class="num">${p.avg_daily_consumption}</td>
+        <td class="num bold">${p.suggested_purchase_quantity}</td>
+        <td class="check"><input type="checkbox" /></td>
+      </tr>`).join('');
+
+    const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
+      <title>Lista de Compras — ${now}</title>
+      <style>
+        body { font-family: 'Inter', system-ui, sans-serif; margin: 32px; color: #142659; }
+        h1 { margin: 0 0 4px; font-size: 22px; font-weight: 600; }
+        .subtitle { color: #64748b; font-size: 13px; margin-bottom: 24px; }
+        .meta { display: flex; gap: 18px; margin-bottom: 24px; font-size: 12px; color: #475569; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; }
+        .meta b { color: #142659; font-weight: 600; font-size: 14px; display: block; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        thead th { text-align: left; border-bottom: 2px solid #142659; padding: 8px 6px; font-weight: 600; }
+        thead th.num { text-align: right; }
+        thead th.check { width: 32px; text-align: center; }
+        tbody td { padding: 10px 6px; border-bottom: 1px solid #e2e8f0; }
+        tbody td.num { text-align: right; font-variant-numeric: tabular-nums; font-family: 'JetBrains Mono', monospace; }
+        tbody td.bold { font-weight: 700; color: #142659; }
+        tbody td.check { text-align: center; }
+        tbody tr:nth-child(even) { background: #f8fafc; }
+        .footer { margin-top: 32px; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+        @media print { body { margin: 18mm; } .no-print { display: none; } button { display: none; } }
+      </style></head><body>
+      <h1>Lista de Compras</h1>
+      <div class="subtitle">Vending Pro · gerado em ${now} · cobertura ${purchaseDays} dia(s)</div>
+      <div class="meta">
+        <div><b>${purchase.length}</b> SKUs distintos</div>
+        <div><b>${totalItems.toLocaleString('pt-BR')}</b> unidades total</div>
+        <div><b>${purchaseDays}</b> dias de cobertura</div>
+      </div>
+      <table>
+        <thead><tr>
+          <th>Produto</th>
+          <th class="num">Em estoque</th>
+          <th class="num">Consumo/dia</th>
+          <th class="num">Comprar</th>
+          <th class="check">✓</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="footer">Vending Pro — gestão para máquinas de venda · Os valores são sugestões baseadas em consumo dos últimos 14 dias.</div>
+      <button class="no-print" onclick="window.print()" style="position:fixed;top:16px;right:16px;background:#fbbf24;color:#1e3a8a;border:none;border-radius:6px;padding:10px 16px;font-weight:600;font-size:13px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.1)">Imprimir / Salvar PDF</button>
+    </body></html>`;
+
+    const w = window.open('', '_blank');
+    if (!w) return;
+    w.document.write(html);
+    w.document.close();
+    setTimeout(() => w.print(), 300);
   }
 
   function toggleScheduleRow(id: string) {
@@ -463,11 +529,23 @@ export default function SuggestionsPage() {
 
         <TabsContent value="purchase" className="mt-4">
           <Card>
-            <CardHeader>
-              <CardTitle>O que comprar agora</CardTitle>
-              <CardDescription>
-                Defina pra quantos dias você quer comprar — calculamos a quantidade exata pra cobrir o consumo.
-              </CardDescription>
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <CardTitle>O que comprar agora</CardTitle>
+                <CardDescription>
+                  Defina pra quantos dias você quer comprar — calculamos a quantidade exata pra cobrir o consumo.
+                </CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportPurchaseListPdf}
+                disabled={purchase.length === 0}
+                className="shrink-0"
+              >
+                <FileDown className="mr-2 h-4 w-4" />
+                Gerar PDF
+              </Button>
             </CardHeader>
             <CardContent>
               <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-border-default bg-surface-subtle/40 p-3">
