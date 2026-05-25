@@ -7,6 +7,8 @@ import { buttonVariants } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Layout do Reabastecedor — minimal, mobile-first.
  * Sem sidebar — só topbar com identidade + logout.
