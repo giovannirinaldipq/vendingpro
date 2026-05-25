@@ -44,21 +44,31 @@ export function KpiCardHero({
       {/* Decoração: grid 3x3 amber/navy no canto superior direito */}
       <DecorativeGrid />
 
-      <div className="relative">
-        <div className="flex items-center gap-2">
+      <div className="relative min-w-0">
+        <div className="flex items-center gap-2 pr-12">
           {Icon && <Icon className="h-3.5 w-3.5 text-brand-navy/60" strokeWidth={2} />}
           <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-brand-navy">
             {label}
           </p>
         </div>
 
-        <div className="mt-2.5 flex items-baseline gap-3">
-          <p className="font-mono text-4xl font-bold tabular-nums leading-none text-brand-navy">
+        <div className="mt-2.5 flex flex-wrap items-baseline gap-x-3 gap-y-1.5 min-w-0">
+          <p
+            className={cn(
+              'font-mono font-bold tabular-nums leading-none text-brand-navy break-words',
+              // Auto-shrink: text-4xl (default) → text-3xl (>10) → text-2xl (>14) → text-xl (>18)
+              value.length <= 10 && 'text-4xl',
+              value.length > 10 && value.length <= 14 && 'text-3xl',
+              value.length > 14 && value.length <= 18 && 'text-2xl',
+              value.length > 18 && 'text-xl'
+            )}
+            title={value}
+          >
             {value}
           </p>
           {showDelta && (
             <span className={cn(
-              'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium tabular-nums',
+              'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium tabular-nums shrink-0',
               isPositive
                 ? 'bg-brand-amber/15 text-[#92400e] dark:text-brand-amber'
                 : 'bg-surface-subtle text-text-secondary'

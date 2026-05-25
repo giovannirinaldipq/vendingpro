@@ -355,7 +355,14 @@ export default function MachineProductsPage({ params }: { params: Promise<{ id: 
                 }
               }}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Escolha um produto..." />
+                  <SelectValue placeholder="Escolha um produto...">
+                    {newProductId
+                      ? (() => {
+                          const p = addableProducts.find(p => p.id === newProductId);
+                          return p ? `${p.name}${p.unit_size ? ` (${p.unit_size})` : ''}` : 'Produto';
+                        })()
+                      : null}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {addableProducts.map(p => (

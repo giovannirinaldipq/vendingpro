@@ -362,7 +362,9 @@ export default function MachineDetailPage({ params }: { params: Promise<{ id: st
                 disabled={isUpdatingStatus}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue />
+                  <SelectValue>
+                    {statusConfig[machine.status]?.label ?? machine.status}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="active">Ativa</SelectItem>

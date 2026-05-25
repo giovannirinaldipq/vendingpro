@@ -120,20 +120,27 @@ export async function POST(req: NextRequest) {
   }
 
   // Insert em lotes (de-duplica via upsert no índice sale_datetime+product_name)
+  // ignoreDuplicates + .select() => retorna apenas linhas EFETIVAMENTE inseridas (não as ignoradas)
   let inserted = 0;
+  let duplicates = 0;
   let errorBatches = 0;
   const batchSize = 500;
   for (let i = 0; i < salesToInsert.length; i += batchSize) {
     const batch = salesToInsert.slice(i, i + batchSize);
-    const { error } = await ctx.supabase.from('sales').upsert(batch as never, {
-      onConflict: 'tenant_id,machine_id,sale_datetime,product_name',
-      ignoreDuplicates: true,
-    });
+    const { data: returned, error } = await ctx.supabase
+      .from('sales')
+      .upsert(batch as never, {
+        onConflict: 'tenant_id,machine_id,sale_datetime,product_name',
+        ignoreDuplicates: true,
+      })
+      .select('id');
     if (error) {
       console.error('[import.confirm] batch error:', error);
       errorBatches++;
     } else {
-      inserted += batch.length;
+      const newRows = returned?.length ?? 0;
+      inserted += newRows;
+      duplicates += batch.length - newRows;
     }
   }
 
@@ -157,11 +164,14 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     data: {
       imported: inserted,
+      duplicates,
       total_in_file: parsed.summary.valid_records,
       aliases_saved: mappings.length,
       unmapped_machines: [...unmapped],
       date_range: parsed.summary.date_range,
       total_revenue: parsed.summary.total_revenue,
+      format: parsed.summary.format,
+      aggregated_transactions: parsed.summary.aggregated_transactions,
     },
   });
 }

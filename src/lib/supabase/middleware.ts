@@ -103,6 +103,16 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
+  // Admin tentando /app/* → redireciona pra /admin (admin não tem tenant; ver /admin/clientes/<id>/imitar pra impersonar)
+  if (user && pathname.startsWith('/app') && !pathname.startsWith('/api/')) {
+    const admin = await isAdminUser(user.id);
+    if (admin) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/admin';
+      return NextResponse.redirect(url);
+    }
+  }
+
   // Reabastecedor tentando /app/* ou /admin/* → redireciona pra /r/visitas
   if (user && (pathname.startsWith('/app') || pathname.startsWith('/admin'))) {
     if (!pathname.startsWith('/api/')) {

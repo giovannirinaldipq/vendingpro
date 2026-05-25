@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Loader2, Save, Trash2, Send, Mail } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Trash2, Send, Mail, Copy, Check, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface Restocker {
   id: string;
@@ -45,6 +53,8 @@ export default function EditRestockerPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [savingAssign, setSavingAssign] = useState(false);
   const [inviting, setInviting] = useState(false);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   async function sendInvite() {
     if (!r?.email) {
@@ -56,18 +66,30 @@ export default function EditRestockerPage() {
       const res = await fetch(`/api/app/restockers/${id}/invite`, { method: 'POST' });
       const json = await res.json();
       if (json.success) {
-        toast.success(json.data?.message ?? 'Convite enviado');
         if (json.data?.action_url) {
-          // Email não foi enviado — mostra o link pra admin copiar
-          // eslint-disable-next-line no-console
-          console.info('Link de convite (Resend não enviou):', json.data.action_url);
-          toast.info('Link disponível no console (F12) — copie e envie manualmente', { duration: 8000 });
+          // Email não foi enviado — abre o dialog com o link pra copiar manualmente
+          setInviteLink(json.data.action_url);
+          setLinkCopied(false);
+        } else {
+          toast.success(json.data?.message ?? 'Convite enviado');
         }
       } else {
         toast.error(json.error?.message ?? 'Falha ao enviar convite');
       }
     } finally {
       setInviting(false);
+    }
+  }
+
+  async function copyLink() {
+    if (!inviteLink) return;
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setLinkCopied(true);
+      toast.success('Link copiado!');
+      setTimeout(() => setLinkCopied(false), 2500);
+    } catch {
+      toast.error('Não foi possível copiar — selecione o texto manualmente');
     }
   }
 
@@ -264,6 +286,41 @@ export default function EditRestockerPage() {
           </Button>
         </CardContent>
       </Card>
+
+      <Dialog open={!!inviteLink} onOpenChange={(open) => { if (!open) setInviteLink(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-warning" />
+              Email não enviado — copie o link manualmente
+            </DialogTitle>
+            <DialogDescription>
+              O serviço de email não está configurado neste ambiente. Copie o link abaixo
+              e envie para <strong>{r?.email}</strong> via WhatsApp ou outro canal. Ao clicar,
+              o reabastecedor entra direto no painel <code className="bg-surface-subtle px-1 rounded text-xs">/r/visitas</code>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="rounded-lg border border-warning/30 bg-warning-soft/30 p-3">
+              <p className="text-xs font-mono text-text-secondary break-all leading-relaxed">
+                {inviteLink}
+              </p>
+            </div>
+            <p className="text-[11px] text-text-tertiary">
+              Esse link é válido por uma única utilização e expira em ~1 hora. Gere outro
+              se necessário clicando em &ldquo;Enviar convite por email&rdquo; novamente.
+            </p>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => setInviteLink(null)}>Fechar</Button>
+            <Button onClick={copyLink} disabled={linkCopied}>
+              {linkCopied
+                ? <><Check className="mr-2 h-4 w-4" />Copiado!</>
+                : <><Copy className="mr-2 h-4 w-4" />Copiar link</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

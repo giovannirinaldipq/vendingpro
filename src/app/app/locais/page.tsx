@@ -2,14 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Plus,
   Search,
   MoreHorizontal,
   Eye,
-  Edit,
   Trash2,
-  MapPin,
   Loader2,
   Building,
 } from 'lucide-react';
@@ -55,6 +54,7 @@ interface LocationsResponse {
 }
 
 export default function LocationsPage() {
+  const router = useRouter();
   const [search, setSearch] = useState('');
   const [data, setData] = useState<LocationsResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -130,7 +130,7 @@ export default function LocationsPage() {
               placeholder="Buscar por nome ou endereço..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
+              className="h-10 pl-9"
             />
           </div>
         </CardContent>
@@ -170,14 +170,14 @@ export default function LocationsPage() {
               </TableHeader>
               <TableBody>
                 {data?.locations.map((location) => (
-                  <TableRow key={location.id}>
-                    <TableCell>
+                  <TableRow key={location.id} className="cursor-pointer hover:bg-surface-subtle/60">
+                    <TableCell onClick={() => router.push(`/app/locais/${location.id}`)}>
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                           <Building className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <p className="font-medium">{location.name}</p>
+                          <p className="font-medium hover:underline">{location.name}</p>
                           <p className="text-xs text-muted-foreground">{location.contact_name}</p>
                         </div>
                       </div>
@@ -214,13 +214,9 @@ export default function LocationsPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => router.push(`/app/locais/${location.id}`)}>
                             <Eye className="mr-2 h-4 w-4" />
-                            Visualizar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Editar
+                            Visualizar / Editar
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem

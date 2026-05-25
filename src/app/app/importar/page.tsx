@@ -48,11 +48,14 @@ interface PreviewData {
 
 interface ConfirmResult {
   imported: number;
+  duplicates?: number;
   total_in_file: number;
   aliases_saved: number;
   unmapped_machines: string[];
   date_range: { start: string; end: string };
   total_revenue: number;
+  format?: 'sales_detailed' | 'cashless_aggregated';
+  aggregated_transactions?: number;
 }
 
 const fmtBRL = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -130,7 +133,14 @@ export default function ImportPage() {
       }
       setResult(json.data);
       setStep('done');
-      toast.success(`${json.data.imported} vendas importadas`);
+      const dup = json.data.duplicates ?? 0;
+      if (json.data.imported === 0 && dup > 0) {
+        toast.info(`Nenhuma venda nova — ${dup} já estavam importadas`, { duration: 5000 });
+      } else if (dup > 0) {
+        toast.success(`${json.data.imported} novas, ${dup} já existiam`, { duration: 5000 });
+      } else {
+        toast.success(`${json.data.imported} vendas importadas`);
+      }
     } finally { setBusy(false); }
   }
 
@@ -419,10 +429,35 @@ export default function ImportPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid sm:grid-cols-3 gap-4">
-              <KpiInline label="Vendas importadas" value={String(result.imported)} variant="success" />
+              {result.format === 'cashless_aggregated' ? (
+                <KpiInline
+                  label="Dias importados"
+                  value={String(result.imported)}
+                  sub={result.aggregated_transactions
+                    ? `${result.aggregated_transactions.toLocaleString('pt-BR')} vendas reais agregadas`
+                    : (result.duplicates ? `${result.duplicates} dias já existiam` : undefined)}
+                  variant="success"
+                />
+              ) : (
+                <KpiInline
+                  label="Vendas importadas"
+                  value={String(result.imported)}
+                  sub={result.duplicates ? `${result.duplicates} já existiam (ignoradas)` : undefined}
+                  variant="success"
+                />
+              )}
               <KpiInline label="Período" value={`${fmtDate(result.date_range.start)} → ${fmtDate(result.date_range.end)}`} />
-              <KpiInline label="Receita" value={fmtBRL(result.total_revenue)} />
+              <KpiInline label="Receita no arquivo" value={fmtBRL(result.total_revenue)} />
             </div>
+            {result.imported === 0 && (result.duplicates ?? 0) > 0 && (
+              <div className="rounded-lg border border-info/30 bg-info-soft/40 p-3 text-sm">
+                <p className="font-medium text-text-primary">Esta planilha já foi importada antes.</p>
+                <p className="text-xs text-text-secondary mt-1">
+                  As {result.duplicates} linhas já existem no banco — nada de novo foi inserido.
+                  Se você queria reimportar para corrigir valores, é preciso excluir os registros antigos antes.
+                </p>
+              </div>
+            )}
             {result.aliases_saved > 0 && (
               <div className="text-sm text-text-secondary">✨ {result.aliases_saved} mapeamento(s) salvo(s) — próximas importações serão automáticas.</div>
             )}
