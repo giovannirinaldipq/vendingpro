@@ -156,10 +156,14 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Reabastecedor tentando /app/* ou /admin/* → redireciona pra /r/visitas
+  // (exceto se também for admin — admin prevalece)
   if (user && (pathname.startsWith('/app') || pathname.startsWith('/admin'))) {
     if (!pathname.startsWith('/api/')) {
-      const restocker = await isRestockerUser(user.id);
-      if (restocker) {
+      const [restocker, admin] = await Promise.all([
+        isRestockerUser(user.id),
+        isAdminUser(user.id),
+      ]);
+      if (restocker && !admin) {
         const url = request.nextUrl.clone();
         url.pathname = '/r/visitas';
         url.search = '';
