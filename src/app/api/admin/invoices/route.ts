@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { requireAdmin } from '@/lib/admin/auth';
 import { logAudit, extractRequestMeta } from '@/lib/admin/audit';
 
@@ -17,10 +18,10 @@ export async function GET(request: NextRequest) {
   const from = (page - 1) * perPage;
   const to = from + perPage - 1;
 
-  let query = supabase
+  let query = supabaseAdmin
     .schema('billing')
     .from('invoices')
-    .select('*, tenant:tenants(company_name, contact_name)', { count: 'exact' })
+    .select('*', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(from, to);
 
@@ -38,10 +39,28 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: false, error: { code: 'DB_ERROR', message: error.message } }, { status: 500 });
   }
 
+  // Enriquecer com dados do tenant
+  const tenantIds = [...new Set((data ?? []).map((i: { tenant_id: string }) => i.tenant_id).filter(Boolean))];
+  const tenantsMap = new Map<string, { company_name: string; contact_name: string }>();
+  if (tenantIds.length > 0) {
+    const { data: tenants } = await supabase
+      .from('tenants')
+      .select('id, company_name, contact_name')
+      .in('id', tenantIds);
+    for (const t of (tenants ?? []) as { id: string; company_name: string; contact_name: string }[]) {
+      tenantsMap.set(t.id, { company_name: t.company_name, contact_name: t.contact_name });
+    }
+  }
+
+  const invoices = (data ?? []).map((inv: Record<string, unknown>) => ({
+    ...inv,
+    tenant: tenantsMap.get(inv.tenant_id as string) ?? null,
+  }));
+
   return NextResponse.json({
     success: true,
     data: {
-      invoices: data,
+      invoices,
       total: count || 0,
       page,
       per_page: perPage,
@@ -54,7 +73,6 @@ export async function POST(request: NextRequest) {
   const auth = await requireAdmin(['super_admin', 'financial']);
   if (!auth.ok) return NextResponse.json({ success: false, error: { code: auth.error, message: auth.error } }, { status: auth.status });
 
-  const supabase = await createClient();
   const body = await request.json();
 
   const { tenant_id, reference_month, due_date, machines_count, price_per_machine, discount = 0, adjustments = [] } = body;
@@ -66,7 +84,7 @@ export async function POST(request: NextRequest) {
 
   // Gerar número da fatura
   const year = new Date().getFullYear();
-  const { count } = await supabase
+  const { count } = await supabaseAdmin
     .schema('billing')
     .from('invoices')
     .select('*', { count: 'exact', head: true })
@@ -74,7 +92,7 @@ export async function POST(request: NextRequest) {
 
   const invoiceNumber = `FAT-${year}-${String((count || 0) + 1).padStart(4, '0')}`;
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .schema('billing')
     .from('invoices')
     .insert({

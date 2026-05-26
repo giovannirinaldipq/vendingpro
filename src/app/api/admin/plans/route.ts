@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { createPlanSchema } from '@/lib/validators';
 import { requireAdmin } from '@/lib/admin/auth';
 import { logAudit, extractRequestMeta } from '@/lib/admin/audit';
@@ -9,7 +10,7 @@ export async function GET() {
   if (!auth.ok) return NextResponse.json({ success: false, error: { code: auth.error, message: auth.error } }, { status: auth.status });
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .schema('billing')
     .from('plans')
     .select('*')
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .schema('billing')
     .from('plans')
     .insert(validation.data)

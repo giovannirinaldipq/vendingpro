@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { updateTenantSchema } from '@/lib/validators';
 import { requireAdmin } from '@/lib/admin/auth';
 import { logAudit, extractRequestMeta } from '@/lib/admin/audit';
@@ -15,7 +16,7 @@ export async function GET(
 
   const { data, error } = await supabase
     .from('tenants')
-    .select('*, plan:billing.plans(*)')
+    .select('*')
     .eq('id', id)
     .single();
 
@@ -29,7 +30,19 @@ export async function GET(
     return NextResponse.json({ success: false, error: { code: 'DB_ERROR', message: error.message } }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true, data });
+  // Buscar plano separadamente (cross-schema)
+  let plan = null;
+  if (data.plan_id) {
+    const { data: planData } = await supabaseAdmin
+      .schema('billing')
+      .from('plans')
+      .select('*')
+      .eq('id', data.plan_id)
+      .maybeSingle();
+    plan = planData;
+  }
+
+  return NextResponse.json({ success: true, data: { ...data, plan } });
 }
 
 export async function PATCH(

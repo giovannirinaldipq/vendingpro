@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { registerPaymentSchema } from '@/lib/validators';
 import { requireAdmin } from '@/lib/admin/auth';
 import { logAudit, extractRequestMeta } from '@/lib/admin/audit';
@@ -7,7 +7,6 @@ import { logAudit, extractRequestMeta } from '@/lib/admin/audit';
 export async function GET(request: NextRequest) {
   const auth = await requireAdmin();
   if (!auth.ok) return NextResponse.json({ success: false, error: { code: auth.error, message: auth.error } }, { status: auth.status });
-  const supabase = await createClient();
   const searchParams = request.nextUrl.searchParams;
 
   const page = parseInt(searchParams.get('page') || '1');
@@ -17,10 +16,10 @@ export async function GET(request: NextRequest) {
   const from = (page - 1) * perPage;
   const to = from + perPage - 1;
 
-  let query = supabase
+  let query = supabaseAdmin
     .schema('billing')
     .from('payments')
-    .select('*, invoice:invoices(invoice_number), tenant:tenants(company_name)', { count: 'exact' })
+    .select('*', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(from, to);
 
@@ -34,10 +33,43 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: false, error: { code: 'DB_ERROR', message: error.message } }, { status: 500 });
   }
 
+  // Enriquecer com invoice_number e tenant company_name
+  const invoiceIds = [...new Set((data ?? []).map((p: { invoice_id: string }) => p.invoice_id).filter(Boolean))];
+  const tenantIds = [...new Set((data ?? []).map((p: { tenant_id: string }) => p.tenant_id).filter(Boolean))];
+
+  const invoicesMap = new Map<string, string>();
+  const tenantsMap = new Map<string, string>();
+
+  if (invoiceIds.length > 0) {
+    const { data: invoices } = await supabaseAdmin
+      .schema('billing')
+      .from('invoices')
+      .select('id, invoice_number')
+      .in('id', invoiceIds);
+    for (const inv of (invoices ?? []) as { id: string; invoice_number: string }[]) {
+      invoicesMap.set(inv.id, inv.invoice_number);
+    }
+  }
+  if (tenantIds.length > 0) {
+    const { data: tenants } = await supabaseAdmin
+      .from('tenants')
+      .select('id, company_name')
+      .in('id', tenantIds);
+    for (const t of (tenants ?? []) as { id: string; company_name: string }[]) {
+      tenantsMap.set(t.id, t.company_name);
+    }
+  }
+
+  const payments = (data ?? []).map((p: Record<string, unknown>) => ({
+    ...p,
+    invoice: p.invoice_id ? { invoice_number: invoicesMap.get(p.invoice_id as string) ?? null } : null,
+    tenant: p.tenant_id ? { company_name: tenantsMap.get(p.tenant_id as string) ?? null } : null,
+  }));
+
   return NextResponse.json({
     success: true,
     data: {
-      payments: data,
+      payments,
       total: count || 0,
       page,
       per_page: perPage,
@@ -50,7 +82,6 @@ export async function POST(request: NextRequest) {
   const auth = await requireAdmin(['super_admin', 'financial']);
   if (!auth.ok) return NextResponse.json({ success: false, error: { code: auth.error, message: auth.error } }, { status: auth.status });
 
-  const supabase = await createClient();
   const body = await request.json();
 
   const validation = registerPaymentSchema.safeParse(body);
@@ -62,7 +93,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Buscar fatura
-  const { data: invoice, error: invoiceError } = await supabase
+  const { data: invoice, error: invoiceError } = await supabaseAdmin
     .schema('billing')
     .from('invoices')
     .select('tenant_id, total, status')
@@ -84,7 +115,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Registrar pagamento
-  const { data: payment, error: paymentError } = await supabase
+  const { data: payment, error: paymentError } = await supabaseAdmin
     .schema('billing')
     .from('payments')
     .insert({
@@ -105,7 +136,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Atualizar fatura
-  await supabase
+  await supabaseAdmin
     .schema('billing')
     .from('invoices')
     .update({
@@ -117,7 +148,7 @@ export async function POST(request: NextRequest) {
     .eq('id', validation.data.invoice_id);
 
   // Atualizar status do tenant se estava inadimplente
-  await supabase
+  await supabaseAdmin
     .from('tenants')
     .update({ subscription_status: 'active' })
     .eq('id', invoice.tenant_id)

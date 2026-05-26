@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { requireAdmin } from '@/lib/admin/auth';
 
 function monthStartIso(year: number, month: number) {
@@ -23,13 +24,13 @@ export async function GET() {
       .select('subscription_status, plan_id')
       .eq('is_active', true),
 
-    supabase
+    supabaseAdmin
       .schema('billing')
       .from('invoices')
       .select('status, total')
       .gte('reference_month', currentMonthStart),
 
-    supabase
+    supabaseAdmin
       .schema('billing')
       .from('invoices')
       .select('status, total')

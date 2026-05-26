@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { createTenantSchema } from '@/lib/validators';
 import { requireAdmin } from '@/lib/admin/auth';
 import { logAudit, extractRequestMeta } from '@/lib/admin/audit';
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
 
   let query = supabase
     .from('tenants')
-    .select('*, plan:billing.plans(*)', { count: 'exact' })
+    .select('*', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(from, to);
 
@@ -39,13 +40,27 @@ export async function GET(request: NextRequest) {
   }
 
   // Enriquece cada tenant com machines_count + estimated_monthly_value
-  // (machines_count × plan.price_per_machine, ou minimum_value se menor)
   type TenantRow = {
     id: string;
-    plan?: { price_per_machine?: number; minimum_value?: number; minimum_machines?: number } | null;
+    plan_id?: string | null;
   } & Record<string, unknown>;
   const rows = (data ?? []) as unknown as TenantRow[];
   const tenantIds = rows.map(t => t.id);
+
+  // Buscar planos via supabaseAdmin (cross-schema)
+  const planIds = [...new Set(rows.map(t => t.plan_id).filter(Boolean))] as string[];
+  const plansMap = new Map<string, { price_per_machine?: number; minimum_value?: number; minimum_machines?: number }>();
+  if (planIds.length > 0) {
+    const { data: plans } = await supabaseAdmin
+      .schema('billing')
+      .from('plans')
+      .select('id, price_per_machine, minimum_value, minimum_machines')
+      .in('id', planIds);
+    for (const p of (plans ?? []) as { id: string; price_per_machine?: number; minimum_value?: number; minimum_machines?: number }[]) {
+      plansMap.set(p.id, p);
+    }
+  }
+
   const countsByTenant = new Map<string, number>();
   if (tenantIds.length > 0) {
     const { data: machineCounts } = await supabase
@@ -60,13 +75,14 @@ export async function GET(request: NextRequest) {
 
   const enrichedTenants = rows.map(t => {
     const machinesCount = countsByTenant.get(t.id) ?? 0;
-    const plan = t.plan ?? null;
+    const plan = t.plan_id ? plansMap.get(t.plan_id) ?? null : null;
     const pricePerMachine = plan?.price_per_machine ? Number(plan.price_per_machine) : 0;
     const minimum = plan?.minimum_value ? Number(plan.minimum_value) : 0;
     const raw = machinesCount * pricePerMachine;
     const estimatedMonthlyValue = Math.max(raw, minimum);
     return {
       ...t,
+      plan: plan ?? null,
       machines_count: machinesCount,
       estimated_monthly_value: estimatedMonthlyValue,
     };
