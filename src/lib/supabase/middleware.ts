@@ -1,8 +1,18 @@
 import { createServerClient } from '@supabase/ssr';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { IMPERSONATION_SESSION_COOKIE } from '@/lib/admin/impersonate';
 import { TWO_FA_COOKIE, verifyTwoFaCookie } from '@/lib/auth/2fa-cookie';
+
+// Client dedicado pro middleware — evita problemas com o Proxy lazy + .schema()
+function getAdminClient() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false, autoRefreshToken: false } }
+  );
+}
 
 /** Retorna true se o user tem 2FA WhatsApp verificado e não passou o desafio nessa sessão. */
 async function isTwoFaRequired(request: NextRequest, userId: string): Promise<boolean> {
@@ -18,7 +28,7 @@ async function isTwoFaRequired(request: NextRequest, userId: string): Promise<bo
 }
 
 async function isAdminUser(userId: string): Promise<boolean> {
-  const { data } = await supabaseAdmin
+  const { data } = await getAdminClient()
     .schema('admin')
     .from('users')
     .select('id')
@@ -29,7 +39,7 @@ async function isAdminUser(userId: string): Promise<boolean> {
 }
 
 async function isImpersonatingActive(sessionId: string, adminUserId: string): Promise<boolean> {
-  const { data } = await supabaseAdmin
+  const { data } = await getAdminClient()
     .schema('admin')
     .from('impersonation_sessions')
     .select('id, ended_at, expires_at')
@@ -155,20 +165,19 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
-  // Reabastecedor tentando /app/* ou /admin/* → redireciona pra /r/visitas
+  // Reabastecedor tentando /app/* → redireciona pra /r/visitas
   // (exceto se também for admin — admin prevalece)
-  if (user && (pathname.startsWith('/app') || pathname.startsWith('/admin'))) {
-    if (!pathname.startsWith('/api/')) {
-      const [restocker, admin] = await Promise.all([
-        isRestockerUser(user.id),
-        isAdminUser(user.id),
-      ]);
-      if (restocker && !admin) {
-        const url = request.nextUrl.clone();
-        url.pathname = '/r/visitas';
-        url.search = '';
-        return NextResponse.redirect(url);
-      }
+  // Nota: não checa /admin/* aqui porque o bloco acima já garante que só admin acessa /admin
+  if (user && pathname.startsWith('/app') && !pathname.startsWith('/api/')) {
+    const [restocker, admin] = await Promise.all([
+      isRestockerUser(user.id),
+      isAdminUser(user.id),
+    ]);
+    if (restocker && !admin) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/r/visitas';
+      url.search = '';
+      return NextResponse.redirect(url);
     }
   }
 
