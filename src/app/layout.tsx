@@ -21,6 +21,11 @@ const jetbrains = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Vending Pro · Gestão inteligente para vending machines",
   description: "Controle de máquinas, vendas e operação em tempo real para franqueadoras de vending.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'VendingPro',
+  },
   icons: {
     icon: [
       { url: "/brand/favicon.ico", sizes: "any" },
@@ -35,6 +40,9 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#fafafa" },
     { media: "(prefers-color-scheme: dark)", color: "#09090b" },

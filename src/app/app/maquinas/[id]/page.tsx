@@ -200,7 +200,7 @@ export default function MachineDetailPage({ params }: { params: Promise<{ id: st
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <Link href="/app/maquinas">
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" aria-label="Voltar">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>

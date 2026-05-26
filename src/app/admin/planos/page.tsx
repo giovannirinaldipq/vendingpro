@@ -161,10 +161,10 @@ export default function PlansPage() {
                     <p className="text-xs text-text-tertiary mt-0.5 font-mono">{plan.slug}</p>
                   </div>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(plan)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Editar plano" onClick={() => openEdit(plan)}>
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-danger" onClick={() => deletePlan(plan)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-danger" aria-label="Excluir plano" onClick={() => deletePlan(plan)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>

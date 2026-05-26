@@ -129,10 +129,10 @@ export default function AuditoriaPage() {
             <CardDescription>{total.toLocaleString('pt-BR')} evento(s) · página {page} de {totalPages}</CardDescription>
           </div>
           <div className="flex items-center gap-1">
-            <Button size="icon" variant="outline" disabled={page <= 1 || loading} onClick={() => setPage(p => Math.max(1, p - 1))}>
+            <Button size="icon" variant="outline" aria-label="Página anterior" disabled={page <= 1 || loading} onClick={() => setPage(p => Math.max(1, p - 1))}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button size="icon" variant="outline" disabled={page >= totalPages || loading} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>
+            <Button size="icon" variant="outline" aria-label="Próxima página" disabled={page >= totalPages || loading} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>

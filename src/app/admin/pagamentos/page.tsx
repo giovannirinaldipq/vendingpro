@@ -202,7 +202,7 @@ export default function PaymentsPage() {
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger>
-                            <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" aria-label="Ações do pagamento"><MoreHorizontal className="h-4 w-4" /></Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem><Eye className="mr-2 h-4 w-4" />Ver detalhes</DropdownMenuItem>

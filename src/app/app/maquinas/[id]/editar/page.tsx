@@ -142,7 +142,7 @@ export default function EditMachinePage({ params }: { params: Promise<{ id: stri
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Link href={`/app/maquinas/${id}`}>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" aria-label="Voltar">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>

@@ -118,7 +118,7 @@ function ManualInvoiceForm() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Link href="/admin/faturas">
-          <Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" aria-label="Voltar"><ArrowLeft className="h-4 w-4" /></Button>
         </Link>
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Fatura manual</h1>
@@ -209,7 +209,7 @@ function ManualInvoiceForm() {
                           onChange={(e) => updateAdjustment(i, 'amount', e.target.value)}
                           className="w-32"
                         />
-                        <Button type="button" size="icon" variant="ghost" onClick={() => removeAdjustment(i)}>
+                        <Button type="button" size="icon" variant="ghost" aria-label="Remover ajuste" onClick={() => removeAdjustment(i)}>
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>

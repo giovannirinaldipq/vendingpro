@@ -172,7 +172,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/app/produtos">
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" aria-label="Voltar">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>

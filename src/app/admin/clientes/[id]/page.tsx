@@ -127,7 +127,7 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-3 min-w-0">
           <Link href="/admin/clientes">
-            <Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" aria-label="Voltar"><ArrowLeft className="h-4 w-4" /></Button>
           </Link>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">

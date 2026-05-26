@@ -82,7 +82,7 @@ export default function InventoryExtractPage({ params }: { params: Promise<{ id:
       {/* Header */}
       <div className="flex items-center gap-3">
         <Link href="/app/estoque">
-          <Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" aria-label="Voltar"><ArrowLeft className="h-4 w-4" /></Button>
         </Link>
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{prod?.name ?? 'Produto'}</h1>
