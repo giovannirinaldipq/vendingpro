@@ -25,14 +25,12 @@ export async function GET() {
       .eq('is_active', true),
 
     supabaseAdmin
-      .schema('billing')
-      .from('invoices')
+      .from('billing_invoices_view')
       .select('status, total')
       .gte('reference_month', currentMonthStart),
 
     supabaseAdmin
-      .schema('billing')
-      .from('invoices')
+      .from('billing_invoices_view')
       .select('status, total')
       .gte('reference_month', prevMonthStart)
       .lt('reference_month', currentMonthStart),

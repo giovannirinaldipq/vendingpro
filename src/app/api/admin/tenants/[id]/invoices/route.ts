@@ -12,8 +12,7 @@ export async function GET(
   const { id } = await params;
 
   const { data, error } = await supabaseAdmin
-    .schema('billing')
-    .from('invoices')
+    .from('billing_invoices_view')
     .select('id, invoice_number, reference_month, due_date, total, status, paid_at, paid_amount, payment_method, gateway_boleto_url, created_at')
     .eq('tenant_id', id)
     .order('reference_month', { ascending: false })

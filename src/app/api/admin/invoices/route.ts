@@ -19,8 +19,7 @@ export async function GET(request: NextRequest) {
   const to = from + perPage - 1;
 
   let query = supabaseAdmin
-    .schema('billing')
-    .from('invoices')
+    .from('billing_invoices_view')
     .select('*', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(from, to);
@@ -85,16 +84,14 @@ export async function POST(request: NextRequest) {
   // Gerar número da fatura
   const year = new Date().getFullYear();
   const { count } = await supabaseAdmin
-    .schema('billing')
-    .from('invoices')
+    .from('billing_invoices_view')
     .select('*', { count: 'exact', head: true })
     .gte('created_at', `${year}-01-01`);
 
   const invoiceNumber = `FAT-${year}-${String((count || 0) + 1).padStart(4, '0')}`;
 
   const { data, error } = await supabaseAdmin
-    .schema('billing')
-    .from('invoices')
+    .from('billing_invoices_view')
     .insert({
       tenant_id,
       invoice_number: invoiceNumber,

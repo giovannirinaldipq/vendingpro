@@ -11,8 +11,7 @@ export async function GET() {
   const supabase = await createClient();
 
   const { data, error } = await supabaseAdmin
-    .schema('billing')
-    .from('plans')
+    .from('billing_plans_view')
     .select('*')
     .order('price_per_machine', { ascending: true });
 
@@ -55,8 +54,7 @@ export async function POST(request: NextRequest) {
   }
 
   const { data, error } = await supabaseAdmin
-    .schema('billing')
-    .from('plans')
+    .from('billing_plans_view')
     .insert(validation.data)
     .select()
     .single();

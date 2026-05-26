@@ -12,9 +12,9 @@ export async function GET() {
   const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
 
   const [todayRes, weekRes, monthRes] = await Promise.all([
-    supabaseAdmin.schema('billing').from('payments').select('amount').gte('payment_date', startOfDay.slice(0, 10)),
-    supabaseAdmin.schema('billing').from('payments').select('amount').gte('payment_date', startOfWeek.slice(0, 10)),
-    supabaseAdmin.schema('billing').from('payments').select('amount').gte('payment_date', startOfMonth.slice(0, 10)),
+    supabaseAdmin.from('billing_payments_view').select('amount').gte('payment_date', startOfDay.slice(0, 10)),
+    supabaseAdmin.from('billing_payments_view').select('amount').gte('payment_date', startOfWeek.slice(0, 10)),
+    supabaseAdmin.from('billing_payments_view').select('amount').gte('payment_date', startOfMonth.slice(0, 10)),
   ]);
 
   const sum = (rows: { amount: number | null }[] | null) =>

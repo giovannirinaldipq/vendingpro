@@ -43,9 +43,9 @@ export async function GET(
     supabaseAdmin.from('products').select('id', { count: 'exact', head: true }).eq('tenant_id', id),
     supabaseAdmin.from('sales').select('total_value, sale_date').eq('tenant_id', id),
     supabaseAdmin.from('sales').select('total_value').eq('tenant_id', id).gte('sale_date', thirtyDaysAgo),
-    supabaseAdmin.schema('billing').from('invoices').select('total', { count: 'exact' }).eq('tenant_id', id).in('status', ['pending', 'overdue']),
-    supabaseAdmin.schema('billing').from('invoices').select('total', { count: 'exact' }).eq('tenant_id', id).eq('status', 'paid'),
-    supabaseAdmin.schema('billing').from('invoices').select('total', { count: 'exact' }).eq('tenant_id', id).eq('status', 'overdue'),
+    supabaseAdmin.from('billing_invoices_view').select('total', { count: 'exact' }).eq('tenant_id', id).in('status', ['pending', 'overdue']),
+    supabaseAdmin.from('billing_invoices_view').select('total', { count: 'exact' }).eq('tenant_id', id).eq('status', 'paid'),
+    supabaseAdmin.from('billing_invoices_view').select('total', { count: 'exact' }).eq('tenant_id', id).eq('status', 'overdue'),
     supabaseAdmin.from('users').select('last_login_at').eq('tenant_id', id).order('last_login_at', { ascending: false }).limit(1).maybeSingle(),
   ]);
 

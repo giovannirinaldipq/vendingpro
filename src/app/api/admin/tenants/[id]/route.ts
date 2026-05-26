@@ -34,8 +34,7 @@ export async function GET(
   let plan = null;
   if (data.plan_id) {
     const { data: planData } = await supabaseAdmin
-      .schema('billing')
-      .from('plans')
+      .from('billing_plans_view')
       .select('*')
       .eq('id', data.plan_id)
       .maybeSingle();

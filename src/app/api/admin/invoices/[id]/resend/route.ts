@@ -32,8 +32,7 @@ export async function POST(
   }
 
   const { data: invoice } = await supabaseAdmin
-    .schema('billing')
-    .from('invoices')
+    .from('billing_invoices_view')
     .select('id, invoice_number, total, due_date, status, gateway_boleto_url, gateway_pix_code, tenant_id')
     .eq('id', id)
     .maybeSingle();

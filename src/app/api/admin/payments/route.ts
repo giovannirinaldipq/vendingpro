@@ -17,8 +17,7 @@ export async function GET(request: NextRequest) {
   const to = from + perPage - 1;
 
   let query = supabaseAdmin
-    .schema('billing')
-    .from('payments')
+    .from('billing_payments_view')
     .select('*', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(from, to);
@@ -42,8 +41,7 @@ export async function GET(request: NextRequest) {
 
   if (invoiceIds.length > 0) {
     const { data: invoices } = await supabaseAdmin
-      .schema('billing')
-      .from('invoices')
+      .from('billing_invoices_view')
       .select('id, invoice_number')
       .in('id', invoiceIds);
     for (const inv of (invoices ?? []) as { id: string; invoice_number: string }[]) {
@@ -94,8 +92,7 @@ export async function POST(request: NextRequest) {
 
   // Buscar fatura
   const { data: invoice, error: invoiceError } = await supabaseAdmin
-    .schema('billing')
-    .from('invoices')
+    .from('billing_invoices_view')
     .select('tenant_id, total, status')
     .eq('id', validation.data.invoice_id)
     .single();
@@ -116,8 +113,7 @@ export async function POST(request: NextRequest) {
 
   // Registrar pagamento
   const { data: payment, error: paymentError } = await supabaseAdmin
-    .schema('billing')
-    .from('payments')
+    .from('billing_payments_view')
     .insert({
       invoice_id: validation.data.invoice_id,
       tenant_id: invoice.tenant_id,
@@ -137,8 +133,7 @@ export async function POST(request: NextRequest) {
 
   // Atualizar fatura
   await supabaseAdmin
-    .schema('billing')
-    .from('invoices')
+    .from('billing_invoices_view')
     .update({
       status: 'paid',
       paid_at: new Date().toISOString(),

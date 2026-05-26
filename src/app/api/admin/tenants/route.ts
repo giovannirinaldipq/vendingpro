@@ -52,8 +52,7 @@ export async function GET(request: NextRequest) {
   const plansMap = new Map<string, { price_per_machine?: number; minimum_value?: number; minimum_machines?: number }>();
   if (planIds.length > 0) {
     const { data: plans } = await supabaseAdmin
-      .schema('billing')
-      .from('plans')
+      .from('billing_plans_view')
       .select('id, price_per_machine, minimum_value, minimum_machines')
       .in('id', planIds);
     for (const p of (plans ?? []) as { id: string; price_per_machine?: number; minimum_value?: number; minimum_machines?: number }[]) {

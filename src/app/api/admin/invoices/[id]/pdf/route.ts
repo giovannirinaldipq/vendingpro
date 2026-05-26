@@ -6,8 +6,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params;
 
   const { data: invoice, error } = await supabaseAdmin
-    .schema('billing')
-    .from('invoices')
+    .from('billing_invoices_view')
     .select(`
       invoice_number, reference_month, due_date, total, subtotal, discount,
       machines_count, price_per_machine, status, paid_at,
@@ -37,8 +36,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   let plan_name: string | undefined;
   if (tenant.plan_id) {
     const { data: plan } = await supabaseAdmin
-      .schema('billing')
-      .from('plans')
+      .from('billing_plans_view')
       .select('name')
       .eq('id', tenant.plan_id)
       .single();

@@ -21,8 +21,7 @@ export async function PATCH(
   }
 
   const { data, error } = await supabaseAdmin
-    .schema('billing')
-    .from('plans')
+    .from('billing_plans_view')
     .update(parsed.data)
     .eq('id', id)
     .select()
@@ -67,8 +66,7 @@ export async function DELETE(
   if ((count ?? 0) > 0) {
     // Soft-disable se houver clientes vinculados
     const { error: updErr } = await supabaseAdmin
-      .schema('billing')
-      .from('plans')
+      .from('billing_plans_view')
       .update({ is_active: false })
       .eq('id', id);
 
@@ -94,8 +92,7 @@ export async function DELETE(
   }
 
   const { error } = await supabaseAdmin
-    .schema('billing')
-    .from('plans')
+    .from('billing_plans_view')
     .delete()
     .eq('id', id);
 
