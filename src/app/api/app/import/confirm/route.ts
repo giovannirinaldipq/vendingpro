@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTenantContext } from '@/lib/auth/tenant';
 import { runParser, type ImportSource } from '@/lib/import';
+import { recordSalesMovementsFiltered } from '@/lib/inventory/movements';
 
 interface MappingPair {
   external_name: string;
@@ -121,9 +122,11 @@ export async function POST(req: NextRequest) {
 
   // Insert em lotes (de-duplica via upsert no índice sale_datetime+product_name)
   // ignoreDuplicates + .select() => retorna apenas linhas EFETIVAMENTE inseridas (não as ignoradas)
+  // Coletamos os retornos COMPLETOS pra gerar inventory_movements depois.
   let inserted = 0;
   let duplicates = 0;
   let errorBatches = 0;
+  const insertedSales: Array<{ id: string; machine_id: string; product_name: string; sale_datetime: string; quantity: number }> = [];
   const batchSize = 500;
   for (let i = 0; i < salesToInsert.length; i += batchSize) {
     const batch = salesToInsert.slice(i, i + batchSize);
@@ -133,7 +136,7 @@ export async function POST(req: NextRequest) {
         onConflict: 'tenant_id,machine_id,sale_datetime,product_name',
         ignoreDuplicates: true,
       })
-      .select('id');
+      .select('id, machine_id, product_name, sale_datetime, quantity');
     if (error) {
       console.error('[import.confirm] batch error:', error);
       errorBatches++;
@@ -141,6 +144,70 @@ export async function POST(req: NextRequest) {
       const newRows = returned?.length ?? 0;
       inserted += newRows;
       duplicates += batch.length - newRows;
+      if (returned) insertedSales.push(...(returned as typeof insertedSales));
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // Inventory movements: cada venda nova vira movement 'sale' negativo,
+  // FILTRADO por cutoff (vendas anteriores a último initial/manual_adjust
+  // já estão refletidas no snapshot — não geram movement).
+  // ─────────────────────────────────────────────────────────────
+  let movementsInserted = 0;
+  let movementsSkipped = 0;
+  let movementsUnresolvedProducts = 0;
+
+  if (insertedSales.length > 0) {
+    // Resolve product_id por product_name via machine_products (preciso) + products (fallback)
+    const distinctNames = [...new Set(insertedSales.map(s => s.product_name).filter(Boolean))];
+    const productIdByKey = new Map<string, string>(); // key = "machine_id::product_name_lower" OU "*::product_name_lower"
+
+    if (distinctNames.length > 0) {
+      // 1) machine_products (mais preciso — produto vinculado à máquina específica)
+      const { data: mp } = await ctx.supabase
+        .from('machine_products')
+        .select('machine_id, product:products(id, name)')
+        .eq('tenant_id', ctx.tenantId)
+        .eq('is_active', true);
+      for (const row of (mp ?? []) as Array<{ machine_id: string; product: { id: string; name: string } | { id: string; name: string }[] | null }>) {
+        const prod = Array.isArray(row.product) ? row.product[0] : row.product;
+        if (!prod) continue;
+        productIdByKey.set(`${row.machine_id}::${prod.name.toLowerCase()}`, prod.id);
+      }
+
+      // 2) products do tenant (fallback por nome)
+      const { data: products } = await ctx.supabase
+        .from('products')
+        .select('id, name')
+        .eq('tenant_id', ctx.tenantId)
+        .in('name', distinctNames);
+      for (const p of (products ?? []) as Array<{ id: string; name: string }>) {
+        const key = `*::${p.name.toLowerCase()}`;
+        if (!productIdByKey.has(key)) productIdByKey.set(key, p.id);
+      }
+    }
+
+    const resolved = insertedSales.map(s => {
+      const lowerName = (s.product_name ?? '').toLowerCase();
+      const productId =
+        productIdByKey.get(`${s.machine_id}::${lowerName}`) ||
+        productIdByKey.get(`*::${lowerName}`) ||
+        null;
+      return productId
+        ? { id: s.id, product_id: productId, machine_id: s.machine_id, quantity: Number(s.quantity) || 1, sale_datetime: s.sale_datetime }
+        : null;
+    });
+
+    const resolvedSales = resolved.filter((r): r is NonNullable<typeof r> => r !== null);
+    movementsUnresolvedProducts = resolved.length - resolvedSales.length;
+
+    if (resolvedSales.length > 0) {
+      const result = await recordSalesMovementsFiltered(ctx.tenantId, resolvedSales);
+      movementsInserted = result.inserted;
+      movementsSkipped = result.skipped;
+      if (result.error) {
+        console.error('[import.confirm] movements error:', result.error);
+      }
     }
   }
 
@@ -157,7 +224,13 @@ export async function POST(req: NextRequest) {
       total_rows: parsed.summary.valid_records,
       processed_rows: inserted,
       error_rows: salesToInsert.length - inserted + unmapped.size,
-      errors_detail: { unmapped: [...unmapped], error_batches: errorBatches },
+      errors_detail: {
+        unmapped: [...unmapped],
+        error_batches: errorBatches,
+        movements_inserted: movementsInserted,
+        movements_skipped: movementsSkipped,
+        movements_unresolved_products: movementsUnresolvedProducts,
+      },
       completed_at: new Date().toISOString(),
     });
 
@@ -172,6 +245,11 @@ export async function POST(req: NextRequest) {
       total_revenue: parsed.summary.total_revenue,
       format: parsed.summary.format,
       aggregated_transactions: parsed.summary.aggregated_transactions,
+      stock: {
+        movements_inserted: movementsInserted,
+        movements_skipped: movementsSkipped,
+        unresolved_products: movementsUnresolvedProducts,
+      },
     },
   });
 }

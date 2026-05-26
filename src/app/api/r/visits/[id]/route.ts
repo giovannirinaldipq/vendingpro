@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getRestockerContext, restockerSupabaseAdmin } from '@/lib/auth/restocker';
+import { recordRestockMovements } from '@/lib/inventory/movements';
 
 const updateSchema = z.object({
   action: z.enum(['add_item', 'finish']),
@@ -220,15 +221,44 @@ export async function PATCH(
       notes: v.data.notes ?? null,
     })
     .eq('id', visitId)
-    .select()
+    .select('id, machine_id')
     .single();
 
-  if (error) {
+  if (error || !finished) {
     return NextResponse.json(
-      { success: false, error: { code: 'DB_ERROR', message: error.message } },
+      { success: false, error: { code: 'DB_ERROR', message: error?.message ?? 'finish_failed' } },
       { status: 500 }
     );
   }
 
-  return NextResponse.json({ success: true, data: finished });
+  // Gera inventory_movements (kind=restock) somando ao estoque.
+  // Idempotente por (source_kind='visit', source_ref=visitId): se já existem
+  // movements desta visita (re-submissão), removemos os antigos antes.
+  await restockerSupabaseAdmin
+    .from('inventory_movements')
+    .delete()
+    .eq('tenant_id', ctx.tenantId)
+    .eq('source_kind', 'visit')
+    .eq('source_ref', visitId);
+
+  const { data: visitItems } = await restockerSupabaseAdmin
+    .from('restocking_items')
+    .select('product_id, quantity')
+    .eq('visit_id', visitId);
+
+  const restockResult = await recordRestockMovements(
+    ctx.tenantId,
+    visitId,
+    finished.machine_id,
+    (visitItems ?? []) as Array<{ product_id: string | null; quantity: number }>,
+  );
+
+  if (restockResult.error) {
+    console.error('[visit.finish] movements error:', restockResult.error);
+  }
+
+  return NextResponse.json({
+    success: true,
+    data: { ...finished, stock_movements_inserted: restockResult.inserted },
+  });
 }

@@ -10,6 +10,8 @@ export interface InventoryPrediction {
   days_of_stock: number | null;     // null = sem consumo registrado
   estimated_runout_date: string | null;
   status: 'ok' | 'low' | 'critical' | 'depleted';
+  /** Última movimentação que alterou esse estoque (qualquer kind). null se nenhum movement ainda. */
+  last_movement_at: string | null;
 }
 
 /**
@@ -24,7 +26,7 @@ export async function predictInventoryRunout(tenantId: string): Promise<Inventor
 
   const { data: inv } = await supabaseAdmin
     .from('inventory')
-    .select('product_id, current_quantity, minimum_quantity, products(name)')
+    .select('product_id, current_quantity, minimum_quantity, last_updated_at, products(name)')
     .eq('tenant_id', tenantId);
 
   if (!inv?.length) return [];
@@ -38,6 +40,21 @@ export async function predictInventoryRunout(tenantId: string): Promise<Inventor
     .eq('tenant_id', tenantId)
     .in('product_id', productIds)
     .gte('sale_datetime', since);
+
+  // Query 3: última movimentação por produto (qualquer kind)
+  const { data: lastMovements } = await supabaseAdmin
+    .from('inventory_movements')
+    .select('product_id, occurred_at')
+    .eq('tenant_id', tenantId)
+    .in('product_id', productIds)
+    .order('occurred_at', { ascending: false });
+
+  const lastMovementByProduct = new Map<string, string>();
+  for (const m of (lastMovements ?? []) as Array<{ product_id: string; occurred_at: string }>) {
+    if (!lastMovementByProduct.has(m.product_id)) {
+      lastMovementByProduct.set(m.product_id, m.occurred_at);
+    }
+  }
 
   // Agregação por product_id em memória
   const salesByProduct = new Map<string, number>();
@@ -84,6 +101,7 @@ export async function predictInventoryRunout(tenantId: string): Promise<Inventor
       days_of_stock: daysOfStock != null ? Math.round(daysOfStock * 10) / 10 : null,
       estimated_runout_date: runoutDate,
       status,
+      last_movement_at: lastMovementByProduct.get(row.product_id) ?? null,
     });
   }
 

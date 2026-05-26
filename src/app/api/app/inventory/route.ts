@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
+import { recordManualAdjust } from '@/lib/inventory/movements';
 
 const inventorySchema = z.object({
   product_id: z.string().uuid(),
@@ -104,6 +105,14 @@ export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const body = await request.json();
 
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json(
+      { success: false, error: { code: 'UNAUTHORIZED', message: 'Não autenticado' } },
+      { status: 401 }
+    );
+  }
+
   const tenantId = await getTenantId(supabase);
   if (!tenantId) {
     return NextResponse.json(
@@ -135,22 +144,69 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Upsert no estoque
+  // Ajuste manual: registra movement com delta. Trigger atualiza current_quantity.
+  // Se inventory row ainda não existe (primeira vez), gera 'initial' em vez de 'manual_adjust'.
+  const { data: existingInv } = await supabase
+    .from('inventory')
+    .select('current_quantity')
+    .eq('tenant_id', tenantId)
+    .eq('product_id', validation.data.product_id)
+    .maybeSingle();
+
+  if (!existingInv) {
+    // Primeira vez — registra estoque inicial
+    const { recordInitialStock } = await import('@/lib/inventory/movements');
+    const initResult = await recordInitialStock(
+      tenantId,
+      validation.data.product_id,
+      validation.data.current_quantity,
+    );
+    if (initResult.error) {
+      return NextResponse.json(
+        { success: false, error: { code: 'DB_ERROR', message: initResult.error } },
+        { status: 500 }
+      );
+    }
+    // Atualiza minimum_quantity (campo separado dos movimentos)
+    if (validation.data.minimum_quantity != null) {
+      await supabase
+        .from('inventory')
+        .update({ minimum_quantity: validation.data.minimum_quantity })
+        .eq('tenant_id', tenantId)
+        .eq('product_id', validation.data.product_id);
+    }
+  } else {
+    // Ajuste subsequente
+    const adjResult = await recordManualAdjust(
+      tenantId,
+      validation.data.product_id,
+      validation.data.current_quantity,
+      user.id,
+    );
+    if (adjResult.error) {
+      return NextResponse.json(
+        { success: false, error: { code: 'DB_ERROR', message: adjResult.error } },
+        { status: 500 }
+      );
+    }
+    if (validation.data.minimum_quantity != null) {
+      await supabase
+        .from('inventory')
+        .update({ minimum_quantity: validation.data.minimum_quantity })
+        .eq('tenant_id', tenantId)
+        .eq('product_id', validation.data.product_id);
+    }
+  }
+
+  // Re-fetch pra retornar estado atualizado
   const { data, error } = await supabase
     .from('inventory')
-    .upsert({
-      tenant_id: tenantId,
-      product_id: validation.data.product_id,
-      current_quantity: validation.data.current_quantity,
-      minimum_quantity: validation.data.minimum_quantity || 0,
-      last_updated_at: new Date().toISOString(),
-    }, {
-      onConflict: 'tenant_id,product_id',
-    })
     .select(`
       *,
       product:products(id, name, barcode, category)
     `)
+    .eq('tenant_id', tenantId)
+    .eq('product_id', validation.data.product_id)
     .single();
 
   if (error) {
