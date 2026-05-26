@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Loader2, CalendarClock, Package2, ShoppingCart, ArrowRight, Sparkles,
-  Info, Repeat, Pin, TrendingUp, TrendingDown, FileDown,
+  Info, Repeat, Pin, TrendingUp, TrendingDown, FileDown, Users,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Pill } from '@/components/ui/pill';
@@ -93,19 +93,22 @@ export default function SuggestionsPage() {
   const [purchaseDays, setPurchaseDays] = useState<number>(30);
   const [purchaseCustom, setPurchaseCustom] = useState<string>('');
   const [purchaseLoading, setPurchaseLoading] = useState(false);
+  const [capacity, setCapacity] = useState<{ active_restockers_count: number; avg_visits_per_day_per_restocker: number } | null>(null);
 
   useEffect(() => {
     (async () => {
-      const [s, p, pu, sw] = await Promise.all([
+      const [s, p, pu, sw, cap] = await Promise.all([
         fetch('/api/app/suggestions/schedule').then(r => r.json()),
         fetch('/api/app/suggestions/inventory').then(r => r.json()),
         fetch(`/api/app/suggestions/purchase?days=${purchaseDays}`).then(r => r.json()),
         fetch('/api/app/suggestions/swap').then(r => r.json()),
+        fetch('/api/app/tenant/capacity').then(r => r.json()),
       ]);
       setSchedule(s.data ?? []);
       setPredictions(p.data ?? []);
       setPurchase(pu.data ?? []);
       setSwaps(sw.data ?? []);
+      setCapacity(cap.data ?? null);
       setLoading(false);
     })();
     // Initial load só; mudança de purchaseDays usa reloadPurchase
@@ -251,6 +254,17 @@ export default function SuggestionsPage() {
                 Baseado em 4 semanas de vendas. Sugerimos o dia/horário de menor movimento pra evitar fila —
                 clique numa linha pra ver o porquê.
               </CardDescription>
+              {capacity && (
+                <div className="mt-2 flex items-center gap-2 text-xs text-text-secondary">
+                  <Users className="h-3.5 w-3.5" />
+                  <span>
+                    Considerando {capacity.active_restockers_count || 1} reabastecedor{(capacity.active_restockers_count || 1) > 1 ? 'es' : ''} × {capacity.avg_visits_per_day_per_restocker || 4} visitas/dia
+                  </span>
+                  <Link href="/app/configuracoes" className="text-brand-amber hover:underline ml-1">
+                    Ajustar
+                  </Link>
+                </div>
+              )}
             </CardHeader>
             <CardContent>
               {loading ? <LoaderStub /> : schedule.length === 0 ? (

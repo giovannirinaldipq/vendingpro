@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { Bell, Shield, Loader2, Save, CreditCard, Plus, Trash2, ArrowRight } from 'lucide-react';
+import { Bell, Shield, Loader2, Save, CreditCard, Plus, Trash2, ArrowRight, Users } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
@@ -58,6 +58,10 @@ export default function SettingsPage() {
   const [financeLoading, setFinanceLoading] = useState(true);
   const [financeSaving, setFinanceSaving] = useState(false);
 
+  const [capacity, setCapacity] = useState<{ active_restockers_count: number; avg_visits_per_day_per_restocker: number } | null>(null);
+  const [capacityLoading, setCapacityLoading] = useState(true);
+  const [capacitySaving, setCapacitySaving] = useState(false);
+
   useEffect(() => {
     fetch('/api/app/alert-settings')
       .then(r => r.json())
@@ -82,6 +86,11 @@ export default function SettingsPage() {
         }
       })
       .finally(() => setFinanceLoading(false));
+
+    fetch('/api/app/tenant/capacity')
+      .then(r => r.json())
+      .then(json => { if (json.data) setCapacity(json.data); })
+      .finally(() => setCapacityLoading(false));
   }, []);
 
   function updateFinance<K extends keyof FinanceSettings>(key: K, value: FinanceSettings[K]) {
@@ -444,6 +453,85 @@ export default function SettingsPage() {
 
               <Button onClick={saveAlertSettings} disabled={saving}>
                 {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</> : <><Save className="mr-2 h-4 w-4" />Salvar configurações de alerta</>}
+              </Button>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Capacidade operacional */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Capacidade operacional
+          </CardTitle>
+          <CardDescription>
+            Quantos reabastecedores ativos e quantas visitas/dia cada um faz. Usado pelas sugestões de abastecimento pra distribuir visitas sem sobrecarregar.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {capacityLoading || !capacity ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-text-tertiary" />
+            </div>
+          ) : (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Reabastecedores ativos</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={capacity.active_restockers_count ?? 0}
+                    onChange={e => setCapacity(c => c ? { ...c, active_restockers_count: Number(e.target.value) } : c)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Atualizado automaticamente ao cadastrar reabastecedores. Ajuste manual se necessário.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Visitas por dia por reabastecedor</Label>
+                  <Input
+                    type="number"
+                    min={0.5}
+                    max={20}
+                    step={0.5}
+                    value={capacity.avg_visits_per_day_per_restocker ?? 4}
+                    onChange={e => setCapacity(c => c ? { ...c, avg_visits_per_day_per_restocker: Number(e.target.value) } : c)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Quantas máquinas cada reabastecedor consegue visitar por dia, em média.
+                  </p>
+                </div>
+              </div>
+              <div className="rounded-md bg-surface-subtle p-3 text-xs text-text-secondary">
+                Capacidade diária total: <span className="font-semibold">{Math.round((capacity.active_restockers_count || 1) * (capacity.avg_visits_per_day_per_restocker || 4))} visitas/dia</span>
+              </div>
+              <Button
+                onClick={async () => {
+                  setCapacitySaving(true);
+                  try {
+                    const res = await fetch('/api/app/tenant/capacity', {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(capacity),
+                    });
+                    const json = await res.json();
+                    if (res.ok) {
+                      toast.success('Capacidade operacional salva');
+                      setCapacity(json.data);
+                    } else {
+                      toast.error(json.error ?? 'Falha ao salvar');
+                    }
+                  } finally {
+                    setCapacitySaving(false);
+                  }
+                }}
+                disabled={capacitySaving}
+              >
+                {capacitySaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</> : <><Save className="mr-2 h-4 w-4" />Salvar capacidade</>}
               </Button>
             </>
           )}
