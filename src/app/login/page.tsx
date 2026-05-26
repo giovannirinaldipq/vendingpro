@@ -325,13 +325,13 @@ export default function LoginPage() {
           }}
         >
           Primeira vez?{' '}
-          <Link
-            href="/request-access"
+          <a
+            href="mailto:contato@vendingpro.com.br?subject=Solicitar%20acesso%20VendingPro&body=Ol%C3%A1%2C%20gostaria%20de%20conhecer%20o%20VendingPro%20para%20a%20minha%20opera%C3%A7%C3%A3o%20de%20vending%20machines.%0A%0ANome%3A%0AEmpresa%3A%0AQuantidade%20de%20m%C3%A1quinas%3A%0AContato%3A"
             className="hover:underline"
             style={{ color: '#fbbf24', textDecoration: 'none', textUnderlineOffset: 3 }}
           >
             Solicitar acesso
-          </Link>
+          </a>
         </p>
       </div>
     </div>

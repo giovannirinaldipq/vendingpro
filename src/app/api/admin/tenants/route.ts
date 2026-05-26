@@ -38,10 +38,44 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: false, error: { code: 'DB_ERROR', message: error.message } }, { status: 500 });
   }
 
+  // Enriquece cada tenant com machines_count + estimated_monthly_value
+  // (machines_count × plan.price_per_machine, ou minimum_value se menor)
+  type TenantRow = {
+    id: string;
+    plan?: { price_per_machine?: number; minimum_value?: number; minimum_machines?: number } | null;
+  } & Record<string, unknown>;
+  const rows = (data ?? []) as unknown as TenantRow[];
+  const tenantIds = rows.map(t => t.id);
+  const countsByTenant = new Map<string, number>();
+  if (tenantIds.length > 0) {
+    const { data: machineCounts } = await supabase
+      .from('machines')
+      .select('tenant_id')
+      .in('tenant_id', tenantIds)
+      .eq('status', 'active');
+    for (const m of (machineCounts ?? []) as { tenant_id: string }[]) {
+      countsByTenant.set(m.tenant_id, (countsByTenant.get(m.tenant_id) ?? 0) + 1);
+    }
+  }
+
+  const enrichedTenants = rows.map(t => {
+    const machinesCount = countsByTenant.get(t.id) ?? 0;
+    const plan = t.plan ?? null;
+    const pricePerMachine = plan?.price_per_machine ? Number(plan.price_per_machine) : 0;
+    const minimum = plan?.minimum_value ? Number(plan.minimum_value) : 0;
+    const raw = machinesCount * pricePerMachine;
+    const estimatedMonthlyValue = Math.max(raw, minimum);
+    return {
+      ...t,
+      machines_count: machinesCount,
+      estimated_monthly_value: estimatedMonthlyValue,
+    };
+  });
+
   return NextResponse.json({
     success: true,
     data: {
-      tenants: data,
+      tenants: enrichedTenants,
       total: count || 0,
       page,
       per_page: perPage,

@@ -298,9 +298,9 @@ export default function SuggestionsPage() {
                             </Pill>
                           </TableCell>
                           <TableCell>
-                            <Link href={`/checkin/${s.machine_id}`} onClick={(e) => e.stopPropagation()}>
+                            <Link href={`/app/maquinas/${s.machine_id}`} onClick={(e) => e.stopPropagation()}>
                               <Button size="sm" variant="outline">
-                                Check-in agora<ArrowRight className="ml-1 h-3 w-3" />
+                                Ver máquina<ArrowRight className="ml-1 h-3 w-3" />
                               </Button>
                             </Link>
                           </TableCell>
@@ -527,7 +527,16 @@ export default function SuggestionsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="purchase" className="mt-4">
+        <TabsContent value="purchase" className="mt-4 space-y-3">
+          {/* Disclaimer: estoque hoje é editado manualmente. Sprint B remove isso. */}
+          <div className="rounded-lg border border-info/30 bg-info-soft/30 p-3 flex gap-2 text-xs text-text-secondary">
+            <Info className="h-4 w-4 text-info shrink-0 mt-0.5" />
+            <div>
+              <strong className="text-text-primary">Como confiar nestes números:</strong> as quantidades partem do <Link href="/app/estoque" className="text-brand-navy hover:underline">estoque cadastrado em Estoque</Link>.
+              Hoje o estoque é atualizado manualmente — mantenha em dia pra que as sugestões reflitam a realidade.
+            </div>
+          </div>
+
           <Card>
             <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>

@@ -2,11 +2,12 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Loader2, TrendingUp, TrendingDown, DollarSign, AlertTriangle, Settings as SettingsIcon, ArrowRight } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, DollarSign, AlertTriangle, Settings as SettingsIcon, ArrowRight, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { KpiCardHero } from '@/components/ui/kpi-hero';
+import { KpiCard } from '@/components/ui/kpi-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,6 +37,7 @@ interface Summary {
   total: { revenue: number; fees: number; cmv: number; fixed_costs: number; net_result: number; sales_count: number };
   per_machine: MachineResult[];
   machines_in_loss: number;
+  products_without_cost?: number;
 }
 
 interface FinanceSettings {
@@ -113,6 +115,17 @@ export default function FinanceiroPage() {
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : (
         <>
+          {summary.products_without_cost != null && summary.products_without_cost > 0 && (
+            <div className="rounded-lg border border-warning/40 bg-warning-soft/30 p-3 flex gap-2 text-xs text-text-secondary">
+              <Info className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <strong className="text-text-primary">{summary.products_without_cost} produto(s) sem custo cadastrado.</strong>{' '}
+                CMV pode estar subestimado — o resultado líquido aparenta ser maior do que é.{' '}
+                <Link href="/app/produtos" className="text-brand-navy hover:underline font-medium">Cadastrar custos →</Link>
+              </div>
+            </div>
+          )}
+
           <div className="grid gap-4 md:grid-cols-5">
             {/* HERO Resultado Líquido — métrica decisiva do financeiro */}
             <div className="md:col-span-2">
@@ -123,45 +136,22 @@ export default function FinanceiroPage() {
                 subtitle={`${summary.total.sales_count.toLocaleString('pt-BR')} vendas · receita ${fmtBRL(summary.total.revenue)}`}
               />
             </div>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-tertiary flex items-center gap-1">
-                  <DollarSign className="h-3 w-3" />Receita bruta
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="font-mono text-3xl font-medium tabular-nums text-text-primary">{fmtBRL(summary.total.revenue)}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-tertiary">
-                  Custos totais
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="font-mono text-3xl font-medium tabular-nums text-text-primary">{fmtBRL(summary.total.fees + summary.total.cmv + summary.total.fixed_costs)}</div>
-                <div className="text-[11px] text-text-tertiary mt-1.5 leading-relaxed">
-                  Taxas {fmtBRL(summary.total.fees)}<br/>
-                  CMV {fmtBRL(summary.total.cmv)} · Fixos {fmtBRL(summary.total.fixed_costs)}
-                </div>
-              </CardContent>
-            </Card>
-            <Card className={summary.machines_in_loss > 0 ? 'border-warning/40' : ''}>
-              <CardHeader className="pb-2">
-                <CardDescription className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-tertiary flex items-center gap-1">
-                  <AlertTriangle className="h-3 w-3" />Em prejuízo
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className={`font-mono text-3xl font-medium tabular-nums ${summary.machines_in_loss > 0 ? 'text-warning' : 'text-text-primary'}`}>
-                  {summary.machines_in_loss}
-                </div>
-                <div className="text-[11px] text-text-tertiary mt-1">
-                  {summary.machines_in_loss > 0 ? 'máquinas no negativo' : 'tudo no positivo'}
-                </div>
-              </CardContent>
-            </Card>
+            <KpiCard
+              label="Receita bruta"
+              value={fmtBRL(summary.total.revenue)}
+              icon={DollarSign}
+            />
+            <KpiCard
+              label="Custos totais"
+              value={fmtBRL(summary.total.fees + summary.total.cmv + summary.total.fixed_costs)}
+              hint={`Taxas ${fmtBRL(summary.total.fees)} · CMV ${fmtBRL(summary.total.cmv)} · Fixos ${fmtBRL(summary.total.fixed_costs)}`}
+            />
+            <KpiCard
+              label="Em prejuízo"
+              value={String(summary.machines_in_loss)}
+              icon={AlertTriangle}
+              hint={summary.machines_in_loss > 0 ? 'máquinas no negativo' : 'tudo no positivo'}
+            />
           </div>
 
           <Card>
@@ -193,7 +183,12 @@ export default function FinanceiroPage() {
                       <TableCell className="text-right text-muted-foreground">{fmtBRL(m.cmv)}</TableCell>
                       <TableCell className="text-right text-muted-foreground">{fmtBRL(m.fixed_costs)}</TableCell>
                       <TableCell className={`text-right font-mono font-semibold tabular-nums ${m.net_result >= 0 ? 'text-success' : 'text-danger'}`}>
-                        {fmtBRL(m.net_result)}
+                        <span className="inline-flex items-center gap-1 justify-end">
+                          {m.net_result >= 0
+                            ? <TrendingUp className="h-3 w-3" strokeWidth={2.5} />
+                            : <TrendingDown className="h-3 w-3" strokeWidth={2.5} />}
+                          {m.net_result >= 0 ? '+' : '−'} {fmtBRL(Math.abs(m.net_result))}
+                        </span>
                         {m.is_loss && <Badge className="ml-2 bg-danger-soft text-danger">Prejuízo</Badge>}
                       </TableCell>
                       <TableCell className="text-right">

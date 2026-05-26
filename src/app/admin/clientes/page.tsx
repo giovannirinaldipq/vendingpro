@@ -51,12 +51,18 @@ const statusConfig = {
 };
 
 interface TenantsResponse {
-  tenants: (Tenant & { plan?: { name: string; price_per_machine: number } })[];
+  tenants: (Tenant & {
+    plan?: { name: string; price_per_machine: number };
+    machines_count?: number;
+    estimated_monthly_value?: number;
+  })[];
   total: number;
   page: number;
   per_page: number;
   total_pages: number;
 }
+
+const fmtBRL = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
 
 export default function ClientsPage() {
   const [search, setSearch] = useState('');
@@ -188,6 +194,7 @@ export default function ClientsPage() {
                   <TableHead>Empresa</TableHead>
                   <TableHead>Contato</TableHead>
                   <TableHead>Plano</TableHead>
+                  <TableHead className="text-right">Valor mensal</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
@@ -213,6 +220,20 @@ export default function ClientsPage() {
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">{client.plan?.name || 'Sem plano'}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {client.estimated_monthly_value != null ? (
+                        <div className="font-mono tabular-nums text-sm font-medium">
+                          {fmtBRL(client.estimated_monthly_value)}
+                        </div>
+                      ) : (
+                        <span className="text-text-tertiary text-xs">—</span>
+                      )}
+                      {client.machines_count != null && (
+                        <div className="text-[11px] text-text-tertiary">
+                          {client.machines_count} {client.machines_count === 1 ? 'máquina' : 'máquinas'}
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge className={statusConfig[client.subscription_status as keyof typeof statusConfig]?.className}>

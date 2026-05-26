@@ -37,34 +37,36 @@ export async function GET() {
     });
   }
 
-  // Datas para cálculos
+  // Período unificado: últimos 30 dias vs 30-60 dias anteriores.
+  // Antes era "mês atual" vs "mês anterior", o que conflitava com o hero
+  // de "Lucro líquido 30D" que vem de /api/app/financeiro/summary?period_days=30.
   const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+  const startCurrent = new Date(now.getTime() - 30 * 86400000);
+  const startPrevious = new Date(now.getTime() - 60 * 86400000);
+  const startCurrentStr = startCurrent.toISOString().split('T')[0];
+  const startPreviousStr = startPrevious.toISOString().split('T')[0];
 
-  // Buscar dados em paralelo
   const [
-    currentMonthSales,
-    lastMonthSales,
+    currentSales,
+    previousSales,
     machinesResult,
     alertsResult,
     lastSaleResult,
   ] = await Promise.all([
-    // Vendas do mês atual
+    // Vendas dos últimos 30 dias
     supabase
       .from('sales')
       .select('total_price')
       .eq('tenant_id', tenantId)
-      .gte('sale_date', startOfMonth.toISOString().split('T')[0]),
+      .gte('sale_date', startCurrentStr),
 
-    // Vendas do mês anterior
+    // Vendas dos 30 dias anteriores (30-60d atrás) para comparação
     supabase
       .from('sales')
       .select('total_price')
       .eq('tenant_id', tenantId)
-      .gte('sale_date', startOfLastMonth.toISOString().split('T')[0])
-      .lte('sale_date', endOfLastMonth.toISOString().split('T')[0]),
+      .gte('sale_date', startPreviousStr)
+      .lt('sale_date', startCurrentStr),
 
     // Máquinas
     supabase
@@ -89,16 +91,16 @@ export async function GET() {
       .maybeSingle(),
   ]);
 
-  // Calcular métricas do mês atual
-  const currentSales = currentMonthSales.data || [];
-  const totalRevenue = currentSales.reduce((sum, s) => sum + Number(s.total_price), 0);
-  const totalSalesCount = currentSales.length;
+  // Calcular métricas dos últimos 30 dias
+  const cur = currentSales.data || [];
+  const totalRevenue = cur.reduce((sum, s) => sum + Number(s.total_price), 0);
+  const totalSalesCount = cur.length;
   const averageTicket = totalSalesCount > 0 ? totalRevenue / totalSalesCount : 0;
 
-  // Calcular métricas do mês anterior
-  const lastSales = lastMonthSales.data || [];
-  const lastRevenue = lastSales.reduce((sum, s) => sum + Number(s.total_price), 0);
-  const lastSalesCount = lastSales.length;
+  // Calcular métricas dos 30 dias anteriores
+  const prev = previousSales.data || [];
+  const lastRevenue = prev.reduce((sum, s) => sum + Number(s.total_price), 0);
+  const lastSalesCount = prev.length;
   const lastAverageTicket = lastSalesCount > 0 ? lastRevenue / lastSalesCount : 0;
 
   // Calcular crescimento

@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Filter, ChevronLeft, ChevronRight, Loader2, History } from 'lucide-react';
+import Link from 'next/link';
+import { Search, Filter, ChevronLeft, ChevronRight, Loader2, History, ExternalLink } from 'lucide-react';
 
 interface AuditLog {
   id: string;
@@ -173,7 +174,18 @@ export default function AuditoriaPage() {
                     </TableCell>
                     <TableCell className="font-mono text-[11px] text-text-tertiary max-w-[200px] truncate">
                       {log.entity_type ?? '—'}
-                      {log.entity_id && <span className="block">{log.entity_id.slice(0, 8)}…</span>}
+                      {log.entity_id && (
+                        entityHref(log.entity_type, log.entity_id) ? (
+                          <Link
+                            href={entityHref(log.entity_type, log.entity_id) as string}
+                            className="block text-brand-navy hover:underline inline-flex items-center gap-1"
+                          >
+                            {log.entity_id.slice(0, 8)}…<ExternalLink className="h-2.5 w-2.5" />
+                          </Link>
+                        ) : (
+                          <span className="block">{log.entity_id.slice(0, 8)}…</span>
+                        )
+                      )}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground max-w-[300px] truncate">
                       {summarizeValues(log.new_values)}
@@ -187,6 +199,18 @@ export default function AuditoriaPage() {
       </Card>
     </div>
   );
+}
+
+function entityHref(entityType: string | null, entityId: string): string | null {
+  if (!entityType || !entityId) return null;
+  switch (entityType) {
+    case 'tenants':            return `/admin/clientes/${entityId}`;
+    case 'billing.invoices':   return `/admin/faturas`;
+    case 'billing.payments':   return `/admin/pagamentos`;
+    case 'billing.plans':      return `/admin/planos`;
+    case 'admin.users':        return `/admin/usuarios`;
+    default:                   return null;
+  }
 }
 
 function summarizeValues(v: Record<string, unknown> | null): string {

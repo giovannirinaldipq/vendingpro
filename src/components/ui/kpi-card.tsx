@@ -69,7 +69,7 @@ function KpiCard({ label, value, delta, deltaLabel, icon: Icon, tone = "default"
             deltaNegative && "text-danger",
             !deltaPositive && !deltaNegative && "text-text-tertiary"
           )}>
-            {deltaPositive && "+"}{delta.toFixed(1)}%
+            {deltaPositive ? "+" : deltaNegative ? "−" : ""}{Math.abs(delta).toFixed(1)}%
           </span>
           {deltaLabel && (
             <span className="text-xs text-text-tertiary">{deltaLabel}</span>

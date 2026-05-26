@@ -195,7 +195,14 @@ export default function ImportPage() {
             </CardHeader>
             <CardContent>
               <Select value={system} onValueChange={v => v && setSystem(v as System)}>
-                <SelectTrigger className="w-full sm:w-[250px]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="w-full sm:w-[250px]">
+                  <SelectValue>
+                    <div className="flex items-center gap-2">
+                      <FileSpreadsheet className={`h-4 w-4 ${system === 'vmpay' ? 'text-info' : 'text-success'}`} />
+                      {system === 'vmpay' ? 'VM PAY (Excel)' : 'VendPago (CSV)'}
+                    </div>
+                  </SelectValue>
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="vmpay">
                     <div className="flex items-center gap-2"><FileSpreadsheet className="h-4 w-4 text-info" />VM PAY (Excel)</div>
