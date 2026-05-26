@@ -44,6 +44,7 @@ interface Tenant {
   reactivated_at: string | null;
   status_change_reason: string | null;
   billing_day: number | null;
+  contracted_machines: number | null;
   created_at: string;
   plan?: { name: string; price_per_machine: number } | null;
 }
@@ -188,6 +189,7 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
                 {tenant.trade_name && <InfoRow label="Nome fantasia" value={tenant.trade_name} />}
                 <InfoRow label="Documento" value={`${tenant.document_type.toUpperCase()} ${tenant.document_number}`} />
                 <InfoRow label="Plano" value={tenant.plan?.name ?? 'Sem plano'} />
+                <InfoRow label="Máquinas contratadas" value={String(tenant.contracted_machines ?? 5)} />
                 <InfoRow label="Dia de cobrança" value={tenant.billing_day ? `Dia ${tenant.billing_day}` : '—'} />
                 <InfoRow label="Cliente desde" value={formatDate(tenant.created_at)} />
                 {tenant.trial_ends_at && tenant.subscription_status === 'trial' && (

@@ -23,6 +23,7 @@ export const createTenantSchema = z.object({
   financial_phone: z.string().optional(),
   source: z.string().optional(),
   plan_id: z.string().uuid('Plano inválido').optional(),
+  contracted_machines: z.number().int().min(1, 'Mínimo 1 máquina').max(9999).optional().default(5),
   billing_day: z.number().min(1).max(28).optional().default(10),
 });
 

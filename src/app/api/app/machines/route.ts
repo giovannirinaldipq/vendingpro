@@ -93,6 +93,20 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Verificar limite de máquinas contratadas
+  const [{ data: tenant }, { count: activeCount }] = await Promise.all([
+    supabase.from('tenants').select('contracted_machines').eq('id', tenantId).single(),
+    supabase.from('machines').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).in('status', ['active', 'inactive', 'maintenance', 'installing']),
+  ]);
+
+  const limit = tenant?.contracted_machines ?? 5;
+  if ((activeCount ?? 0) >= limit) {
+    return NextResponse.json(
+      { success: false, error: { code: 'MACHINE_LIMIT', message: `Limite de ${limit} máquinas atingido. Entre em contato para ampliar seu plano.` } },
+      { status: 403 }
+    );
+  }
+
   // Verificar se código já existe para este tenant
   const { data: existing } = await supabase
     .from('machines')

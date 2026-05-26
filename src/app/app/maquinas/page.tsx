@@ -66,6 +66,7 @@ export default function MachinesPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [data, setData] = useState<MachinesResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [usage, setUsage] = useState<{ used: number; limit: number } | null>(null);
 
   const fetchMachines = async () => {
     setLoading(true);
@@ -93,6 +94,13 @@ export default function MachinesPage() {
     const debounce = setTimeout(fetchMachines, 300);
     return () => clearTimeout(debounce);
   }, [search, statusFilter]);
+
+  useEffect(() => {
+    fetch('/api/app/tenant/machines-usage')
+      .then(r => r.json())
+      .then(j => { if (j.success) setUsage(j.data); })
+      .catch(() => {});
+  }, [data]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Tem certeza que deseja desativar esta máquina?')) return;
@@ -122,12 +130,22 @@ export default function MachinesPage() {
             Gerencie suas máquinas de vending
           </p>
         </div>
-        <Link href="/app/maquinas/nova">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Nova Máquina
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          {usage && (
+            <span className={cn(
+              "text-sm font-medium tabular-nums",
+              usage.used >= usage.limit ? "text-destructive" : "text-muted-foreground"
+            )}>
+              {usage.used}/{usage.limit} máquinas
+            </span>
+          )}
+          <Link href="/app/maquinas/nova">
+            <Button disabled={!!usage && usage.used >= usage.limit}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nova Máquina
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}

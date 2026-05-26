@@ -55,6 +55,7 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
           address_zipcode: data.address_zipcode ?? '',
           plan_id: data.plan_id ?? undefined,
           billing_day: data.billing_day ?? 10,
+          contracted_machines: data.contracted_machines ?? 5,
           source: data.source ?? '',
         });
       }
@@ -206,6 +207,15 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Máquinas contratadas</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  {...register('contracted_machines', { valueAsNumber: true })}
+                />
+                <p className="text-xs text-muted-foreground">Limite de máquinas que o cliente pode cadastrar</p>
               </div>
             </div>
           </CardContent>

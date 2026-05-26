@@ -47,6 +47,7 @@ export default function NewClientPage() {
     defaultValues: {
       document_type: 'cnpj',
       billing_day: 10,
+      contracted_machines: 5,
     },
   });
 
@@ -351,6 +352,20 @@ export default function NewClientPage() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="contracted_machines">Máquinas Contratadas</Label>
+                <Input
+                  id="contracted_machines"
+                  type="number"
+                  min={1}
+                  defaultValue={5}
+                  {...register('contracted_machines', { valueAsNumber: true })}
+                />
+                <p className="text-xs text-muted-foreground">Limite de máquinas que o cliente pode cadastrar</p>
               </div>
             </div>
 
