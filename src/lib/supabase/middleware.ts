@@ -28,9 +28,8 @@ async function isTwoFaRequired(request: NextRequest, userId: string): Promise<bo
 }
 
 async function isAdminUser(userId: string): Promise<boolean> {
-  const { data } = await getAdminClient()
-    .schema('admin')
-    .from('users')
+  const { data } = await supabaseAdmin
+    .from('admin_users_lookup')
     .select('id')
     .eq('id', userId)
     .eq('is_active', true)
