@@ -16,10 +16,9 @@ export async function getCurrentAdmin(): Promise<AdminProfile | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  // Busca o perfil admin via service_role (não depende de RLS)
+  // Busca o perfil admin via service_role (view no public schema)
   const { data, error } = await supabaseAdmin
-    .schema('admin')
-    .from('users')
+    .from('admin_users_lookup')
     .select('id, email, name, role, is_active')
     .eq('id', user.id)
     .maybeSingle();
