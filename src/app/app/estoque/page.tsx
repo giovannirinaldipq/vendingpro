@@ -293,19 +293,23 @@ export default function InventoryPage() {
                 {data?.inventory.map((item) => (
                   <TableRow key={item.id} className={isLowStock(item) ? 'bg-warning-soft/40' : ''}>
                     <TableCell>
-                      <div className="flex items-center gap-3">
+                      <Link
+                        href={`/app/estoque/${item.id}`}
+                        className="flex items-center gap-3 hover:opacity-80"
+                        title="Ver extrato"
+                      >
                         <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${isLowStock(item) ? 'bg-warning-soft' : 'bg-brand-navy/10'}`}>
                           <Package className={`h-5 w-5 ${isLowStock(item) ? 'text-warning' : 'text-brand-navy'}`} />
                         </div>
                         <div>
-                          <p className="font-medium">{item.product.name}</p>
+                          <p className="font-medium hover:underline">{item.product.name}</p>
                           {item.product.category && (
                             <p className="text-xs text-text-tertiary">
                               {item.product.category}
                             </p>
                           )}
                         </div>
-                      </div>
+                      </Link>
                     </TableCell>
                     <TableCell>
                       <Pill tone="outline">{item.product.category || 'Sem categoria'}</Pill>

@@ -528,12 +528,12 @@ export default function SuggestionsPage() {
         </TabsContent>
 
         <TabsContent value="purchase" className="mt-4 space-y-3">
-          {/* Disclaimer: estoque hoje é editado manualmente. Sprint B remove isso. */}
-          <div className="rounded-lg border border-info/30 bg-info-soft/30 p-3 flex gap-2 text-xs text-text-secondary">
-            <Info className="h-4 w-4 text-info shrink-0 mt-0.5" />
+          {/* Estoque agora é mantido por movements automáticos */}
+          <div className="rounded-lg border border-success/30 bg-success-soft/30 p-3 flex gap-2 text-xs text-text-secondary">
+            <Info className="h-4 w-4 text-success shrink-0 mt-0.5" />
             <div>
-              <strong className="text-text-primary">Como confiar nestes números:</strong> as quantidades partem do <Link href="/app/estoque" className="text-brand-navy hover:underline">estoque cadastrado em Estoque</Link>.
-              Hoje o estoque é atualizado manualmente — mantenha em dia pra que as sugestões reflitam a realidade.
+              <strong className="text-text-primary">Estoque sincronizado automaticamente:</strong> vendas (via upload) e reposições (das visitas) já atualizam o estoque.
+              Clique num produto em <Link href="/app/estoque" className="text-brand-navy hover:underline">/app/estoque</Link> pra ver o extrato completo.
             </div>
           </div>
 
