@@ -248,6 +248,7 @@ async function onboardTenantUser(tenant: {
 
   // 2. Cria registro em public.users vinculando ao tenant
   await supabaseAdmin.from('users').insert({
+    id: authUser.user.id,
     auth_user_id: authUser.user.id,
     email: tenant.contact_email,
     name: tenant.contact_name,
