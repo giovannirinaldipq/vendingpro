@@ -254,22 +254,22 @@ export async function POST(
 
   if (movementError) {
     console.error('Movement error:', movementError);
-    // Continua mesmo se falhar o registro de movimentação
+    return NextResponse.json(
+      { success: false, error: { code: 'DB_ERROR', message: 'Erro ao registrar movimentação' } },
+      { status: 500 }
+    );
   }
 
-  // Atualizar estoque
+  // Trigger recompute_inventory_quantity() atualiza current_quantity automaticamente.
+  // Re-fetch para retornar o valor atualizado.
   const { data, error } = await supabase
     .from('inventory')
-    .update({
-      current_quantity: newQuantity,
-      last_updated_at: new Date().toISOString(),
-    })
-    .eq('id', id)
-    .eq('tenant_id', tenantId)
     .select(`
       *,
       product:products(id, name, barcode, category)
     `)
+    .eq('id', id)
+    .eq('tenant_id', tenantId)
     .single();
 
   if (error) {

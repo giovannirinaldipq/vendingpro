@@ -89,6 +89,27 @@ export default function InventoryPage() {
   const [movementReason, setMovementReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [editingMinId, setEditingMinId] = useState<string | null>(null);
+  const [editingMinValue, setEditingMinValue] = useState('');
+
+  const saveMinimum = async (item: InventoryItem) => {
+    const val = parseInt(editingMinValue);
+    if (isNaN(val) || val < 0) { setEditingMinId(null); return; }
+    if (val === item.minimum_quantity) { setEditingMinId(null); return; }
+    try {
+      await fetch(`/api/app/inventory/${item.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ minimum_quantity: val }),
+      });
+      fetchInventory();
+      toast.success('Mínimo atualizado');
+    } catch {
+      toast.error('Erro ao atualizar mínimo');
+    }
+    setEditingMinId(null);
+  };
+
   const fetchInventory = async () => {
     setLoading(true);
     try {
@@ -315,8 +336,28 @@ export default function InventoryPage() {
                         {item.current_quantity}
                       </span>
                     </TableCell>
-                    <TableCell className="text-center text-text-tertiary tabular-nums">
-                      {item.minimum_quantity}
+                    <TableCell className="text-center">
+                      {editingMinId === item.id ? (
+                        <Input
+                          type="number"
+                          min={0}
+                          value={editingMinValue}
+                          onChange={e => setEditingMinValue(e.target.value)}
+                          onBlur={() => saveMinimum(item)}
+                          onKeyDown={e => { if (e.key === 'Enter') saveMinimum(item); if (e.key === 'Escape') setEditingMinId(null); }}
+                          className="h-7 w-16 text-center text-xs mx-auto"
+                          autoFocus
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => { setEditingMinId(item.id); setEditingMinValue(String(item.minimum_quantity)); }}
+                          className="text-text-tertiary tabular-nums hover:text-text-primary hover:underline cursor-pointer"
+                          title="Clique para editar"
+                        >
+                          {item.minimum_quantity}
+                        </button>
+                      )}
                     </TableCell>
                     <TableCell>
                       {isLowStock(item) ? (

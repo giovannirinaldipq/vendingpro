@@ -156,9 +156,10 @@ export async function POST(req: NextRequest) {
     if (distinctProductNames.length > 0) {
       const { data: existingProducts } = await ctx.supabase
         .from('products')
-        .select('name')
+        .select('id, name')
         .eq('tenant_id', ctx.tenantId);
       const existingSet = new Set((existingProducts ?? []).map(p => (p.name as string).toLowerCase()));
+      const existingByName = new Map((existingProducts ?? []).map(p => [(p.name as string).toLowerCase(), p.id as string]));
       const newProducts = distinctProductNames
         .filter(name => !existingSet.has(name.toLowerCase()))
         .map(name => ({
@@ -171,7 +172,7 @@ export async function POST(req: NextRequest) {
         const { data: createdProducts } = await ctx.supabase
           .from('products')
           .insert(newProducts)
-          .select('id');
+          .select('id, name');
         if (createdProducts && createdProducts.length > 0) {
           const inventoryRows = createdProducts.map(p => ({
             tenant_id: ctx.tenantId,
@@ -180,7 +181,40 @@ export async function POST(req: NextRequest) {
             minimum_quantity: 0,
           }));
           await ctx.supabase.from('inventory').upsert(inventoryRows, { onConflict: 'tenant_id,product_id' });
+          for (const p of createdProducts) {
+            existingByName.set((p.name as string).toLowerCase(), p.id as string);
+          }
         }
+      }
+
+      // ─────────────────────────────────────────────────────────────
+      // Auto-create machine_products: vincula cada produto à máquina
+      // onde foi vendido (necessário para picklist e resolução futura)
+      // ─────────────────────────────────────────────────────────────
+      const machineProductPairs = new Map<string, number>(); // key -> sale_price
+      for (const sale of salesToInsert) {
+        const productId = existingByName.get((sale.product_name as string ?? '').toLowerCase());
+        if (!productId) continue;
+        const pairKey = `${sale.machine_id}::${productId}`;
+        if (!machineProductPairs.has(pairKey)) {
+          machineProductPairs.set(pairKey, Number(sale.unit_price) || 0);
+        }
+      }
+      const mpToInsert = [...machineProductPairs.entries()].map(([key, price]) => {
+        const [machine_id, product_id] = key.split('::');
+        return {
+          tenant_id: ctx.tenantId,
+          machine_id,
+          product_id,
+          sale_price: price,
+          cost_price: 0,
+          is_active: true,
+        };
+      });
+      if (mpToInsert.length > 0) {
+        await ctx.supabase
+          .from('machine_products')
+          .upsert(mpToInsert, { onConflict: 'machine_id,product_id', ignoreDuplicates: true });
       }
     }
   }
@@ -212,12 +246,11 @@ export async function POST(req: NextRequest) {
         productIdByKey.set(`${row.machine_id}::${prod.name.toLowerCase()}`, prod.id);
       }
 
-      // 2) products do tenant (fallback por nome)
+      // 2) products do tenant (fallback por nome, case-insensitive)
       const { data: products } = await ctx.supabase
         .from('products')
         .select('id, name')
-        .eq('tenant_id', ctx.tenantId)
-        .in('name', distinctNames);
+        .eq('tenant_id', ctx.tenantId);
       for (const p of (products ?? []) as Array<{ id: string; name: string }>) {
         const key = `*::${p.name.toLowerCase()}`;
         if (!productIdByKey.has(key)) productIdByKey.set(key, p.id);
