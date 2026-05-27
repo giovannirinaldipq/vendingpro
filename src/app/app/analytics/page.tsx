@@ -11,6 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Heatmap } from '@/components/charts/heatmap';
 import { EmptyStateV2 } from '@/components/ui/empty-state-v2';
 import { PaymentBreakdownCard } from '@/components/analytics/payment-breakdown-card';
@@ -48,6 +50,9 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [machines, setMachines] = useState<Array<{ id: string; name: string; code: string }>>([]);
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
+  const [appliedRange, setAppliedRange] = useState<{ start: string; end: string } | null>(null);
 
   useEffect(() => {
     fetch('/api/app/machines')
@@ -60,10 +65,15 @@ export default function AnalyticsPage() {
   }, []);
 
   useEffect(() => {
+    if (period === 'custom' && !appliedRange) return;
     setLoading(true);
     const params = new URLSearchParams({ period });
     if (machineId !== 'all') {
       params.set('machine_id', machineId);
+    }
+    if (period === 'custom' && appliedRange) {
+      params.set('start_date', appliedRange.start);
+      params.set('end_date', appliedRange.end);
     }
 
     fetch(`/api/app/analytics?${params}`)
@@ -74,7 +84,21 @@ export default function AnalyticsPage() {
         }
       })
       .finally(() => setLoading(false));
-  }, [period, machineId]);
+  }, [period, machineId, appliedRange]);
+
+  function applyCustomRange() {
+    if (customStart && customEnd) {
+      setAppliedRange({ start: customStart, end: customEnd });
+    }
+  }
+
+  function handlePeriodChange(v: string | null) {
+    if (!v) return;
+    setPeriod(v);
+    if (v !== 'custom') {
+      setAppliedRange(null);
+    }
+  }
 
   const hasData = data && (data.heatmap.length > 0 || data.daily_sales.length > 0);
 
@@ -88,8 +112,8 @@ export default function AnalyticsPage() {
             Análise detalhada das suas vendas
           </p>
         </div>
-        <div className="flex gap-2">
-          <Select value={period} onValueChange={(v) => v && setPeriod(v)}>
+        <div className="flex flex-wrap gap-2">
+          <Select value={period} onValueChange={handlePeriodChange}>
             <SelectTrigger className="w-[170px]">
               <Calendar className="mr-2 h-4 w-4" />
               <SelectValue>
@@ -98,6 +122,9 @@ export default function AnalyticsPage() {
                  : period === '90d' ? 'Últimos 90 dias'
                  : period === '180d' ? 'Últimos 180 dias'
                  : period === '365d' ? 'Último ano'
+                 : period === 'current_month' ? 'Mês atual'
+                 : period === 'previous_month' ? 'Mês anterior'
+                 : period === 'custom' ? 'Personalizado'
                  : period === 'all' ? 'Todo o histórico'
                  : period}
               </SelectValue>
@@ -105,12 +132,35 @@ export default function AnalyticsPage() {
             <SelectContent>
               <SelectItem value="7d">Últimos 7 dias</SelectItem>
               <SelectItem value="30d">Últimos 30 dias</SelectItem>
+              <SelectItem value="current_month">Mês atual</SelectItem>
+              <SelectItem value="previous_month">Mês anterior</SelectItem>
               <SelectItem value="90d">Últimos 90 dias</SelectItem>
               <SelectItem value="180d">Últimos 180 dias</SelectItem>
               <SelectItem value="365d">Último ano</SelectItem>
               <SelectItem value="all">Todo o histórico</SelectItem>
+              <SelectItem value="custom">Personalizado...</SelectItem>
             </SelectContent>
           </Select>
+          {period === 'custom' && (
+            <div className="flex items-center gap-2">
+              <Input
+                type="date"
+                value={customStart}
+                onChange={e => setCustomStart(e.target.value)}
+                className="w-[145px] h-9"
+              />
+              <span className="text-xs text-muted-foreground">até</span>
+              <Input
+                type="date"
+                value={customEnd}
+                onChange={e => setCustomEnd(e.target.value)}
+                className="w-[145px] h-9"
+              />
+              <Button size="sm" onClick={applyCustomRange} disabled={!customStart || !customEnd}>
+                Aplicar
+              </Button>
+            </div>
+          )}
           <Select value={machineId} onValueChange={(v) => v && setMachineId(v)}>
             <SelectTrigger className="w-[220px]">
               <Monitor className="mr-2 h-4 w-4" />

@@ -37,15 +37,37 @@ export async function GET(request: NextRequest) {
   // Calcular data inicial baseado no período
   const now = new Date();
   const DAY = 24 * 60 * 60 * 1000;
-  const PERIOD_DAYS: Record<string, number | 'all'> = {
-    '7d': 7, '30d': 30, '90d': 90, '180d': 180, '365d': 365, 'all': 'all',
-  };
-  const periodDays = PERIOD_DAYS[period] ?? 30;
-  const startDate: Date | null = periodDays === 'all'
-    ? null
-    : new Date(now.getTime() - periodDays * DAY);
 
-  const startDateStr = startDate ? startDate.toISOString().split('T')[0] : null;
+  // Suporte a datas customizadas (start_date / end_date)
+  const customStart = searchParams.get('start_date');
+  const customEnd = searchParams.get('end_date');
+
+  let startDateStr: string | null = null;
+  let endDateStr: string | null = null;
+
+  if (customStart && customEnd) {
+    startDateStr = customStart;
+    endDateStr = customEnd;
+  } else if (period === 'current_month') {
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    startDateStr = `${y}-${m}-01`;
+    endDateStr = null;
+  } else if (period === 'previous_month') {
+    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth(), 0);
+    const y = prev.getFullYear();
+    const m = String(prev.getMonth() + 1).padStart(2, '0');
+    startDateStr = `${y}-${m}-01`;
+    endDateStr = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+  } else if (period !== 'all') {
+    const PERIOD_DAYS: Record<string, number> = {
+      '7d': 7, '30d': 30, '90d': 90, '180d': 180, '365d': 365,
+    };
+    const days = PERIOD_DAYS[period] ?? 30;
+    const startDate = new Date(now.getTime() - days * DAY);
+    startDateStr = startDate.toISOString().split('T')[0];
+  }
 
   // Query base
   let query = supabase
@@ -55,6 +77,9 @@ export async function GET(request: NextRequest) {
 
   if (startDateStr) {
     query = query.gte('sale_date', startDateStr);
+  }
+  if (endDateStr) {
+    query = query.lte('sale_date', endDateStr);
   }
 
   if (machineId) {
