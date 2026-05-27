@@ -149,6 +149,31 @@ export async function POST(req: NextRequest) {
   }
 
   // ─────────────────────────────────────────────────────────────
+  // Auto-create products from imported sales (if they don't exist yet)
+  // ─────────────────────────────────────────────────────────────
+  if (insertedSales.length > 0) {
+    const distinctProductNames = [...new Set(insertedSales.map(s => s.product_name).filter(Boolean))];
+    if (distinctProductNames.length > 0) {
+      const { data: existingProducts } = await ctx.supabase
+        .from('products')
+        .select('name')
+        .eq('tenant_id', ctx.tenantId);
+      const existingSet = new Set((existingProducts ?? []).map(p => (p.name as string).toLowerCase()));
+      const newProducts = distinctProductNames
+        .filter(name => !existingSet.has(name.toLowerCase()))
+        .map(name => ({
+          tenant_id: ctx.tenantId,
+          name,
+          category: 'snack_beverage' as const,
+          is_active: true,
+        }));
+      if (newProducts.length > 0) {
+        await ctx.supabase.from('products').insert(newProducts);
+      }
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
   // Inventory movements: cada venda nova vira movement 'sale' negativo,
   // FILTRADO por cutoff (vendas anteriores a último initial/manual_adjust
   // já estão refletidas no snapshot — não geram movement).

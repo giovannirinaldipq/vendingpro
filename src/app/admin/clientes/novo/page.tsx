@@ -23,6 +23,33 @@ import { Separator } from '@/components/ui/separator';
 import { createTenantSchema, type CreateTenantFormInput } from '@/lib/validators';
 import type { Plan } from '@/types';
 
+function maskCNPJ(value: string) {
+  return value
+    .replace(/\D/g, '')
+    .slice(0, 14)
+    .replace(/^(\d{2})(\d)/, '$1.$2')
+    .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/\.(\d{3})(\d)/, '.$1/$2')
+    .replace(/(\d{4})(\d)/, '$1-$2');
+}
+
+function maskCPF(value: string) {
+  return value
+    .replace(/\D/g, '')
+    .slice(0, 11)
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+}
+
+function maskPhone(value: string) {
+  return value
+    .replace(/\D/g, '')
+    .slice(0, 11)
+    .replace(/^(\d{2})(\d)/, '($1) $2')
+    .replace(/(\d{5})(\d)/, '$1-$2');
+}
+
 export default function NewClientPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -32,7 +59,7 @@ export default function NewClientPage() {
     fetch('/api/admin/plans')
       .then(res => res.json())
       .then(result => {
-        if (result.success) setPlans(result.data);
+        if (result.success) setPlans(result.data.filter((p: Plan) => p.is_active));
       });
   }, []);
 
@@ -138,7 +165,7 @@ export default function NewClientPage() {
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue>{documentType === 'cnpj' ? 'CNPJ' : 'CPF'}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="cnpj">CNPJ</SelectItem>
@@ -154,7 +181,13 @@ export default function NewClientPage() {
                 <Input
                   id="document_number"
                   placeholder={documentType === 'cnpj' ? '00.000.000/0000-00' : '000.000.000-00'}
+                  maxLength={documentType === 'cnpj' ? 18 : 14}
                   {...register('document_number')}
+                  onChange={(e) => {
+                    const masked = documentType === 'cnpj' ? maskCNPJ(e.target.value) : maskCPF(e.target.value);
+                    setValue('document_number', masked, { shouldValidate: true });
+                    e.target.value = masked;
+                  }}
                 />
                 {errors.document_number && (
                   <p className="text-xs text-danger mt-1">{errors.document_number.message}</p>
@@ -189,7 +222,13 @@ export default function NewClientPage() {
                 <Input
                   id="contact_phone"
                   placeholder="(00) 00000-0000"
+                  maxLength={15}
                   {...register('contact_phone')}
+                  onChange={(e) => {
+                    const masked = maskPhone(e.target.value);
+                    setValue('contact_phone', masked);
+                    e.target.value = masked;
+                  }}
                 />
               </div>
             </div>
@@ -225,7 +264,13 @@ export default function NewClientPage() {
                 <Input
                   id="financial_phone"
                   placeholder="(00) 00000-0000"
+                  maxLength={15}
                   {...register('financial_phone')}
+                  onChange={(e) => {
+                    const masked = maskPhone(e.target.value);
+                    setValue('financial_phone', masked);
+                    e.target.value = masked;
+                  }}
                 />
               </div>
             </div>
@@ -323,12 +368,16 @@ export default function NewClientPage() {
                 <Label>Plano</Label>
                 <Select onValueChange={(value) => setValue('plan_id', value as string)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione um plano" />
+                    <SelectValue>
+                      {watch('plan_id')
+                        ? `${plans.find(p => p.id === watch('plan_id'))?.name ?? ''} · R$ ${plans.find(p => p.id === watch('plan_id'))?.price_per_machine ?? ''}/máquina`
+                        : 'Selecione um plano'}
+                    </SelectValue>
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent alignItemWithTrigger={false}>
                     {plans.map((plan) => (
                       <SelectItem key={plan.id} value={plan.id}>
-                        {plan.name} - R$ {plan.price_per_machine}/máquina
+                        {plan.name} · R$ {plan.price_per_machine}/máquina
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -342,7 +391,7 @@ export default function NewClientPage() {
                   onValueChange={(value) => setValue('billing_day', parseInt(value as string))}
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue>Dia {watch('billing_day') ?? 10}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {[1, 5, 10, 15, 20, 25].map((day) => (
@@ -373,7 +422,11 @@ export default function NewClientPage() {
               <Label htmlFor="source">Origem</Label>
               <Select onValueChange={(value) => setValue('source', value as string)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Como o cliente chegou?" />
+                  <SelectValue>
+                    {watch('source')
+                      ? { indicacao: 'Indicação', google: 'Google', instagram: 'Instagram', facebook: 'Facebook', youtube: 'YouTube', outro: 'Outro' }[watch('source')!] ?? watch('source')
+                      : 'Como o cliente chegou?'}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="indicacao">Indicação</SelectItem>

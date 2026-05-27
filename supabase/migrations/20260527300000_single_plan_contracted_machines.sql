@@ -1,4 +1,4 @@
-﻿-- Plano unico VendingPro: desativa planos antigos, cria o definitivo
+-- Plano unico VendingPro: desativa planos antigos, cria o definitivo
 -- e adiciona contracted_machines ao tenant para controle de limite
 
 -- 1. Desativar planos antigos
