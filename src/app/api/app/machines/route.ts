@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
   const limit = tenant?.contracted_machines ?? 5;
   if ((activeCount ?? 0) >= limit) {
     return NextResponse.json(
-      { success: false, error: { code: 'MACHINE_LIMIT', message: `Limite de ${limit} máquinas atingido. Entre em contato para ampliar seu plano.` } },
+      { success: false, error: { code: 'MACHINE_LIMIT', message: `Limite de ${limit} máquinas atingido. Amplie seu plano na página de máquinas.` } },
       { status: 403 }
     );
   }

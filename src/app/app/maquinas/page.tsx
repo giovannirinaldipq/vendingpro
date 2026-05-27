@@ -12,6 +12,7 @@ import {
   Monitor,
   Loader2,
   Filter,
+  TrendingUp,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -43,6 +44,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import type { Machine, Location } from '@/types';
 
@@ -66,8 +75,19 @@ export default function MachinesPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [data, setData] = useState<MachinesResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [usage, setUsage] = useState<{ used: number; limit: number } | null>(null);
+  const [usage, setUsage] = useState<{
+    used: number;
+    limit: number;
+    billing_day?: number;
+    price_per_machine?: number | null;
+    plan_name?: string | null;
+  } | null>(null);
   const [stockSummary, setStockSummary] = useState<Record<string, { fill_rate: number | null; critical_slots: number }>>({});
+
+  // Expand dialog
+  const [expandOpen, setExpandOpen] = useState(false);
+  const [expandQty, setExpandQty] = useState(1);
+  const [expanding, setExpanding] = useState(false);
 
   const fetchMachines = async () => {
     setLoading(true);
@@ -128,6 +148,52 @@ export default function MachinesPage() {
     }
   };
 
+  function calcProRata(qty: number) {
+    if (!usage?.price_per_machine || !usage.billing_day) return null;
+    const today = new Date();
+    const billingDay = usage.billing_day;
+    let nextBilling = new Date(today.getFullYear(), today.getMonth(), billingDay);
+    if (nextBilling <= today) nextBilling.setMonth(nextBilling.getMonth() + 1);
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const daysRemaining = Math.ceil((nextBilling.getTime() - today.getTime()) / 86400000);
+    const factor = daysRemaining / daysInMonth;
+    return {
+      total: Math.round(qty * usage.price_per_machine * factor * 100) / 100,
+      daysRemaining,
+      daysInMonth,
+      factor,
+    };
+  }
+
+  async function handleExpand() {
+    setExpanding(true);
+    try {
+      const res = await fetch('/api/app/tenant/expand-machines', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ additional_machines: expandQty }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(`+${expandQty} máquina(s) liberada(s)! Fatura de R$ ${json.data.invoice_total.toFixed(2)} gerada.`);
+        setExpandOpen(false);
+        setExpandQty(1);
+        // Refresh usage
+        const r = await fetch('/api/app/tenant/machines-usage');
+        const j = await r.json();
+        if (j.success) setUsage(j.data);
+      } else {
+        toast.error(json.error ?? 'Erro ao ampliar plano');
+      }
+    } catch {
+      toast.error('Erro ao ampliar plano');
+    } finally {
+      setExpanding(false);
+    }
+  }
+
+  const proRata = calcProRata(expandQty);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -146,6 +212,12 @@ export default function MachinesPage() {
             )}>
               {usage.used}/{usage.limit} máquinas
             </span>
+          )}
+          {usage && usage.used >= usage.limit && usage.price_per_machine && (
+            <Button variant="outline" onClick={() => setExpandOpen(true)} className="border-brand-amber text-brand-amber hover:bg-brand-amber/10">
+              <TrendingUp className="mr-2 h-4 w-4" />
+              Ampliar plano
+            </Button>
           )}
           <Link href="/app/maquinas/nova">
             <Button disabled={!!usage && usage.used >= usage.limit}>
@@ -304,6 +376,60 @@ export default function MachinesPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Dialog de ampliação */}
+      <Dialog open={expandOpen} onOpenChange={setExpandOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ampliar plano de máquinas</DialogTitle>
+            <DialogDescription>
+              Adicione máquinas ao seu plano. A cobrança pro-rata é gerada imediatamente.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-center gap-4">
+              <label className="text-sm font-medium whitespace-nowrap">Máquinas a adicionar:</label>
+              <Input
+                type="number"
+                min={1}
+                max={20}
+                value={expandQty}
+                onChange={(e) => setExpandQty(Math.max(1, Math.min(20, Number(e.target.value) || 1)))}
+                className="w-20 tabular-nums"
+              />
+            </div>
+            {proRata && usage?.price_per_machine && (
+              <div className="rounded-lg border border-border-default bg-surface-subtle p-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-text-secondary">Valor por máquina</span>
+                  <span className="tabular-nums">R$ {usage.price_per_machine.toFixed(2)}/mês</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-text-secondary">Dias restantes no ciclo</span>
+                  <span className="tabular-nums">{proRata.daysRemaining} de {proRata.daysInMonth} dias</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-text-secondary">Fator pro-rata</span>
+                  <span className="tabular-nums">{(proRata.factor * 100).toFixed(0)}%</span>
+                </div>
+                <div className="border-t border-border-default pt-2 flex justify-between font-medium">
+                  <span>Total desta ampliação</span>
+                  <span className="tabular-nums text-brand-amber">R$ {proRata.total.toFixed(2)}</span>
+                </div>
+              </div>
+            )}
+            <p className="text-xs text-text-tertiary">
+              No próximo ciclo de cobrança (dia {usage?.billing_day ?? 10}), o valor cheio das novas máquinas será incluído na fatura mensal automaticamente.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExpandOpen(false)}>Cancelar</Button>
+            <Button onClick={handleExpand} disabled={expanding || !proRata}>
+              {expanding ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processando...</> : `Confirmar +${expandQty} máquina(s)`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
