@@ -17,7 +17,7 @@ export async function POST() {
   const { data: existingTenant } = await supabaseAdmin
     .from('tenants')
     .select('id')
-    .eq('email', 'audit@vendingtest.com')
+    .eq('contact_email', 'audit@vendingtest.com')
     .maybeSingle();
 
   if (existingTenant) {
@@ -28,12 +28,12 @@ export async function POST() {
   const { data: tenant, error: tenantErr } = await supabaseAdmin
     .from('tenants')
     .insert({
-      name: 'Auditoria Vending',
+      company_name: 'Auditoria Vending',
       document_number: '99.999.999/0001-99',
-      email: 'audit@vendingtest.com',
-      phone: '11999999999',
-      plan: 'professional',
-      status: 'active',
+      contact_name: 'Auditor Teste',
+      contact_email: 'audit@vendingtest.com',
+      contact_phone: '11999999999',
+      subscription_status: 'active',
       contracted_machines: 10,
     })
     .select('id')
@@ -41,20 +41,23 @@ export async function POST() {
   if (tenantErr) return NextResponse.json({ error: tenantErr.message }, { status: 500 });
   const tenantId = tenant.id;
 
-  // Create user profile
-  await supabaseAdmin.from('users').insert({
-    tenant_id: tenantId,
-    auth_user_id: authUserId ?? null,
-    email: 'audit@vendingtest.com',
-    name: 'Auditor Teste',
-    role: 'owner',
-    is_active: true,
-  });
+  // Create user profile (id = auth_user_id so .eq('id', user.id) works in middleware)
+  if (authUserId) {
+    await supabaseAdmin.from('users').insert({
+      id: authUserId,
+      tenant_id: tenantId,
+      auth_user_id: authUserId,
+      email: 'audit@vendingtest.com',
+      name: 'Auditor Teste',
+      role: 'owner',
+      is_active: true,
+    });
+  }
 
   // Location
   const { data: loc } = await supabaseAdmin
     .from('locations')
-    .insert({ tenant_id: tenantId, name: 'Shopping Centro', address: 'Rua das Flores 100', city: 'São Paulo', state: 'SP' })
+    .insert({ tenant_id: tenantId, name: 'Shopping Centro', address_street: 'Rua das Flores 100', address_city: 'São Paulo', address_state: 'SP' })
     .select('id').single();
   const locId = loc!.id;
 

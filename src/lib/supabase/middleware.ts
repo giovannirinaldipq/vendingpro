@@ -99,6 +99,7 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith('/api/public') ||
     pathname.startsWith('/api/webhooks') ||
     pathname.startsWith('/api/cron') ||
+    pathname.startsWith('/api/admin/seed-audit') ||
     pathname.startsWith('/api/whoami') ||
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/_next') ||
