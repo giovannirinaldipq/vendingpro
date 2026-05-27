@@ -97,5 +97,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, error: { code: 'DB_ERROR', message: error.message } }, { status: 500 });
   }
 
+  await supabase.from('inventory').upsert({
+    tenant_id: tenantId,
+    product_id: data.id,
+    current_quantity: 0,
+    minimum_quantity: 0,
+  }, { onConflict: 'tenant_id,product_id' });
+
   return NextResponse.json({ success: true, data }, { status: 201 });
 }

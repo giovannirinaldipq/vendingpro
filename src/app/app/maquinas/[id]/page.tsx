@@ -220,7 +220,13 @@ export default function MachineDetailPage({ params }: { params: Promise<{ id: st
           <Link href={`/app/maquinas/${id}/produtos`}>
             <Button variant="outline">
               <ShoppingCart className="mr-2 h-4 w-4" />
-              Produtos
+              Planograma
+            </Button>
+          </Link>
+          <Link href={`/app/maquinas/${id}/estoque`}>
+            <Button variant="outline">
+              <TrendingUp className="mr-2 h-4 w-4" />
+              Estoque
             </Button>
           </Link>
           <Link href={`/app/maquinas/${id}/editar`}>

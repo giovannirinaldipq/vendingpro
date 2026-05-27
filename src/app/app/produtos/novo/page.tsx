@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, Loader2, Info, Check } from 'lucide-react';
+import { ArrowLeft, Loader2, Info, Check, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -38,11 +38,15 @@ export default function NewProductPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [duplicateMatch, setDuplicateMatch] = useState<{ id: string; name: string } | null>(null);
+  const [checkingDuplicate, setCheckingDuplicate] = useState(false);
+  const [priceEditing, setPriceEditing] = useState({ sale: false, cost: false });
 
   const {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
@@ -50,6 +54,41 @@ export default function NewProductPage() {
       is_active: true,
     },
   });
+
+  const nameValue = watch('name');
+
+  const checkDuplicate = useCallback(async (name: string) => {
+    if (!name || name.length < 2) {
+      setDuplicateMatch(null);
+      return;
+    }
+    setCheckingDuplicate(true);
+    try {
+      const res = await fetch(`/api/app/products?search=${encodeURIComponent(name)}`);
+      const json = await res.json();
+      if (json.success && json.data.products.length > 0) {
+        const exact = json.data.products.find(
+          (p: { name: string }) => p.name.toLowerCase() === name.toLowerCase()
+        );
+        if (exact) {
+          setDuplicateMatch({ id: exact.id, name: exact.name });
+        } else {
+          setDuplicateMatch(null);
+        }
+      } else {
+        setDuplicateMatch(null);
+      }
+    } catch {
+      setDuplicateMatch(null);
+    } finally {
+      setCheckingDuplicate(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const t = setTimeout(() => checkDuplicate(nameValue || ''), 400);
+    return () => clearTimeout(t);
+  }, [nameValue, checkDuplicate]);
 
   function pickCategory(c: string) {
     setSelectedCategory(c);
@@ -111,6 +150,30 @@ export default function NewProductPage() {
                 />
                 {errors.name && (
                   <p className="text-xs text-danger">{errors.name.message}</p>
+                )}
+                {duplicateMatch && (
+                  <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-xs">
+                    <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
+                    <div className="space-y-1.5">
+                      <p className="text-amber-800 font-medium">
+                        Já existe &quot;{duplicateMatch.name}&quot; cadastrado
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-6 text-[11px] px-2"
+                          onClick={() => router.push(`/app/produtos/${duplicateMatch.id}`)}
+                        >
+                          Usar existente
+                        </Button>
+                        <span className="text-[11px] text-amber-700 self-center">
+                          ou altere o nome para criar um novo
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -184,26 +247,46 @@ export default function NewProductPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="default_sale_price">Preço de Venda Padrão (R$)</Label>
-                <Input
-                  id="default_sale_price"
-                  type="number"
-                  step="0.01"
-                  inputMode="decimal"
-                  placeholder="0,00"
-                  {...register('default_sale_price', { valueAsNumber: true })}
-                />
+                {priceEditing.sale ? (
+                  <Input
+                    id="default_sale_price"
+                    type="number"
+                    step="0.01"
+                    inputMode="decimal"
+                    placeholder="0,00"
+                    {...register('default_sale_price', { valueAsNumber: true })}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setPriceEditing(p => ({ ...p, sale: true }))}
+                    className="flex h-9 w-full items-center rounded-md border border-dashed border-amber-300 bg-amber-50/50 px-3 text-xs text-amber-700 hover:bg-amber-50 transition-colors"
+                  >
+                    Números fictícios — Clique para alterar o valor
+                  </button>
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="default_cost_price">Preço de Custo (R$)</Label>
-                <Input
-                  id="default_cost_price"
-                  type="number"
-                  step="0.01"
-                  inputMode="decimal"
-                  placeholder="0,00"
-                  {...register('default_cost_price', { valueAsNumber: true })}
-                />
+                {priceEditing.cost ? (
+                  <Input
+                    id="default_cost_price"
+                    type="number"
+                    step="0.01"
+                    inputMode="decimal"
+                    placeholder="0,00"
+                    {...register('default_cost_price', { valueAsNumber: true })}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setPriceEditing(p => ({ ...p, cost: true }))}
+                    className="flex h-9 w-full items-center rounded-md border border-dashed border-amber-300 bg-amber-50/50 px-3 text-xs text-amber-700 hover:bg-amber-50 transition-colors"
+                  >
+                    Números fictícios — Clique para alterar o valor
+                  </button>
+                )}
               </div>
             </div>
           </CardContent>

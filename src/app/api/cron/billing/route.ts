@@ -133,7 +133,7 @@ async function generateMonthlyInvoices(results: CronResults) {
 
   const { data: tenants, error } = await supabaseAdmin
     .from('tenants')
-    .select('id, company_name, contact_name, contact_email, financial_email, contact_phone, document_number, document_type, asaas_customer_id, plan_id, billing_day')
+    .select('id, company_name, contact_name, contact_email, financial_email, contact_phone, document_number, document_type, asaas_customer_id, plan_id, billing_day, last_billed_machines, contracted_machines')
     .eq('subscription_status', 'active')
     .eq('billing_day', currentDay)
     .not('plan_id', 'is', null);
@@ -145,8 +145,7 @@ async function generateMonthlyInvoices(results: CronResults) {
 
   for (const tenant of tenants || []) {
     const { data: existingInvoice } = await supabaseAdmin
-      .schema('billing')
-      .from('invoices')
+      .from('billing_invoices_view')
       .select('id')
       .eq('tenant_id', tenant.id)
       .eq('reference_month', `${referenceMonth}-01`)
@@ -155,8 +154,7 @@ async function generateMonthlyInvoices(results: CronResults) {
     if (existingInvoice) continue;
 
     const { data: plan } = await supabaseAdmin
-      .schema('billing')
-      .from('plans')
+      .from('billing_plans_view')
       .select('price_per_machine, minimum_value')
       .eq('id', tenant.plan_id)
       .single();
@@ -170,7 +168,41 @@ async function generateMonthlyInvoices(results: CronResults) {
       .eq('status', 'active');
 
     const machines = machinesCount || 0;
-    const subtotal = Math.max(machines * plan.price_per_machine, plan.minimum_value);
+    const lastBilled = tenant.last_billed_machines ?? 0;
+    const newMachines = Math.max(0, machines - lastBilled);
+
+    // Máquinas que já existiam: ciclo completo
+    // Máquinas novas: pro-rata baseado nos dias desde a adição até o billing day
+    let subtotal = lastBilled > 0
+      ? lastBilled * plan.price_per_machine
+      : machines * plan.price_per_machine;
+
+    if (newMachines > 0 && lastBilled > 0) {
+      // Busca data de criação das máquinas mais recentes para calcular pro-rata
+      const { data: newMachineRows } = await supabaseAdmin
+        .from('machines')
+        .select('created_at')
+        .eq('tenant_id', tenant.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(newMachines);
+
+      const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+      let proRataTotal = 0;
+
+      for (const m of newMachineRows ?? []) {
+        const createdAt = new Date(m.created_at);
+        const daysActive = Math.max(1, Math.ceil((today.getTime() - createdAt.getTime()) / 86400000));
+        const factor = Math.min(1, daysActive / daysInMonth);
+        proRataTotal += plan.price_per_machine * factor;
+      }
+
+      subtotal += Math.round(proRataTotal * 100) / 100;
+      // Próximo mês cobra tudo completo
+    }
+
+    subtotal = Math.max(subtotal, plan.minimum_value);
+    subtotal = Math.round(subtotal * 100) / 100;
 
     const dueDate = new Date(today);
     dueDate.setDate(dueDate.getDate() + 10);
@@ -179,8 +211,7 @@ async function generateMonthlyInvoices(results: CronResults) {
     const invoiceNumber = `INV-${referenceMonth.replace('-', '')}-${tenant.id.slice(0, 8).toUpperCase()}`;
 
     const { data: invoice, error: invoiceError } = await supabaseAdmin
-      .schema('billing')
-      .from('invoices')
+      .from('billing_invoices_view')
       .insert({
         tenant_id: tenant.id,
         invoice_number: invoiceNumber,
@@ -202,6 +233,12 @@ async function generateMonthlyInvoices(results: CronResults) {
     }
 
     results.invoices_generated++;
+
+    // Atualiza last_billed_machines para controle de pro-rata
+    await supabaseAdmin
+      .from('tenants')
+      .update({ last_billed_machines: machines })
+      .eq('id', tenant.id);
 
     let boletoUrl: string | null = invoice.gateway_boleto_url ?? null;
     let pixCode: string | null = invoice.gateway_pix_code ?? null;
@@ -239,8 +276,7 @@ async function generateMonthlyInvoices(results: CronResults) {
         pixCode = pix?.payload ?? null;
 
         await supabaseAdmin
-          .schema('billing')
-          .from('invoices')
+          .from('billing_invoices_view')
           .update({
             gateway_invoice_id: payment.id,
             gateway_boleto_url: boletoUrl,
@@ -276,8 +312,7 @@ async function sendBeforeDueReminders(results: CronResults) {
   const targetStr = target.toISOString().split('T')[0];
 
   const { data: invoices, error } = await supabaseAdmin
-    .schema('billing')
-    .from('invoices')
+    .from('billing_invoices_view')
     .select('id, tenant_id, invoice_number, total, due_date, gateway_boleto_url, gateway_pix_code')
     .eq('status', 'pending')
     .eq('due_date', targetStr);
@@ -320,8 +355,7 @@ async function markOverdueInvoices(results: CronResults) {
   const today = new Date().toISOString().split('T')[0];
 
   const { data: overdueInvoices, error } = await supabaseAdmin
-    .schema('billing')
-    .from('invoices')
+    .from('billing_invoices_view')
     .update({ status: 'overdue' })
     .eq('status', 'pending')
     .lt('due_date', today)
@@ -354,8 +388,7 @@ async function sendOverdueNotices(results: CronResults) {
     const targetStr = target.toISOString().split('T')[0];
 
     const { data: invoices, error } = await supabaseAdmin
-      .schema('billing')
-      .from('invoices')
+      .from('billing_invoices_view')
       .select('id, tenant_id, invoice_number, total, due_date, gateway_boleto_url, gateway_pix_code')
       .eq('status', 'overdue')
       .eq('due_date', targetStr);
@@ -404,8 +437,7 @@ async function sendSuspensionWarnings(results: CronResults) {
   const targetStr = target.toISOString().split('T')[0];
 
   const { data: invoices, error } = await supabaseAdmin
-    .schema('billing')
-    .from('invoices')
+    .from('billing_invoices_view')
     .select('id, tenant_id, invoice_number, total, due_date, gateway_boleto_url, gateway_pix_code')
     .eq('status', 'overdue')
     .lte('due_date', targetStr);
@@ -443,15 +475,14 @@ async function sendSuspensionWarnings(results: CronResults) {
   }
 }
 
-// 7. Suspender clientes muito inadimplentes (30+ dias)
+// 7. Suspender clientes inadimplentes (3+ dias de atraso)
 async function suspendDelinquentTenants(results: CronResults) {
   const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - 30);
+  cutoff.setDate(cutoff.getDate() - 3);
   const cutoffDate = cutoff.toISOString().split('T')[0];
 
   const { data: oldOverdueInvoices, error } = await supabaseAdmin
-    .schema('billing')
-    .from('invoices')
+    .from('billing_invoices_view')
     .select('id, tenant_id')
     .eq('status', 'overdue')
     .lt('due_date', cutoffDate);
@@ -491,8 +522,7 @@ async function suspendDelinquentTenants(results: CronResults) {
 
 async function alreadySent(invoiceId: string, eventType: string): Promise<boolean> {
   const { data } = await supabaseAdmin
-    .schema('billing')
-    .from('collection_events')
+    .from('billing_collection_events_view')
     .select('id')
     .eq('invoice_id', invoiceId)
     .eq('event_type', eventType)
@@ -509,8 +539,7 @@ async function logCollectionEvent(
   errorMessage?: string
 ) {
   await supabaseAdmin
-    .schema('billing')
-    .from('collection_events')
+    .from('billing_collection_events_view')
     .insert({
       invoice_id: invoiceId,
       event_type: eventType,

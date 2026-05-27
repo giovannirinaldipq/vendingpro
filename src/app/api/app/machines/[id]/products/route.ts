@@ -8,6 +8,7 @@ const createSchema = z.object({
   sale_price: z.number().min(0),
   cost_price: z.number().min(0).optional().nullable(),
   slot_code: z.string().max(20).optional().nullable(),
+  max_capacity: z.number().int().min(1).optional().nullable(),
   is_active: z.boolean().default(true),
 });
 
@@ -42,7 +43,7 @@ export async function GET(
 
   const { data, error } = await supabaseAdmin
     .from('machine_products')
-    .select('id, sale_price, cost_price, slot_code, is_active, created_at, updated_at, product:products(id, name, category, unit_size, default_sale_price, default_cost_price)')
+    .select('id, sale_price, cost_price, slot_code, max_capacity, is_active, created_at, updated_at, product:products(id, name, category, unit_size, default_sale_price, default_cost_price)')
     .eq('machine_id', machineId)
     .eq('tenant_id', tenantId)
     .order('slot_code', { ascending: true, nullsFirst: false });
@@ -103,7 +104,7 @@ export async function POST(
       machine_id: machineId,
       tenant_id: tenantId,
     })
-    .select('id, sale_price, cost_price, slot_code, is_active, product:products(id, name, category, unit_size)')
+    .select('id, sale_price, cost_price, slot_code, max_capacity, is_active, product:products(id, name, category, unit_size)')
     .single();
 
   if (error) {

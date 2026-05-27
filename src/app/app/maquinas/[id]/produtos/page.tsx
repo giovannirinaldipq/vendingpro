@@ -3,7 +3,7 @@
 import { useState, useEffect, use, useCallback } from 'react';
 import Link from 'next/link';
 import {
-  ArrowLeft, Loader2, Plus, Trash2, Save, AlertCircle, Package, Info,
+  ArrowLeft, Loader2, Plus, Trash2, Save, AlertCircle, Package, Info, LayoutGrid,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -36,8 +36,15 @@ interface MachineProduct {
   sale_price: number;
   cost_price: number | null;
   slot_code: string | null;
+  max_capacity: number | null;
   is_active: boolean;
   product: ProductRef;
+}
+
+interface MachineInventoryItem {
+  product_id: string;
+  current_quantity: number;
+  fill_level: number | null;
 }
 
 interface MachineInfo {
@@ -49,11 +56,26 @@ interface MachineInfo {
 const fmtBRL = (n?: number | null) =>
   n != null ? `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '—';
 
+function FillBar({ level }: { level: number | null }) {
+  if (level === null) return <span className="text-xs text-text-tertiary">—</span>;
+  const pct = Math.round(level * 100);
+  const color = pct >= 50 ? 'bg-emerald-500' : pct >= 20 ? 'bg-amber-400' : 'bg-red-500';
+  return (
+    <div className="flex items-center gap-2">
+      <div className="h-2 w-16 rounded-full bg-surface-secondary overflow-hidden">
+        <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
+      </div>
+      <span className="text-xs tabular-nums text-text-tertiary">{pct}%</span>
+    </div>
+  );
+}
+
 export default function MachineProductsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
 
   const [machine, setMachine] = useState<MachineInfo | null>(null);
   const [items, setItems] = useState<MachineProduct[]>([]);
+  const [inventoryMap, setInventoryMap] = useState<Map<string, MachineInventoryItem>>(new Map());
   const [loading, setLoading] = useState(true);
 
   // Dialog adicionar
@@ -62,27 +84,37 @@ export default function MachineProductsPage({ params }: { params: Promise<{ id: 
   const [newProductId, setNewProductId] = useState<string>('');
   const [newSalePrice, setNewSalePrice] = useState<string>('');
   const [newSlot, setNewSlot] = useState<string>('');
+  const [newCapacity, setNewCapacity] = useState<string>('');
   const [adding, setAdding] = useState(false);
 
-  // Dirty tracking pra preço/slot inline
-  const [drafts, setDrafts] = useState<Record<string, { sale_price?: number; slot_code?: string }>>({});
+  // Dirty tracking pra preço/slot/capacidade inline
+  const [drafts, setDrafts] = useState<Record<string, { sale_price?: number; slot_code?: string; max_capacity?: number | null }>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [machineRes, mpRes, productsRes] = await Promise.all([
+      const [machineRes, mpRes, productsRes, invRes] = await Promise.all([
         fetch(`/api/app/machines/${id}`),
         fetch(`/api/app/machines/${id}/products`),
         fetch(`/api/app/products`),
+        fetch(`/api/app/machines/${id}/inventory`),
       ]);
       const machineJson = await machineRes.json();
       const mpJson = await mpRes.json();
       const productsJson = await productsRes.json();
+      const invJson = await invRes.json();
 
       if (machineJson.success) setMachine(machineJson.data);
       if (mpJson.success) setItems(mpJson.data.items);
       if (productsJson.success) setAvailableProducts(productsJson.data.products);
+      if (invJson.success) {
+        const map = new Map<string, MachineInventoryItem>();
+        for (const item of invJson.data.items) {
+          map.set(item.product_id, item);
+        }
+        setInventoryMap(map);
+      }
     } finally {
       setLoading(false);
     }
@@ -98,6 +130,7 @@ export default function MachineProductsPage({ params }: { params: Promise<{ id: 
     setNewProductId('');
     setNewSalePrice('');
     setNewSlot('');
+    setNewCapacity('');
     setDlgOpen(true);
   }
 
@@ -105,6 +138,8 @@ export default function MachineProductsPage({ params }: { params: Promise<{ id: 
     if (!newProductId) { toast.error('Escolha um produto'); return; }
     const price = parseFloat(newSalePrice.replace(',', '.'));
     if (isNaN(price) || price < 0) { toast.error('Preço inválido'); return; }
+    const capacity = newCapacity ? parseInt(newCapacity) : null;
+    if (capacity !== null && (isNaN(capacity) || capacity < 1)) { toast.error('Capacidade inválida'); return; }
     setAdding(true);
     try {
       const res = await fetch(`/api/app/machines/${id}/products`, {
@@ -114,6 +149,7 @@ export default function MachineProductsPage({ params }: { params: Promise<{ id: 
           product_id: newProductId,
           sale_price: price,
           slot_code: newSlot.trim() || null,
+          max_capacity: capacity,
         }),
       });
       const json = await res.json();
@@ -129,7 +165,7 @@ export default function MachineProductsPage({ params }: { params: Promise<{ id: 
     }
   }
 
-  function updateDraft(mpId: string, patch: { sale_price?: number; slot_code?: string }) {
+  function updateDraft(mpId: string, patch: { sale_price?: number; slot_code?: string; max_capacity?: number | null }) {
     setDrafts(d => ({ ...d, [mpId]: { ...d[mpId], ...patch } }));
   }
 
@@ -186,7 +222,7 @@ export default function MachineProductsPage({ params }: { params: Promise<{ id: 
         </Link>
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight">Produtos desta máquina</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Planograma</h1>
             {machine && <Pill tone="navy" size="sm">{machine.code}</Pill>}
           </div>
           <p className="text-text-secondary">{machine?.name}</p>
@@ -197,13 +233,13 @@ export default function MachineProductsPage({ params }: { params: Promise<{ id: 
       </div>
 
       <div className="rounded-lg border border-info/30 bg-info-soft/40 p-4 text-sm flex gap-3">
-        <Info className="h-5 w-5 text-info shrink-0 mt-0.5" />
+        <LayoutGrid className="h-5 w-5 text-info shrink-0 mt-0.5" />
         <div className="space-y-1">
-          <p className="font-medium text-text-primary">Como funciona o preço por máquina</p>
+          <p className="font-medium text-text-primary">Planograma da máquina</p>
           <p className="text-xs text-text-secondary">
-            O preço de venda definido aqui sobrescreve o preço padrão do produto.
-            Mesmo Kit Kat pode ser R$ 4 numa máquina e R$ 6 em outra.
-            Slot/canaleta é opcional, ajuda a localizar fisicamente.
+            Define quais produtos estão em cada posição e a capacidade máxima por slot.
+            O sistema usa essas informações para calcular a pick list de abastecimento
+            (capacidade − estoque atual = quantidade a levar).
           </p>
         </div>
       </div>
@@ -244,10 +280,11 @@ export default function MachineProductsPage({ params }: { params: Promise<{ id: 
                 <TableRow>
                   <TableHead className="w-[80px]">Slot</TableHead>
                   <TableHead>Produto</TableHead>
+                  <TableHead className="text-center w-[100px]">Capacidade</TableHead>
+                  <TableHead className="text-center w-[120px]">Nível</TableHead>
                   <TableHead className="text-right w-[140px]">Preço de Venda</TableHead>
-                  <TableHead className="text-right w-[140px]">Padrão Produto</TableHead>
-                  <TableHead className="text-center w-[120px]">Status</TableHead>
-                  <TableHead className="w-[120px]"></TableHead>
+                  <TableHead className="text-center w-[90px]">Status</TableHead>
+                  <TableHead className="w-[100px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -256,6 +293,9 @@ export default function MachineProductsPage({ params }: { params: Promise<{ id: 
                   const hasDraft = draft !== undefined;
                   const currentPrice = draft?.sale_price ?? item.sale_price;
                   const currentSlot = draft?.slot_code ?? item.slot_code ?? '';
+                  const currentCapacity = draft?.max_capacity !== undefined ? draft.max_capacity : item.max_capacity;
+                  const inv = inventoryMap.get(item.product.id);
+                  const fillLevel = inv?.fill_level ?? null;
                   return (
                     <TableRow key={item.id}>
                       <TableCell>
@@ -279,6 +319,19 @@ export default function MachineProductsPage({ params }: { params: Promise<{ id: 
                           </div>
                         </div>
                       </TableCell>
+                      <TableCell className="text-center">
+                        <Input
+                          type="number"
+                          min="1"
+                          value={currentCapacity ?? ''}
+                          onChange={(e) => updateDraft(item.id, { max_capacity: e.target.value ? parseInt(e.target.value) : null })}
+                          placeholder="—"
+                          className="h-8 text-xs tabular-nums text-center w-[70px] mx-auto"
+                        />
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <FillBar level={fillLevel} />
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="relative">
                           <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-text-tertiary">R$</span>
@@ -291,9 +344,6 @@ export default function MachineProductsPage({ params }: { params: Promise<{ id: 
                             className="h-8 text-right text-sm tabular-nums pl-9 pr-2"
                           />
                         </div>
-                      </TableCell>
-                      <TableCell className="text-right text-sm text-text-tertiary tabular-nums">
-                        {fmtBRL(item.product.default_sale_price)}
                       </TableCell>
                       <TableCell className="text-center">
                         <Pill tone={item.is_active ? 'success' : 'neutral'} size="sm" dot>
@@ -383,7 +433,7 @@ export default function MachineProductsPage({ params }: { params: Promise<{ id: 
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div className="space-y-2">
                 <Label htmlFor="sale_price">Preço de venda *</Label>
                 <div className="relative">
@@ -401,13 +451,25 @@ export default function MachineProductsPage({ params }: { params: Promise<{ id: 
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="slot">Slot / Canaleta</Label>
+                <Label htmlFor="slot">Slot</Label>
                 <Input
                   id="slot"
                   value={newSlot}
                   onChange={(e) => setNewSlot(e.target.value)}
                   placeholder="Ex: A1"
                   className="font-mono"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="capacity">Capacidade</Label>
+                <Input
+                  id="capacity"
+                  type="number"
+                  min="1"
+                  value={newCapacity}
+                  onChange={(e) => setNewCapacity(e.target.value)}
+                  placeholder="Ex: 10"
+                  className="tabular-nums"
                 />
               </div>
             </div>

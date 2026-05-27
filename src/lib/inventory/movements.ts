@@ -198,6 +198,47 @@ export async function recordManualAdjust(
 }
 
 /**
+ * Registra ajuste de inventário POR MÁQUINA.
+ * Lê current_quantity de machine_inventory, calcula delta, insere movement com machine_id.
+ * Justificativa (notes) é obrigatória.
+ */
+export async function recordMachineAdjust(
+  tenantId: string,
+  machineId: string,
+  productId: string,
+  countedQuantity: number,
+  userId: string,
+  notes: string,
+  client: SupabaseLike = supabaseAdmin,
+): Promise<{ delta: number; error: string | null }> {
+  const { data: row } = await (client as SupabaseClient)
+    .from('machine_inventory')
+    .select('current_quantity')
+    .eq('machine_id', machineId)
+    .eq('product_id', productId)
+    .maybeSingle();
+
+  const current = Number(row?.current_quantity ?? 0);
+  const delta = Math.round(countedQuantity) - current;
+
+  if (delta === 0) return { delta: 0, error: null };
+
+  const { error } = await insertMovements([{
+    tenant_id: tenantId,
+    product_id: productId,
+    machine_id: machineId,
+    movement_type: 'manual_adjust',
+    quantity: delta,
+    occurred_at: new Date().toISOString(),
+    notes,
+    created_by: userId,
+    source_kind: 'manual',
+  }], client);
+
+  return { delta, error };
+}
+
+/**
  * Registra estoque inicial (usado pelo backfill ou primeiro cadastro).
  */
 export async function recordInitialStock(

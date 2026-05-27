@@ -13,6 +13,9 @@ import {
   Sparkles,
   Check,
   ShoppingBag,
+  FileSpreadsheet,
+  Upload,
+  Download,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -82,6 +85,18 @@ export default function ProductsPage() {
   const [catalogCategory, setCatalogCategory] = useState<string>('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [importing, setImporting] = useState(false);
+
+  // Import planilha
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheetFile, setSheetFile] = useState<File | null>(null);
+  const [sheetUploading, setSheetUploading] = useState(false);
+  const [sheetResult, setSheetResult] = useState<{
+    imported: number;
+    skipped_duplicates: number;
+    skipped_example: number;
+    errors: string[];
+    total_rows: number;
+  } | null>(null);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -183,6 +198,33 @@ export default function ProductsPage() {
     }
   }
 
+  function openSheetDialog() {
+    setSheetFile(null);
+    setSheetResult(null);
+    setSheetOpen(true);
+  }
+
+  async function handleSheetUpload() {
+    if (!sheetFile) return;
+    setSheetUploading(true);
+    try {
+      const form = new FormData();
+      form.append('file', sheetFile);
+      const res = await fetch('/api/app/products/import-spreadsheet', { method: 'POST', body: form });
+      const json = await res.json();
+      if (json.success) {
+        setSheetResult(json.data);
+        fetchProducts();
+      } else {
+        toast.error(json.error?.message ?? 'Erro ao importar planilha');
+      }
+    } catch {
+      toast.error('Erro ao importar planilha');
+    } finally {
+      setSheetUploading(false);
+    }
+  }
+
   const handleDelete = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir este produto?')) return;
 
@@ -211,6 +253,10 @@ export default function ProductsPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={openSheetDialog}>
+            <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-600" />
+            Importar Planilha
+          </Button>
           <Button variant="outline" onClick={openCatalog}>
             <Sparkles className="mr-2 h-4 w-4 text-brand-amber" />
             Importar do catálogo
@@ -335,35 +381,33 @@ export default function ProductsPage() {
       </Card>
 
       <Dialog open={catalogOpen} onOpenChange={setCatalogOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShoppingBag className="h-5 w-5 text-brand-amber" />
-              Catálogo VendingPro — top vendidos no Brasil
+              Importar do Catálogo
             </DialogTitle>
             <DialogDescription>
-              Curadoria com os produtos mais vendidos em vending machines no Brasil
-              (refrigerantes, snacks, chocolates). Selecione os que você vende e
-              importe com 1 clique — vem com preço sugerido pra agilizar.
+              Produtos mais vendidos em vending machines no Brasil. Selecione e importe com 1 clique.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <div className="relative flex-1">
+          <div className="space-y-3">
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Buscar produto ou marca..."
                 value={catalogSearch}
                 onChange={(e) => setCatalogSearch(e.target.value)}
-                className="h-10 pl-9"
+                className="h-9 pl-9"
               />
             </div>
-            <div className="flex flex-wrap gap-1.5 sm:max-w-[60%]">
+            <div className="flex flex-wrap gap-1.5">
               <button
                 type="button"
                 onClick={() => setCatalogCategory('')}
                 className={cn(
-                  'rounded-full px-3 py-1 text-xs font-medium transition-colors',
+                  'rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors',
                   catalogCategory === ''
                     ? 'bg-brand-navy text-white'
                     : 'bg-surface-subtle text-text-secondary hover:bg-surface-subtle/80'
@@ -377,7 +421,7 @@ export default function ProductsPage() {
                   type="button"
                   onClick={() => setCatalogCategory(cat === catalogCategory ? '' : cat)}
                   className={cn(
-                    'rounded-full px-3 py-1 text-xs font-medium transition-colors',
+                    'rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors',
                     catalogCategory === cat
                       ? 'bg-brand-navy text-white'
                       : 'bg-surface-subtle text-text-secondary hover:bg-surface-subtle/80'
@@ -389,7 +433,7 @@ export default function ProductsPage() {
             </div>
           </div>
 
-          <div className="max-h-[400px] overflow-y-auto rounded-lg border border-border-default">
+          <div className="flex-1 min-h-0 overflow-y-auto rounded-lg border border-border-default">
             {catalogLoading ? (
               <div className="flex h-32 items-center justify-center">
                 <Loader2 className="h-6 w-6 animate-spin text-text-tertiary" />
@@ -407,43 +451,43 @@ export default function ProductsPage() {
                       key={item.id}
                       onClick={() => toggleId(item.id, item.already_imported)}
                       className={cn(
-                        'flex items-center gap-3 px-4 py-2.5 transition-colors',
+                        'flex items-center gap-3 px-3 py-2 transition-colors',
                         item.already_imported
-                          ? 'cursor-not-allowed opacity-60'
+                          ? 'cursor-not-allowed opacity-50'
                           : 'cursor-pointer hover:bg-surface-subtle/60',
                         selected && 'bg-brand-amber/10'
                       )}
                     >
                       <div className={cn(
-                        'flex h-5 w-5 shrink-0 items-center justify-center rounded border-2',
+                        'flex h-4 w-4 shrink-0 items-center justify-center rounded border-2',
                         item.already_imported
                           ? 'border-success bg-success text-white'
                           : selected
                             ? 'border-brand-navy bg-brand-navy text-white'
                             : 'border-border-default'
                       )}>
-                        {(selected || item.already_imported) && <Check className="h-3 w-3" />}
+                        {(selected || item.already_imported) && <Check className="h-2.5 w-2.5" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="truncate text-sm font-medium">{item.name}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="truncate text-sm font-medium leading-tight">{item.name}</p>
                           {item.popularity_rank && item.popularity_rank <= 20 && (
                             <Pill tone="amber" size="sm">Top {item.popularity_rank}</Pill>
                           )}
                           {item.already_imported && (
-                            <Pill tone="success" size="sm">Já importado</Pill>
+                            <Pill tone="success" size="sm">Importado</Pill>
                           )}
                         </div>
-                        <p className="text-xs text-text-tertiary">
+                        <p className="text-[11px] text-text-tertiary leading-tight mt-0.5">
                           {item.brand && <span>{item.brand} · </span>}
                           {item.unit_size} · {item.category.replace(/_/g, ' ')}
                         </p>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-sm font-medium tabular-nums">
+                        <p className="text-xs font-medium tabular-nums">
                           {fmtBRL(item.suggested_sale_price)}
                         </p>
-                        <p className="text-[11px] text-text-tertiary tabular-nums">
+                        <p className="text-[10px] text-text-tertiary tabular-nums">
                           custo {fmtBRL(item.suggested_cost_price)}
                         </p>
                       </div>
@@ -454,28 +498,133 @@ export default function ProductsPage() {
             )}
           </div>
 
-          <DialogFooter className="flex items-center justify-between gap-2 sm:gap-2">
-            <div className="flex items-center gap-3 text-xs text-text-tertiary mr-auto">
+          <DialogFooter className="flex items-center justify-between gap-2 border-t border-border-default pt-3">
+            <div className="flex items-center gap-2 text-xs text-text-tertiary mr-auto">
               <button
                 type="button"
                 onClick={selectAllVisible}
                 className="font-medium text-brand-navy hover:underline"
               >
-                Selecionar todos visíveis
+                Selecionar todos
               </button>
-              <span>•</span>
-              <span className="tabular-nums">{selectedIds.size} selecionado(s)</span>
+              <span className="tabular-nums">({selectedIds.size})</span>
             </div>
-            <Button variant="outline" onClick={() => setCatalogOpen(false)}>
+            <Button variant="outline" size="sm" onClick={() => setCatalogOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={importSelected} disabled={selectedIds.size === 0 || importing}>
+            <Button size="sm" onClick={importSelected} disabled={selectedIds.size === 0 || importing}>
               {importing ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Importando...</>
               ) : (
-                <>Importar {selectedIds.size} {selectedIds.size === 1 ? 'produto' : 'produtos'}</>
+                <>Importar {selectedIds.size}</>
               )}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog importação por planilha */}
+      <Dialog open={sheetOpen} onOpenChange={setSheetOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileSpreadsheet className="h-5 w-5 text-emerald-600" />
+              Importar produtos via planilha
+            </DialogTitle>
+            <DialogDescription>
+              Baixe o modelo, preencha com seus produtos e faça o upload. Duplicatas são ignoradas automaticamente.
+            </DialogDescription>
+          </DialogHeader>
+
+          {!sheetResult ? (
+            <div className="space-y-4 py-2">
+              <a
+                href="/api/app/products/template"
+                download
+                className="flex items-center gap-3 rounded-lg border border-emerald-400 bg-emerald-100 p-3 text-sm hover:bg-emerald-200 transition-colors"
+              >
+                <Download className="h-5 w-5 text-emerald-700 shrink-0" />
+                <div>
+                  <p className="font-medium text-emerald-900">Baixar modelo (.xlsx)</p>
+                  <p className="text-xs text-emerald-700">Primeira linha preenchida como exemplo</p>
+                </div>
+              </a>
+
+              <div className="space-y-2">
+                <label
+                  htmlFor="sheet-upload"
+                  className={cn(
+                    'flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 cursor-pointer transition-colors',
+                    sheetFile
+                      ? 'border-brand-navy bg-brand-navy/5'
+                      : 'border-border-default hover:border-brand-navy/50'
+                  )}
+                >
+                  <Upload className="h-6 w-6 text-text-tertiary" />
+                  {sheetFile ? (
+                    <p className="text-sm font-medium">{sheetFile.name}</p>
+                  ) : (
+                    <p className="text-sm text-text-secondary">Clique para selecionar ou arraste o arquivo</p>
+                  )}
+                  <p className="text-[11px] text-text-tertiary">Aceita .xlsx e .csv</p>
+                </label>
+                <input
+                  id="sheet-upload"
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  className="sr-only"
+                  onChange={(e) => setSheetFile(e.target.files?.[0] ?? null)}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3 py-2">
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 space-y-1">
+                <p className="text-sm font-medium text-emerald-800">
+                  {sheetResult.imported} produto(s) importado(s)
+                </p>
+                {sheetResult.skipped_duplicates > 0 && (
+                  <p className="text-xs text-emerald-700">
+                    {sheetResult.skipped_duplicates} duplicata(s) ignorada(s)
+                  </p>
+                )}
+                {sheetResult.skipped_example > 0 && (
+                  <p className="text-xs text-emerald-700">
+                    Linha de exemplo ignorada
+                  </p>
+                )}
+              </div>
+              {sheetResult.errors.length > 0 && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                  <p className="text-xs font-medium text-amber-800 mb-1">Avisos:</p>
+                  <ul className="text-[11px] text-amber-700 space-y-0.5">
+                    {sheetResult.errors.slice(0, 5).map((e, i) => (
+                      <li key={i}>{e}</li>
+                    ))}
+                    {sheetResult.errors.length > 5 && (
+                      <li>...e mais {sheetResult.errors.length - 5} aviso(s)</li>
+                    )}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            {!sheetResult ? (
+              <>
+                <Button variant="outline" onClick={() => setSheetOpen(false)}>Cancelar</Button>
+                <Button onClick={handleSheetUpload} disabled={!sheetFile || sheetUploading}>
+                  {sheetUploading ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processando...</>
+                  ) : (
+                    <>Importar</>
+                  )}
+                </Button>
+              </>
+            ) : (
+              <Button onClick={() => setSheetOpen(false)}>Fechar</Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

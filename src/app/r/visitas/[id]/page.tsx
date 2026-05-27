@@ -33,6 +33,12 @@ interface PicklistItem {
   product: { id: string; name: string; category: string | null; unit_size: string | null } | null;
   already_reposted: number;
   suggested_quantity: number;
+  suggestion_reason?: 'capacity_based' | 'consumption' | 'capacity' | 'fallback';
+  current_stock: number | null;
+  max_capacity: number | null;
+  fill_level: number | null;
+  warehouse_stock: number | null;
+  warehouse_sufficient: boolean | null;
 }
 
 interface VisitData {
@@ -286,6 +292,30 @@ export default function VisitDetailPage({ params }: { params: Promise<{ id: stri
                       )}
                     </div>
 
+                    {/* Estoque e capacidade */}
+                    {(item.current_stock !== null || item.max_capacity !== null) && (
+                      <div className="mt-1.5 flex items-center gap-3 text-[11px] text-text-tertiary">
+                        {item.current_stock !== null && item.max_capacity !== null && (
+                          <>
+                            <span className="tabular-nums">
+                              {item.current_stock}/{item.max_capacity}
+                            </span>
+                            <div className="h-1.5 w-12 rounded-full bg-surface-secondary overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${(item.fill_level ?? 0) >= 0.5 ? 'bg-emerald-500' : (item.fill_level ?? 0) >= 0.2 ? 'bg-amber-400' : 'bg-red-500'}`}
+                                style={{ width: `${Math.round((item.fill_level ?? 0) * 100)}%` }}
+                              />
+                            </div>
+                          </>
+                        )}
+                        {item.warehouse_sufficient === false && (
+                          <span className="text-amber-600 font-medium flex items-center gap-0.5">
+                            <AlertTriangle className="h-3 w-3" />Estoque central baixo
+                          </span>
+                        )}
+                      </div>
+                    )}
+
                     <div className="mt-2 flex items-center gap-2">
                       <div className="flex items-center rounded-md border border-border-default overflow-hidden">
                         <button
@@ -314,7 +344,10 @@ export default function VisitDetailPage({ params }: { params: Promise<{ id: stri
                         </button>
                       </div>
                       <span className="text-[11px] text-text-tertiary">
-                        sugerido: <span className="tabular-nums">{item.suggested_quantity}</span>
+                        levar: <span className="tabular-nums font-medium">{item.suggested_quantity}</span>
+                        {item.suggestion_reason === 'capacity_based' && item.max_capacity !== null && item.current_stock !== null && (
+                          <span className="ml-1 opacity-70">({item.max_capacity}−{item.current_stock})</span>
+                        )}
                       </span>
                       {isDirty && !isFinished && (
                         <Button

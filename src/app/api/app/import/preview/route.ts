@@ -87,6 +87,18 @@ export async function POST(req: NextRequest) {
     };
   });
 
+  // Detectar produtos novos (não existem no cadastro do tenant)
+  const productNamesInFile = [...new Set(parsed.sales.map(s => s.product_name).filter(Boolean))];
+  let newProducts: string[] = [];
+  if (productNamesInFile.length > 0 && parsed.summary.format === 'sales_detailed') {
+    const { data: existingProducts } = await ctx.supabase
+      .from('products')
+      .select('name')
+      .eq('tenant_id', ctx.tenantId);
+    const existingSet = new Set((existingProducts ?? []).map(p => (p.name as string).toLowerCase()));
+    newProducts = productNamesInFile.filter(name => !existingSet.has(name.toLowerCase()));
+  }
+
   return NextResponse.json({
     data: {
       system,
@@ -103,6 +115,7 @@ export async function POST(req: NextRequest) {
       },
       machines,
       available_machines: availableMachines ?? [],
+      new_products: newProducts,
     },
   });
 }

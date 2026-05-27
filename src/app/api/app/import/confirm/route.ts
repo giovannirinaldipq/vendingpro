@@ -168,7 +168,19 @@ export async function POST(req: NextRequest) {
           is_active: true,
         }));
       if (newProducts.length > 0) {
-        await ctx.supabase.from('products').insert(newProducts);
+        const { data: createdProducts } = await ctx.supabase
+          .from('products')
+          .insert(newProducts)
+          .select('id');
+        if (createdProducts && createdProducts.length > 0) {
+          const inventoryRows = createdProducts.map(p => ({
+            tenant_id: ctx.tenantId,
+            product_id: p.id,
+            current_quantity: 0,
+            minimum_quantity: 0,
+          }));
+          await ctx.supabase.from('inventory').upsert(inventoryRows, { onConflict: 'tenant_id,product_id' });
+        }
       }
     }
   }

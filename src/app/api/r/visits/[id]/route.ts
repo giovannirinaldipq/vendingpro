@@ -48,16 +48,48 @@ export async function GET(
   }
 
   // Picklist: produtos cadastrados na máquina (machine_products) com sugestão
-  // baseada em consumo médio dos últimos 14d × cobertura de 7d
+  // Fórmula principal: capacidade - estoque_atual = levar
+  // Fallback (sem estoque por máquina): consumo médio 14d × cobertura 7d
   const { data: machineProducts } = await restockerSupabaseAdmin
     .from('machine_products')
-    .select('id, sale_price, slot_code, product:products(id, name, category, unit_size)')
+    .select('id, sale_price, slot_code, max_capacity, product:products(id, name, category, unit_size)')
     .eq('machine_id', visit.machine_id)
     .eq('tenant_id', ctx.tenantId)
     .eq('is_active', true)
     .order('slot_code', { ascending: true, nullsFirst: false });
 
-  // Vendas dos últimos 14d nesta máquina, por produto
+  // Estoque por máquina (machine_inventory)
+  const { data: machineInventory } = await restockerSupabaseAdmin
+    .from('machine_inventory')
+    .select('product_id, current_quantity')
+    .eq('machine_id', visit.machine_id)
+    .eq('tenant_id', ctx.tenantId);
+
+  const machineStockMap = new Map(
+    (machineInventory ?? []).map(i => [i.product_id, Number(i.current_quantity)])
+  );
+
+  // Estoque central (warehouse) para alertar insuficiência
+  const productIds = (machineProducts ?? [])
+    .map(mp => {
+      const prod = Array.isArray(mp.product) ? mp.product[0] : mp.product;
+      return prod?.id;
+    })
+    .filter(Boolean) as string[];
+
+  const { data: warehouseStock } = productIds.length > 0
+    ? await restockerSupabaseAdmin
+        .from('inventory')
+        .select('product_id, current_quantity')
+        .eq('tenant_id', ctx.tenantId)
+        .in('product_id', productIds)
+    : { data: [] };
+
+  const warehouseMap = new Map(
+    (warehouseStock ?? []).map(i => [i.product_id, Number(i.current_quantity)])
+  );
+
+  // Vendas dos últimos 14d nesta máquina, por produto (fallback)
   const since14d = new Date(Date.now() - 14 * 86400000).toISOString();
   const { data: recentSales } = await restockerSupabaseAdmin
     .from('sales')
@@ -91,23 +123,43 @@ export async function GET(
 
   const picklist = (machineProducts ?? []).map(mp => {
     const prod = Array.isArray(mp.product) ? mp.product[0] : mp.product;
-    const reposted = prod ? itemsByProduct.get(prod.id) : undefined;
-    const soldLast14d = prod ? (salesByProduct.get(prod.id) ?? 0) : 0;
-    const avgDaily = soldLast14d / 14;
-    const projected = Math.ceil(avgDaily * COVERAGE_DAYS);
+    const prodId = prod?.id;
+    const reposted = prodId ? itemsByProduct.get(prodId) : undefined;
+    const currentStock = prodId ? (machineStockMap.get(prodId) ?? null) : null;
+    const effectiveCapacity = mp.max_capacity ?? slotCapacity ?? null;
+    const warehouseQty = prodId ? (warehouseMap.get(prodId) ?? null) : null;
 
     let suggested: number;
-    let reason: 'consumption' | 'capacity' | 'fallback';
-    if (projected > 0) {
-      suggested = slotCapacity ? Math.min(projected, slotCapacity) : projected;
-      reason = 'consumption';
-    } else if (slotCapacity) {
-      suggested = slotCapacity;
-      reason = 'capacity';
+    let reason: 'capacity_based' | 'consumption' | 'capacity' | 'fallback';
+
+    if (effectiveCapacity !== null && currentStock !== null) {
+      // Fórmula principal: capacidade - estoque_atual
+      suggested = Math.max(0, effectiveCapacity - currentStock);
+      reason = 'capacity_based';
     } else {
-      suggested = FALLBACK_SUGGESTION;
-      reason = 'fallback';
+      // Fallback: consumo médio × cobertura
+      const soldLast14d = prodId ? (salesByProduct.get(prodId) ?? 0) : 0;
+      const avgDaily = soldLast14d / 14;
+      const projected = Math.ceil(avgDaily * COVERAGE_DAYS);
+
+      if (projected > 0) {
+        suggested = effectiveCapacity ? Math.min(projected, effectiveCapacity) : projected;
+        reason = 'consumption';
+      } else if (effectiveCapacity) {
+        suggested = effectiveCapacity;
+        reason = 'capacity';
+      } else {
+        suggested = FALLBACK_SUGGESTION;
+        reason = 'fallback';
+      }
     }
+
+    const soldLast14d = prodId ? (salesByProduct.get(prodId) ?? 0) : 0;
+    const avgDaily = soldLast14d / 14;
+    const fillLevel = (effectiveCapacity && currentStock !== null)
+      ? Math.min(currentStock / effectiveCapacity, 1)
+      : null;
+    const warehouseSufficient = warehouseQty !== null ? warehouseQty >= suggested : null;
 
     return {
       machine_product_id: mp.id,
@@ -118,6 +170,11 @@ export async function GET(
       suggestion_reason: reason,
       avg_daily_sales: Math.round(avgDaily * 10) / 10,
       sales_last_14d: soldLast14d,
+      current_stock: currentStock,
+      max_capacity: effectiveCapacity,
+      fill_level: fillLevel,
+      warehouse_stock: warehouseQty,
+      warehouse_sufficient: warehouseSufficient,
     };
   });
 

@@ -24,9 +24,8 @@ export async function POST(req: NextRequest) {
   const toDate = dates[dates.length - 1];
 
   const { data: payments } = await supabaseAdmin
-    .schema('billing')
-    .from('payments')
-    .select('id, amount, payment_date, payment_method, invoices(invoice_number)')
+    .from('billing_payments_view')
+    .select('id, amount, payment_date, payment_method')
     .eq('tenant_id', ctx.tenantId)
     .gte('payment_date', fromDate)
     .lte('payment_date', toDate);
@@ -36,7 +35,7 @@ export async function POST(req: NextRequest) {
     amount: Number(p.amount),
     payment_date: p.payment_date,
     payment_method: p.payment_method,
-    invoice_number: Array.isArray(p.invoices) ? p.invoices[0]?.invoice_number : (p.invoices as { invoice_number?: string } | null)?.invoice_number,
+    invoice_number: undefined,
   }));
 
   const matches = matchBankAgainstPayments(bankRows, mappedPayments);

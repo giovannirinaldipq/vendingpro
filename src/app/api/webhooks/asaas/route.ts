@@ -28,8 +28,7 @@ export async function POST(req: NextRequest) {
   const invoiceId = payment.externalReference;
   let { data: invoice } = invoiceId
     ? await supabaseAdmin
-        .schema('billing')
-        .from('invoices')
+        .from('billing_invoices_view')
         .select('id, tenant_id, status, total, gateway_invoice_id')
         .eq('id', invoiceId)
         .maybeSingle()
@@ -37,8 +36,7 @@ export async function POST(req: NextRequest) {
 
   if (!invoice) {
     const { data: byGw } = await supabaseAdmin
-      .schema('billing')
-      .from('invoices')
+      .from('billing_invoices_view')
       .select('id, tenant_id, status, total, gateway_invoice_id')
       .eq('gateway_invoice_id', payment.id)
       .maybeSingle();
@@ -56,8 +54,7 @@ export async function POST(req: NextRequest) {
     case 'PAYMENT_RECEIVED':
     case 'PAYMENT_CONFIRMED': {
       await supabaseAdmin
-        .schema('billing')
-        .from('invoices')
+        .from('billing_invoices_view')
         .update({
           status: 'paid',
           paid_at: new Date().toISOString(),
@@ -67,8 +64,7 @@ export async function POST(req: NextRequest) {
         .eq('id', invoice.id);
 
       await supabaseAdmin
-        .schema('billing')
-        .from('payments')
+        .from('billing_payments_view')
         .insert({
           invoice_id: invoice.id,
           tenant_id: invoice.tenant_id,
@@ -81,8 +77,7 @@ export async function POST(req: NextRequest) {
 
       // Reativa tenant se estava overdue/suspended e não tem mais nenhuma fatura aberta
       const { count } = await supabaseAdmin
-        .schema('billing')
-        .from('invoices')
+        .from('billing_invoices_view')
         .select('id', { count: 'exact', head: true })
         .eq('tenant_id', invoice.tenant_id)
         .in('status', ['pending', 'overdue']);
@@ -99,8 +94,7 @@ export async function POST(req: NextRequest) {
     case 'PAYMENT_DELETED':
     case 'PAYMENT_REFUNDED': {
       await supabaseAdmin
-        .schema('billing')
-        .from('invoices')
+        .from('billing_invoices_view')
         .update({ status: 'cancelled' })
         .eq('id', invoice.id);
       break;

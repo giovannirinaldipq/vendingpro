@@ -59,7 +59,7 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
           source: data.source ?? '',
         });
       }
-      if (p.success) setPlans(p.data);
+      if (p.success) setPlans(p.data.filter((pl: Plan) => pl.is_active));
     });
   }, [id, reset]);
 

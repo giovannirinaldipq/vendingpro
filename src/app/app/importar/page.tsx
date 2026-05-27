@@ -44,6 +44,7 @@ interface PreviewData {
   };
   machines: MachineRow[];
   available_machines: AvailableMachine[];
+  new_products?: string[];
 }
 
 interface ConfirmResult {
@@ -440,6 +441,33 @@ export default function ImportPage() {
               </div>
             </CardContent>
           </Card>
+
+          {preview.new_products && preview.new_products.length > 0 && (
+            <Card className="border-brand-amber/40">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Wand2 className="h-5 w-5 text-brand-amber" />
+                  {preview.new_products.length} produto(s) novo(s) detectado(s)
+                </CardTitle>
+                <CardDescription>
+                  Estes produtos aparecem na planilha mas não estão no seu cadastro. Ao confirmar a importação, eles serão criados automaticamente.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="max-h-[200px] overflow-y-auto rounded-lg border border-border-default divide-y divide-border-default">
+                  {preview.new_products.map(name => (
+                    <div key={name} className="flex items-center gap-2 px-3 py-1.5 text-sm">
+                      <Plus className="h-3.5 w-3.5 text-brand-amber shrink-0" />
+                      <span>{name}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-text-tertiary mt-2">
+                  Os produtos serão criados sem preço definido — ajuste depois em Produtos.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </>
       )}
 

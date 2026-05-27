@@ -81,6 +81,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: { code: 'INSERT_ERROR', message: error.message } }, { status: 500 });
     }
     inserted = data?.length ?? 0;
+
+    if (data && data.length > 0) {
+      const inventoryRows = data.map(p => ({
+        tenant_id: tenantId,
+        product_id: p.id,
+        current_quantity: 0,
+        minimum_quantity: 0,
+      }));
+      await supabaseAdmin.from('inventory').upsert(inventoryRows, { onConflict: 'tenant_id,product_id' });
+    }
   }
 
   return NextResponse.json({

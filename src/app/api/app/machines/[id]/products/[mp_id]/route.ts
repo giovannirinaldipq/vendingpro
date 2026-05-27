@@ -7,6 +7,7 @@ const updateSchema = z.object({
   sale_price: z.number().min(0).optional(),
   cost_price: z.number().min(0).optional().nullable(),
   slot_code: z.string().max(20).optional().nullable(),
+  max_capacity: z.number().int().min(1).optional().nullable(),
   is_active: z.boolean().optional(),
 });
 
@@ -47,7 +48,7 @@ export async function PATCH(
     .eq('id', mp_id)
     .eq('machine_id', machineId)
     .eq('tenant_id', tenantId)
-    .select('id, sale_price, cost_price, slot_code, is_active')
+    .select('id, sale_price, cost_price, slot_code, max_capacity, is_active')
     .single();
 
   if (error || !data) {

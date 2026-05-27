@@ -150,15 +150,29 @@ export function parseVMPayFile(buffer: ArrayBuffer): VMPayParseResult {
     const sheet = workbook.Sheets[sheetName];
     const data = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 });
 
-    // Detecção: formato CASHLESS AGREGADO (Transações cashless agrupado por Dia/Local/Máquina)
+    // Detecção: formato CASHLESS — pode ser AGREGADO ou DETALHADO (transação por transação)
     const titleCell = String((data[0] as unknown[])?.[0] ?? '').toLowerCase().trim();
     const sheetNameLower = sheetName.toLowerCase();
-    const isCashlessAggregated =
+    const isCashlessTitle =
       titleCell === 'transações cashless' ||
       titleCell === 'transacoes cashless' ||
       sheetNameLower.includes('cashless');
 
-    if (isCashlessAggregated) {
+    if (isCashlessTitle) {
+      // Verificar se é formato DETALHADO (tem header com "Operador" + "Data/hora" + "Produto")
+      let detailedHeaderRow = -1;
+      for (let i = 0; i < Math.min(30, data.length); i++) {
+        const row = data[i];
+        if (!row || !Array.isArray(row)) continue;
+        const r = row.map((c: unknown) => String(c ?? '').toLowerCase().trim());
+        if (r.includes('operador') && r.some(c => c.includes('data')) && r.includes('produto')) {
+          detailedHeaderRow = i;
+          break;
+        }
+      }
+      if (detailedHeaderRow !== -1) {
+        return parseVMPayCashlessDetailed(data, detailedHeaderRow);
+      }
       return parseVMPayCashlessAggregated(data, workbook.SheetNames);
     }
 
@@ -307,6 +321,150 @@ export function parseVMPayFile(buffer: ArrayBuffer): VMPayParseResult {
       errors: [`Erro ao processar arquivo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`],
     };
   }
+}
+
+/**
+ * Parser do relatório CASHLESS DETALHADO do VMPay (aba "Transações cashless").
+ *
+ * Formato: 1 linha por transação individual com colunas:
+ * Operador | Data/hora | Cliente | Local | Local interno | Máquina | Modelo de máquina |
+ * VMbox | Uuid | Ponto de captura | Tipo | Estado | Item | Código do produto | Produto |
+ * Provedor | Adquirente | Cartão | Tipo de cartão | Número do cartão | Parcelas |
+ * Quantidade | Valor (R$) | Desconto (R$) | Preço de Custo (R$) | ...
+ */
+function parseVMPayCashlessDetailed(
+  data: unknown[][],
+  headerRowIndex: number
+): VMPayParseResult {
+  const errors: string[] = [];
+  const sales: ParsedSale[] = [];
+  const machinesSet = new Set<string>();
+  let minDate = '';
+  let maxDate = '';
+  let totalRevenue = 0;
+  let skippedRecords = 0;
+
+  const headers = (data[headerRowIndex] as unknown[]).map((c: unknown) => String(c ?? '').trim().toLowerCase());
+
+  const col = {
+    operador: headers.indexOf('operador'),
+    dataHora: headers.findIndex(h => h.includes('data')),
+    maquina: headers.findIndex(h => h === 'máquina' || h === 'maquina'),
+    tipo: headers.indexOf('tipo'),
+    estado: headers.indexOf('estado'),
+    item: headers.indexOf('item'),
+    codigoProduto: headers.findIndex(h => h.includes('código do produto') || h.includes('codigo do produto')),
+    produto: headers.indexOf('produto'),
+    provedor: headers.indexOf('provedor'),
+    adquirente: headers.indexOf('adquirente'),
+    cartao: headers.findIndex(h => h === 'cartão' || h === 'cartao'),
+    tipoCartao: headers.findIndex(h => h.includes('tipo de cart')),
+    parcelas: headers.indexOf('parcelas'),
+    quantidade: headers.indexOf('quantidade'),
+    valor: headers.findIndex(h => h.includes('valor')),
+    desconto: headers.findIndex(h => h.includes('desconto')),
+    custoProduto: headers.findIndex(h => h.includes('custo')),
+  };
+
+  for (let i = headerRowIndex + 1; i < data.length; i++) {
+    const row = data[i] as unknown[];
+    if (!row || !Array.isArray(row) || row.length < 10) continue;
+
+    const estado = String(row[col.estado] ?? '').trim();
+    if (estado !== 'OK') {
+      skippedRecords++;
+      continue;
+    }
+
+    const machineCode = String(row[col.maquina] ?? '').trim();
+    const produto = String(row[col.produto] ?? '').trim();
+    const codigoProduto = String(row[col.codigoProduto] ?? '').trim();
+    const valor = Number(row[col.valor] ?? 0);
+    const quantidadeRaw = String(row[col.quantidade] ?? '1');
+    const quantity = parseInt(quantidadeRaw.replace(/[^\d]/g, '')) || 1;
+
+    if (!machineCode || !produto) {
+      skippedRecords++;
+      continue;
+    }
+
+    // Parse date/time from "DD/MM/YYYY HH:MM:SS" format
+    const dateTimeStr = String(row[col.dataHora] ?? '');
+    const dtMatch = dateTimeStr.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
+    if (!dtMatch) {
+      skippedRecords++;
+      continue;
+    }
+
+    const [, dd, mm, yyyy, hh, mi, ss] = dtMatch;
+    const saleDateStr = `${yyyy}-${mm}-${dd}`;
+    const saleTimeStr = `${hh}:${mi}:${ss}`;
+    const saleDatetime = `${saleDateStr}T${saleTimeStr}`;
+
+    if (!minDate || saleDateStr < minDate) minDate = saleDateStr;
+    if (!maxDate || saleDateStr > maxDate) maxDate = saleDateStr;
+    machinesSet.add(machineCode);
+    totalRevenue += valor;
+
+    // Payment method inference
+    const tipoCartao = String(row[col.tipoCartao] ?? '').toLowerCase();
+    const adquirente = String(row[col.adquirente] ?? '').toLowerCase();
+    const cartaoBrand = String(row[col.cartao] ?? '').toLowerCase();
+    const tipoTransacao = String(row[col.tipo] ?? '').toLowerCase();
+
+    let paymentMethod: string;
+    if (/vmlink|autorizador externo/i.test(tipoTransacao)) {
+      paymentMethod = 'pix';
+    } else if (/voucher/i.test(tipoCartao) || /ticket|alelo|pluxee|sodexo|vr\b|vale/i.test(cartaoBrand)) {
+      if (/aliment|refei/i.test(cartaoBrand)) paymentMethod = 'meal_voucher';
+      else paymentMethod = 'meal_voucher';
+    } else if (/débit|debit|débito/i.test(tipoCartao)) {
+      paymentMethod = 'debit';
+    } else if (/crédit|credit|crédito/i.test(tipoCartao)) {
+      paymentMethod = 'credit';
+    } else if (/pix/i.test(tipoCartao) || /pix/i.test(adquirente)) {
+      paymentMethod = 'pix';
+    } else {
+      paymentMethod = inferPaymentMethod({ autorizador: null, tipoCartao, adquirente });
+    }
+
+    sales.push({
+      machine_code: machineCode,
+      sale_date: saleDateStr,
+      sale_time: saleTimeStr,
+      sale_datetime: saleDatetime,
+      product_name: produto,
+      product_code: codigoProduto,
+      barcode: null,
+      category: '',
+      quantity,
+      unit_price: quantity > 0 ? Math.round((valor / quantity) * 100) / 100 : valor,
+      total_price: valor,
+      payment_method: paymentMethod,
+      raw_data: {
+        row_index: i,
+        format: 'vmpay_cashless_detailed',
+        adquirente: row[col.adquirente],
+        cartao: row[col.cartao],
+        tipo_cartao: row[col.tipoCartao],
+      },
+    });
+  }
+
+  return {
+    success: true,
+    sales,
+    summary: {
+      total_records: data.length - headerRowIndex - 1,
+      valid_records: sales.length,
+      skipped_records: skippedRecords,
+      machines: Array.from(machinesSet).sort(),
+      date_range: { start: minDate, end: maxDate },
+      total_revenue: Math.round(totalRevenue * 100) / 100,
+      format: 'sales_detailed',
+    },
+    errors,
+  };
 }
 
 /**
