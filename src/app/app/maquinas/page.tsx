@@ -67,6 +67,7 @@ export default function MachinesPage() {
   const [data, setData] = useState<MachinesResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [usage, setUsage] = useState<{ used: number; limit: number } | null>(null);
+  const [stockSummary, setStockSummary] = useState<Record<string, { fill_rate: number | null; critical_slots: number }>>({});
 
   const fetchMachines = async () => {
     setLoading(true);
@@ -99,6 +100,13 @@ export default function MachinesPage() {
     fetch('/api/app/tenant/machines-usage')
       .then(r => r.json())
       .then(j => { if (j.success) setUsage(j.data); })
+      .catch(() => {});
+  }, [data]);
+
+  useEffect(() => {
+    fetch('/api/app/machines/stock-summary')
+      .then(r => r.json())
+      .then(j => { if (j.success) setStockSummary(j.data); })
       .catch(() => {});
   }, [data]);
 
@@ -149,39 +157,35 @@ export default function MachinesPage() {
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por código, nome ou local..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="h-10 pl-9"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={(v) => v && setStatusFilter(v)}>
-              <SelectTrigger className="h-10 w-full sm:w-[180px]">
-                <Filter className="mr-2 h-4 w-4" />
-                <SelectValue>
-                  {statusFilter === 'all' ? 'Todos'
-                   : statusFilter === 'active' ? 'Ativas'
-                   : statusFilter === 'inactive' ? 'Inativas'
-                   : statusFilter === 'maintenance' ? 'Manutenção'
-                   : 'Status'}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="active">Ativas</SelectItem>
-                <SelectItem value="inactive">Inativas</SelectItem>
-                <SelectItem value="maintenance">Manutenção</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por código, nome ou local..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-10 pl-9"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={(v) => v && setStatusFilter(v)}>
+          <SelectTrigger className="h-10 w-full sm:w-[180px]">
+            <Filter className="mr-2 h-4 w-4" />
+            <SelectValue>
+              {statusFilter === 'all' ? 'Todos'
+               : statusFilter === 'active' ? 'Ativas'
+               : statusFilter === 'inactive' ? 'Inativas'
+               : statusFilter === 'maintenance' ? 'Manutenção'
+               : 'Status'}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="active">Ativas</SelectItem>
+            <SelectItem value="inactive">Inativas</SelectItem>
+            <SelectItem value="maintenance">Manutenção</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* Table */}
       <Card>
@@ -211,6 +215,7 @@ export default function MachinesPage() {
                   <TableHead>Máquina</TableHead>
                   <TableHead>Local</TableHead>
                   <TableHead>Tipo</TableHead>
+                  <TableHead>Estoque</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
@@ -240,6 +245,25 @@ export default function MachinesPage() {
                       <Pill tone="outline" size="sm">
                         {typeLabels[machine.machine_type || 'other']}
                       </Pill>
+                    </TableCell>
+                    <TableCell>
+                      {(() => {
+                        const stock = stockSummary[machine.id];
+                        if (!stock || stock.fill_rate === null) return <span className="text-text-tertiary text-xs">—</span>;
+                        const pct = stock.fill_rate;
+                        const color = pct >= 50 ? 'bg-emerald-500' : pct >= 30 ? 'bg-amber-400' : 'bg-red-500';
+                        return (
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-16 rounded-full bg-surface-secondary overflow-hidden">
+                              <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
+                            </div>
+                            <span className="text-xs tabular-nums text-text-tertiary">{pct}%</span>
+                            {stock.critical_slots > 0 && (
+                              <span className="text-[10px] text-red-600 font-medium">{stock.critical_slots} crit</span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </TableCell>
                     <TableCell>
                       <StatusDot status={machineDbStatusToDot(machine.status)} label />
