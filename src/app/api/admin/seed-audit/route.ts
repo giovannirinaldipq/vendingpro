@@ -8,10 +8,17 @@ export async function POST() {
     password: 'Audit@2026',
     email_confirm: true,
   });
-  if (authErr && !authErr.message.includes('already been registered')) {
+  let authUserId: string | undefined;
+  if (authErr && authErr.message.includes('already been registered')) {
+    // Fetch existing auth user
+    const { data: { users } } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 100 });
+    const existing = users?.find(u => u.email === 'audit@vendingtest.com');
+    authUserId = existing?.id;
+  } else if (authErr) {
     return NextResponse.json({ error: authErr.message }, { status: 500 });
+  } else {
+    authUserId = authUser?.user?.id;
   }
-  const authUserId = authUser?.user?.id;
 
   // Check if tenant already exists
   const { data: existingTenant } = await supabaseAdmin
