@@ -141,3 +141,19 @@ function firstName(name: string): string {
 function escape(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
+
+export function tplOnboarding(t: TenantCtx, setPasswordUrl: string) {
+  const title = `Defina sua senha — VendingPro`;
+  const content = `
+    <p style="margin:0 0 16px;">Olá, ${escape(firstName(t.contact_name))} 👋</p>
+    <p style="margin:0 0 16px;">Sua conta da <strong>${escape(t.company_name)}</strong> foi criada na VendingPro. Para começar, defina sua senha clicando no botão abaixo:</p>
+    ${button(setPasswordUrl, 'Definir minha senha')}
+    <p style="margin:24px 0 8px;color:#64748b;font-size:13px;">Após definir sua senha, você poderá:</p>
+    <ul style="margin:0 0 16px;padding-left:20px;color:#475569;font-size:14px;line-height:1.7;">
+      <li>Cadastrar seus locais e máquinas</li>
+      <li>Importar dados de vendas</li>
+      <li>Acompanhar dashboards em tempo real</li>
+    </ul>
+    <p style="margin:0;color:#94a3b8;font-size:12px;">Este link expira em 24 horas. Se expirar, use "Esqueci minha senha" na tela de login.</p>`;
+  return { subject: title, html: renderLayout({ title, preheader: 'Defina sua senha para acessar o VendingPro.', content }) };
+}

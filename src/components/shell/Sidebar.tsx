@@ -123,7 +123,7 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        'hidden lg:flex h-screen flex-col border-r border-border-default bg-surface-card transition-[width] duration-200',
+        'hidden lg:flex h-screen flex-col border-r border-border-default bg-[var(--sidebar)] transition-[width] duration-200',
         collapsed ? 'w-[64px]' : 'w-[240px]'
       )}
       aria-label="Navegação principal"

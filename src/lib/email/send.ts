@@ -5,6 +5,7 @@ import {
   tplInvoiceCreated,
   tplInvoiceOverdue,
   tplInvoiceReminder,
+  tplOnboarding,
   tplSuspensionWarning,
   tplTenantSuspended,
   tplTrialActivated,
@@ -58,6 +59,11 @@ export async function sendEmail({ to, subject, html, tags }: SendInput): Promise
 export function sendWelcome(t: TenantCtx, to: string) {
   const { subject, html } = tplWelcome(t);
   return sendEmail({ to, subject, html, tags: [{ name: 'type', value: 'welcome' }] });
+}
+
+export function sendOnboarding(t: TenantCtx, setPasswordUrl: string, to: string) {
+  const { subject, html } = tplOnboarding(t, setPasswordUrl);
+  return sendEmail({ to, subject, html, tags: [{ name: 'type', value: 'onboarding' }] });
 }
 
 export function sendInvoiceCreated(t: TenantCtx, inv: InvoiceCtx, to: string) {

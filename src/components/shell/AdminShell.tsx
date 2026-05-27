@@ -3,7 +3,7 @@ import { AdminTopbar } from './AdminTopbar';
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen bg-surface-base">
+    <div className="admin-shell flex min-h-screen bg-admin-bg">
       <AdminSidebar />
       <div className="flex flex-1 flex-col min-w-0">
         <AdminTopbar />

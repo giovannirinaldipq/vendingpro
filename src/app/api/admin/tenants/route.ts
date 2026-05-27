@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { createTenantSchema } from '@/lib/validators';
 import { requireAdmin } from '@/lib/admin/auth';
 import { logAudit, extractRequestMeta } from '@/lib/admin/audit';
+import { sendOnboarding } from '@/lib/email';
 
 export async function GET(request: NextRequest) {
   const auth = await requireAdmin();
@@ -103,7 +104,6 @@ export async function POST(request: NextRequest) {
   const auth = await requireAdmin(['super_admin', 'commercial']);
   if (!auth.ok) return NextResponse.json({ success: false, error: { code: auth.error, message: auth.error } }, { status: auth.status });
 
-  const supabase = await createClient();
   const body = await request.json();
 
   const validation = createTenantSchema.safeParse(body);
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('tenants')
     .insert({
       ...validation.data,
@@ -144,5 +144,138 @@ export async function POST(request: NextRequest) {
     userAgent: meta.userAgent,
   });
 
+  // Gera primeira fatura pro-rata se tem plano e máquinas contratadas
+  if (data.plan_id && data.contracted_machines > 0) {
+    try {
+      await generateFirstInvoice(data);
+    } catch (e) {
+      console.error('Erro ao gerar primeira fatura:', e);
+    }
+  }
+
+  // Cria auth user + registro em public.users + envia email de onboarding
+  try {
+    await onboardTenantUser(data);
+  } catch (e) {
+    console.error('Erro ao criar usuário do tenant:', e);
+  }
+
   return NextResponse.json({ success: true, data }, { status: 201 });
+}
+
+async function generateFirstInvoice(tenant: {
+  id: string;
+  plan_id: string;
+  contracted_machines: number;
+  billing_day: number;
+  company_name: string;
+}) {
+  const { data: plan } = await supabaseAdmin
+    .from('billing_plans_view')
+    .select('price_per_machine')
+    .eq('id', tenant.plan_id)
+    .single();
+
+  if (!plan) return;
+
+  const today = new Date();
+  const billingDay = tenant.billing_day || 10;
+  const machines = tenant.contracted_machines;
+  const pricePerMachine = Number(plan.price_per_machine);
+
+  // Calcula pro-rata: dias restantes até o próximo billing_day
+  let nextBillingDate = new Date(today.getFullYear(), today.getMonth(), billingDay);
+  if (nextBillingDate <= today) {
+    nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
+  }
+
+  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const msPerDay = 86400000;
+  const daysRemaining = Math.ceil((nextBillingDate.getTime() - today.getTime()) / msPerDay);
+  const proRataFactor = daysRemaining / daysInMonth;
+
+  const subtotal = Math.round(machines * pricePerMachine * proRataFactor * 100) / 100;
+  if (subtotal <= 0) return;
+
+  const dueDate = new Date(today);
+  dueDate.setDate(dueDate.getDate() + 5);
+  const dueDateStr = dueDate.toISOString().split('T')[0];
+
+  const referenceMonth = today.toISOString().slice(0, 7);
+  const invoiceNumber = `INV-${referenceMonth.replace('-', '')}-${tenant.id.slice(0, 8).toUpperCase()}-PRO`;
+
+  await supabaseAdmin
+    .from('billing_invoices_view')
+    .insert({
+      tenant_id: tenant.id,
+      invoice_number: invoiceNumber,
+      reference_month: `${referenceMonth}-01`,
+      due_date: dueDateStr,
+      subtotal,
+      discount: 0,
+      total: subtotal,
+      machines_count: machines,
+      price_per_machine: pricePerMachine,
+      status: 'pending',
+    });
+
+  // Atualiza last_billed_machines
+  await supabaseAdmin
+    .from('tenants')
+    .update({ last_billed_machines: machines })
+    .eq('id', tenant.id);
+}
+
+async function onboardTenantUser(tenant: {
+  id: string;
+  contact_name: string;
+  contact_email: string;
+  company_name: string;
+}) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://vendingpro.vercel.app';
+
+  // 1. Cria auth user no Supabase (sem senha — será definida via link)
+  const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    email: tenant.contact_email,
+    email_confirm: true,
+    user_metadata: { name: tenant.contact_name, tenant_id: tenant.id },
+  });
+
+  if (authError) {
+    console.error('[onboard] Erro ao criar auth user:', authError.message);
+    return;
+  }
+
+  // 2. Cria registro em public.users vinculando ao tenant
+  await supabaseAdmin.from('users').insert({
+    auth_user_id: authUser.user.id,
+    email: tenant.contact_email,
+    name: tenant.contact_name,
+    tenant_id: tenant.id,
+    role: 'owner',
+    is_active: true,
+  });
+
+  // 3. Gera link de reset de senha (funciona como "definir senha" para user novo)
+  const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+    type: 'recovery',
+    email: tenant.contact_email,
+    options: { redirectTo: `${appUrl}/reset-password` },
+  });
+
+  if (linkError || !linkData) {
+    console.error('[onboard] Erro ao gerar link:', linkError?.message);
+    return;
+  }
+
+  // O link gerado pelo Supabase contém o token — extrair e montar URL final
+  const actionLink = linkData.properties?.action_link;
+  if (!actionLink) return;
+
+  // 4. Envia email de onboarding via Resend
+  await sendOnboarding(
+    { company_name: tenant.company_name, contact_name: tenant.contact_name },
+    actionLink,
+    tenant.contact_email,
+  );
 }

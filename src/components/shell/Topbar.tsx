@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 
 export function Topbar() {
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border-default bg-surface-card/95 backdrop-blur-sm px-4 lg:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border-default bg-surface-base/80 backdrop-blur-md px-4 lg:px-6">
       <MobileSidebar />
 
       <div className="hidden md:flex flex-1 max-w-md">

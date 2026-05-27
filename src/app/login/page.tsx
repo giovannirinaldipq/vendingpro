@@ -11,14 +11,6 @@ import { toast } from 'sonner';
 import { loginSchema, type LoginInput } from '@/lib/validators';
 import { createClient } from '@/lib/supabase/client';
 
-/**
- * Login v4 — single-column centered.
- *
- * Direção: "minimalist cartoon premium". Fundo navy da marca #142659,
- * pattern grid sutil, ilustração cartoon de uma máquina de vending como
- * herói visual (os slots amber replicam o padrão da logo: cantos do topo +
- * centro). Sem split-screen, sem stats falsas, sem cards escuros.
- */
 export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -60,279 +52,151 @@ export default function LoginPage() {
   }
 
   return (
-    <div
-      className="relative flex min-h-[100svh] flex-col items-center justify-center px-5"
-      style={{ background: '#142659' }}
-    >
-      {/* Pattern grid sutil — branco 0.5px / opacity 0.04, células 32x32 */}
-      <svg
-        aria-hidden
-        className="pointer-events-none absolute inset-0 h-full w-full"
-        style={{ zIndex: 0 }}
-      >
-        <defs>
-          <pattern id="login-bg-grid" width="32" height="32" patternUnits="userSpaceOnUse">
-            <path d="M 32 0 L 0 0 0 32" fill="none" stroke="white" strokeWidth="0.5" strokeOpacity="0.04" />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#login-bg-grid)" />
-      </svg>
+    <div className="vp-conveyor-bg min-h-[100svh] relative flex flex-col items-center justify-center overflow-hidden px-6 py-8">
 
-      {/* Conteúdo */}
-      <div
-        className="relative flex w-full max-w-[360px] flex-col items-center"
-        style={{ zIndex: 1 }}
-      >
-        {/* 1. ILUSTRAÇÃO da máquina — herói visual */}
+      {/* Partículas ambientes — 6 pontinhos drift */}
+      <div className="vp-particle" style={{ left: '12%', top: '55%', width: 3, height: 3, background: '#fbbf24', animation: 'vp-drift-a 12s ease-out infinite' }} />
+      <div className="vp-particle" style={{ left: '6%', top: '70%', width: 2, height: 2, background: 'rgba(255,255,255,0.7)', animation: 'vp-drift-b 14s ease-out -4s infinite' }} />
+      <div className="vp-particle" style={{ left: '20%', top: '65%', width: 2, height: 2, background: '#fbbf24', animation: 'vp-drift-c 16s ease-out -8s infinite' }} />
+      <div className="vp-particle" style={{ left: '80%', top: '60%', width: 3, height: 3, background: '#fbbf24', animation: 'vp-drift-a 13s ease-out -2s infinite' }} />
+      <div className="vp-particle" style={{ left: '92%', top: '72%', width: 2, height: 2, background: 'rgba(255,255,255,0.6)', animation: 'vp-drift-b 15s ease-out -6s infinite' }} />
+      <div className="vp-particle" style={{ left: '86%', top: '50%', width: 2, height: 2, background: '#fbbf24', animation: 'vp-drift-c 18s ease-out -10s infinite' }} />
+
+      {/* Coluna de conteúdo */}
+      <div className="relative z-10 w-full max-w-sm flex flex-col items-center">
+
+        {/* PERSONAGEM MÁQUINA */}
         <svg
-          width="98"
-          height="148"
-          viewBox="0 0 120 180"
+          width="160" height="224"
+          viewBox="0 0 200 280"
           xmlns="http://www.w3.org/2000/svg"
+          className="mb-6"
           aria-hidden="true"
-          className="mb-[18px] sm:w-[98px] sm:h-[148px]"
-          style={{ width: 80, height: 120 }}
         >
-          <rect x="10" y="10" width="100" height="160" rx="10"
-                fill="none" stroke="#fff" strokeWidth="1.5" strokeOpacity="0.7"/>
-          <rect x="20" y="22" width="80" height="14" rx="2.5"
-                fill="none" stroke="#fff" strokeWidth="1" strokeOpacity="0.35"/>
-          <circle cx="28" cy="29" r="1.2" fill="#fbbf24"/>
-          <line x1="34" y1="29" x2="56" y2="29"
-                stroke="#fff" strokeOpacity="0.35" strokeWidth="0.8"/>
-          {/* row 1 */}
-          <rect x="26" y="48" width="20" height="22" rx="2" fill="#fbbf24"/>
-          <rect x="50" y="48" width="20" height="22" rx="2"
-                fill="none" stroke="#fff" strokeWidth="1" strokeOpacity="0.4"/>
-          <rect x="74" y="48" width="20" height="22" rx="2" fill="#fbbf24"/>
-          {/* row 2 */}
-          <rect x="26" y="74" width="20" height="22" rx="2"
-                fill="none" stroke="#fff" strokeWidth="1" strokeOpacity="0.4"/>
-          <rect x="50" y="74" width="20" height="22" rx="2" fill="#fbbf24"/>
-          <rect x="74" y="74" width="20" height="22" rx="2"
-                fill="none" stroke="#fff" strokeWidth="1" strokeOpacity="0.4"/>
-          {/* row 3 */}
-          <rect x="26" y="100" width="20" height="22" rx="2"
-                fill="none" stroke="#fff" strokeWidth="1" strokeOpacity="0.4"/>
-          <rect x="50" y="100" width="20" height="22" rx="2"
-                fill="none" stroke="#fff" strokeWidth="1" strokeOpacity="0.4"/>
-          <rect x="74" y="100" width="20" height="22" rx="2"
-                fill="none" stroke="#fff" strokeWidth="1" strokeOpacity="0.4"/>
-          {/* slot inferior */}
-          <rect x="20" y="138" width="80" height="20" rx="3"
-                fill="none" stroke="#fff" strokeWidth="1" strokeOpacity="0.35"/>
-          <line x1="24" y1="150" x2="96" y2="150"
-                stroke="#fff" strokeOpacity="0.2" strokeWidth="0.5"/>
+          <g className="vp-breathe">
+            <g className="vp-machine-cycle">
+              <rect x="20" y="30" width="160" height="240" rx="14" fill="rgba(20,38,89,0.4)" stroke="#fff" strokeWidth="2" strokeOpacity="0.72"/>
+              <rect x="38" y="50" width="124" height="40" rx="6" fill="rgba(0,0,0,0.2)" stroke="#fff" strokeWidth="1.2" strokeOpacity="0.45"/>
+              <g className="vp-blink">
+                <circle cx="82" cy="70" r="4.5" fill="#fbbf24"/>
+                <circle cx="118" cy="70" r="4.5" fill="#fbbf24"/>
+              </g>
+              <rect x="48" y="108" width="32" height="32" rx="3" fill="#fbbf24"/>
+              <rect x="84" y="108" width="32" height="32" rx="3" fill="none" stroke="#fff" strokeWidth="1.5" strokeOpacity="0.45"/>
+              <rect x="120" y="108" width="32" height="32" rx="3" fill="#fbbf24"/>
+              <rect x="48" y="144" width="32" height="32" rx="3" fill="none" stroke="#fff" strokeWidth="1.5" strokeOpacity="0.45"/>
+              <rect x="84" y="144" width="32" height="32" rx="3" fill="#fbbf24"/>
+              <rect x="120" y="144" width="32" height="32" rx="3" fill="none" stroke="#fff" strokeWidth="1.5" strokeOpacity="0.45"/>
+              <rect x="48" y="180" width="32" height="32" rx="3" fill="none" stroke="#fff" strokeWidth="1.5" strokeOpacity="0.45"/>
+              <rect x="84" y="180" width="32" height="32" rx="3" fill="none" stroke="#fff" strokeWidth="1.5" strokeOpacity="0.45"/>
+              <rect x="120" y="180" width="32" height="32" rx="3" fill="none" stroke="#fff" strokeWidth="1.5" strokeOpacity="0.45"/>
+              <rect x="36" y="225" width="128" height="32" rx="4" fill="none" stroke="#fff" strokeWidth="1.5" strokeOpacity="0.5"/>
+              <line x1="44" y1="244" x2="156" y2="244" stroke="#fff" strokeOpacity="0.25" strokeWidth="0.8"/>
+            </g>
+          </g>
         </svg>
 
-        {/* 2. WORDMARK "Vending Pro" — tipografia nítida (não SVG) */}
+        {/* Wordmark */}
         <div
-          className="text-[26px] sm:text-[32px]"
+          className="mb-11 leading-none text-[26px] sm:text-[32px]"
           style={{
-            marginBottom: 44,
             fontFamily: "'Inter', system-ui, sans-serif",
             fontWeight: 500,
             letterSpacing: '-0.015em',
-            lineHeight: 1,
           }}
         >
           <span style={{ color: 'rgba(255,255,255,0.92)' }}>Vending</span>
           <span style={{ color: '#fbbf24', marginLeft: 8 }}>Pro</span>
         </div>
 
-        {/* 3. TÍTULO */}
+        {/* Título */}
         <h1
-          className="text-[18px] sm:text-[20px]"
-          style={{
-            color: '#fff',
-            fontWeight: 500,
-            margin: '0 0 28px',
-            letterSpacing: '-0.01em',
-            alignSelf: 'flex-start',
-          }}
+          className="text-white text-xl font-medium mb-7 self-start"
+          style={{ letterSpacing: '-0.01em' }}
         >
           Acesse sua conta
         </h1>
 
-        {/* 4-6. FORM */}
+        {/* Formulário */}
         <form onSubmit={handleSubmit(onSubmit)} className="w-full">
-          {/* Email */}
-          <div className="mb-4">
-            <label
-              htmlFor="email"
-              className="block"
-              style={{
-                fontSize: 12,
-                color: 'rgba(255,255,255,0.65)',
-                fontWeight: 500,
-                marginBottom: 7,
-              }}
-            >
-              Email
+          <label htmlFor="email" className="block text-xs font-medium mb-1.5" style={{ color: 'rgba(255,255,255,0.65)' }}>
+            Email
+          </label>
+          <input
+            {...emailRest}
+            ref={(el) => { emailHookRef(el); emailRef.current = el; }}
+            id="email"
+            type="email"
+            autoComplete="email"
+            placeholder="seu@email.com"
+            disabled={isLoading}
+            className="vp-input w-full px-3.5 py-2.5 mb-1 text-sm text-white rounded-lg outline-none transition-all"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.1)',
+            }}
+          />
+          {errors.email && (
+            <p className="mb-3 text-xs" style={{ color: '#fca5a5' }}>{errors.email.message}</p>
+          )}
+          {!errors.email && <div className="mb-4" />}
+
+          <div className="flex justify-between items-center mb-1.5">
+            <label htmlFor="password" className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.65)' }}>
+              Senha
             </label>
-            <input
-              {...emailRest}
-              ref={(el) => {
-                emailHookRef(el);
-                emailRef.current = el;
-              }}
-              id="email"
-              type="email"
-              autoComplete="email"
-              placeholder="seu@email.com"
-              disabled={isLoading}
-              className="w-full focus:outline-none"
-              style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 8,
-                padding: '11px 14px',
-                fontSize: 14,
-                color: '#fff',
-                transition: 'all 150ms',
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = '#fbbf24';
-                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(251,191,36,0.15)';
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
-            />
-            {errors.email && (
-              <p className="mt-1.5 text-xs" style={{ color: '#fca5a5' }}>
-                {errors.email.message}
-              </p>
-            )}
+            <Link
+              href="/forgot-password"
+              className="text-xs no-underline hover:underline"
+              style={{ color: '#fbbf24' }}
+            >
+              Esqueci a senha
+            </Link>
           </div>
+          <input
+            {...register('password')}
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            placeholder="••••••••"
+            disabled={isLoading}
+            className="vp-input w-full px-3.5 py-2.5 mb-1 text-sm text-white rounded-lg outline-none transition-all"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.1)',
+            }}
+          />
+          {errors.password && (
+            <p className="mb-4 text-xs" style={{ color: '#fca5a5' }}>{errors.password.message}</p>
+          )}
+          {!errors.password && <div className="mb-5" />}
 
-          {/* Senha */}
-          <div style={{ marginBottom: 22 }}>
-            <div className="flex items-center justify-between" style={{ marginBottom: 7 }}>
-              <label
-                htmlFor="password"
-                style={{
-                  fontSize: 12,
-                  color: 'rgba(255,255,255,0.65)',
-                  fontWeight: 500,
-                }}
-              >
-                Senha
-              </label>
-              <Link
-                href="/forgot-password"
-                className="hover:underline"
-                style={{
-                  fontSize: 12,
-                  color: '#fbbf24',
-                  textDecoration: 'none',
-                  textUnderlineOffset: 3,
-                }}
-              >
-                Esqueci a senha
-              </Link>
-            </div>
-            <input
-              {...register('password')}
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              placeholder="••••••••"
-              disabled={isLoading}
-              className="w-full focus:outline-none"
-              style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 8,
-                padding: '11px 14px',
-                fontSize: 14,
-                color: '#fff',
-                transition: 'all 150ms',
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = '#fbbf24';
-                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(251,191,36,0.15)';
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
-            />
-            {errors.password && (
-              <p className="mt-1.5 text-xs" style={{ color: '#fca5a5' }}>
-                {errors.password.message}
-              </p>
-            )}
-          </div>
-
-          {/* Botão Entrar */}
           <button
             type="submit"
             disabled={isLoading}
-            className="flex w-full items-center justify-center disabled:cursor-not-allowed disabled:opacity-60"
-            style={{
-              background: '#fbbf24',
-              color: '#1e3a8a',
-              border: 'none',
-              borderRadius: 8,
-              padding: '12px 16px',
-              fontSize: 14,
-              fontWeight: 500,
-              gap: 7,
-              cursor: 'pointer',
-              transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
-            }}
-            onMouseEnter={(e) => {
-              if (isLoading) return;
-              e.currentTarget.style.background = '#f59e0b';
-              e.currentTarget.style.transform = 'translateY(-1px)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#fbbf24';
-              e.currentTarget.style.transform = 'translateY(0)';
-            }}
-            onMouseDown={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-            onFocus={(e) => {
-              e.currentTarget.style.outline = '2px solid rgba(251,191,36,0.5)';
-              e.currentTarget.style.outlineOffset = '2px';
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.outline = 'none';
-            }}
+            className="w-full rounded-lg py-3 text-sm font-medium flex items-center justify-center gap-1.5 transition-all hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
+            style={{ background: '#fbbf24', color: '#1e3a8a' }}
+            onMouseEnter={(e) => { if (!isLoading) e.currentTarget.style.background = '#f59e0b'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = '#fbbf24'; }}
           >
             {isLoading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Entrando...
-              </>
+              <><Loader2 className="h-4 w-4 animate-spin" />Entrando...</>
             ) : (
-              <>
-                Entrar
-                <ArrowRight size={16} />
-              </>
+              <><span>Entrar</span><ArrowRight size={16} /></>
             )}
           </button>
-        </form>
 
-        {/* 7. Link secundário */}
-        <p
-          style={{
-            margin: '24px 0 0',
-            textAlign: 'center',
-            fontSize: 12,
-            color: 'rgba(255,255,255,0.5)',
-          }}
-        >
-          Primeira vez?{' '}
-          <a
-            href="mailto:contato@vendingpro.com.br?subject=Solicitar%20acesso%20VendingPro&body=Ol%C3%A1%2C%20gostaria%20de%20conhecer%20o%20VendingPro%20para%20a%20minha%20opera%C3%A7%C3%A3o%20de%20vending%20machines.%0A%0ANome%3A%0AEmpresa%3A%0AQuantidade%20de%20m%C3%A1quinas%3A%0AContato%3A"
-            className="hover:underline"
-            style={{ color: '#fbbf24', textDecoration: 'none', textUnderlineOffset: 3 }}
-          >
-            Solicitar acesso
-          </a>
-        </p>
+          <p className="mt-5 text-center text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>
+            Primeira vez?{' '}
+            <a
+              href="mailto:contato@vendingpro.com.br?subject=Solicitar%20acesso%20VendingPro"
+              className="no-underline hover:underline"
+              style={{ color: '#fbbf24' }}
+            >
+              Solicitar acesso
+            </a>
+          </p>
+        </form>
       </div>
     </div>
   );

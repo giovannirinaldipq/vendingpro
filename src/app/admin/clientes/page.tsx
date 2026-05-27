@@ -134,23 +134,29 @@ export default function ClientsPage() {
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col gap-4 sm:flex-row">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por nome, email ou empresa..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={(v) => v && setStatusFilter(v)}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <Filter className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nome, email ou empresa..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-9 pl-9"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={(v) => v && setStatusFilter(v)}>
+          <SelectTrigger className="h-9 w-full sm:w-[160px]">
+            <Filter className="mr-2 h-4 w-4" />
+            <SelectValue>
+              {statusFilter === 'all' ? 'Todos'
+               : statusFilter === 'active' ? 'Ativos'
+               : statusFilter === 'trial' ? 'Trial'
+               : statusFilter === 'overdue' ? 'Inadimplentes'
+               : statusFilter === 'suspended' ? 'Suspensos'
+               : statusFilter === 'cancelled' ? 'Cancelados'
+               : 'Status'}
+            </SelectValue>
+          </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="active">Ativos</SelectItem>
@@ -160,9 +166,7 @@ export default function ClientsPage() {
                 <SelectItem value="cancelled">Cancelados</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-        </CardContent>
-      </Card>
+      </div>
 
       {/* Table */}
       <Card>

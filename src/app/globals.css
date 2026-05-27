@@ -68,6 +68,11 @@
   --color-surface-muted: var(--surface-muted);
   --color-border-default: var(--border-default);
   --color-border-strong: var(--border-strong);
+
+  --color-admin-bg: var(--admin-bg);
+  --color-admin-sidebar: var(--admin-sidebar);
+  --color-admin-surface: var(--admin-surface);
+  --color-admin-border: var(--admin-border);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
@@ -119,6 +124,13 @@
   --text-secondary: #475569;     /* slate-600 */
   --text-tertiary: #94a3b8;      /* slate-400 */
   --text-on-brand: #ffffff;
+
+  /* ─── ADMIN (dark navy shell — independent of dark mode) ──── */
+  --admin-bg: #142659;
+  --admin-sidebar: #0c1738;
+  --admin-surface: rgba(255,255,255,0.025);
+  --admin-border: rgba(255,255,255,0.08);
+  --admin-border-hover: rgba(255,255,255,0.14);
 
   --success: #16a34a;
   --warning: var(--brand-amber-500);
@@ -180,18 +192,18 @@
   --brand-amber: var(--brand-amber-400);
   --brand-amber-hover: var(--brand-amber-300);
 
-  --surface-base: #020617;
-  --surface-card: #0f172a;
-  --surface-subtle: #1e293b;
-  --surface-muted: #334155;
+  --surface-base: #142659;
+  --surface-card: rgba(255,255,255,0.03);
+  --surface-subtle: rgba(255,255,255,0.06);
+  --surface-muted: rgba(255,255,255,0.10);
 
-  --border-default: #1e293b;
-  --border-strong: #334155;
+  --border-default: rgba(255,255,255,0.08);
+  --border-strong: rgba(255,255,255,0.14);
   --border-focus: var(--brand-navy);
 
   --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-tertiary: #64748b;
+  --text-secondary: rgba(255,255,255,0.6);
+  --text-tertiary: rgba(255,255,255,0.4);
   --text-on-brand: #f8fafc;
 
   --success: #22c55e;
@@ -201,22 +213,22 @@
 
   --background: var(--surface-base);
   --foreground: var(--text-primary);
-  --card: var(--surface-card);
+  --card: rgba(255,255,255,0.03);
   --card-foreground: var(--text-primary);
-  --popover: var(--surface-card);
+  --popover: #1a2d5a;
   --popover-foreground: var(--text-primary);
-  --primary: var(--brand-navy);
-  --primary-foreground: var(--surface-base);
+  --primary: #fbbf24;
+  --primary-foreground: #1e3a8a;
   --secondary: var(--surface-subtle);
   --secondary-foreground: var(--text-primary);
-  --muted: var(--surface-subtle);
-  --muted-foreground: var(--text-secondary);
+  --muted: rgba(255,255,255,0.06);
+  --muted-foreground: rgba(255,255,255,0.5);
   --accent: var(--surface-subtle);
   --accent-foreground: var(--text-primary);
   --destructive: var(--danger);
   --border: var(--border-default);
   --input: var(--border-default);
-  --ring: var(--brand-navy);
+  --ring: #fbbf24;
 
   --chart-1: var(--brand-navy-600);
   --chart-2: var(--brand-navy-400);
@@ -224,14 +236,31 @@
   --chart-4: #64748b;
   --chart-5: var(--info);
 
-  --sidebar: var(--surface-card);
+  --sidebar: #0c1738;
   --sidebar-foreground: var(--text-primary);
-  --sidebar-primary: var(--brand-navy);
-  --sidebar-primary-foreground: var(--surface-base);
-  --sidebar-accent: var(--brand-navy-100);
-  --sidebar-accent-foreground: var(--brand-navy-800);
-  --sidebar-border: var(--border-default);
-  --sidebar-ring: var(--brand-navy);
+  --sidebar-primary: #fbbf24;
+  --sidebar-primary-foreground: #1e3a8a;
+  --sidebar-accent: rgba(255,255,255,0.07);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgba(255,255,255,0.08);
+  --sidebar-ring: #fbbf24;
+}
+
+/* ─── DARK MODE: navy/glass brand overrides ─── */
+.dark .bg-brand-navy {
+  background-color: rgba(255,255,255,0.08);
+}
+.dark .text-brand-navy {
+  color: #93b3fd;
+}
+.dark .border-brand-navy\/20 {
+  border-color: rgba(255,255,255,0.10);
+}
+
+/* Glass backdrop for cards in dark mode */
+.dark .bg-surface-card {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 @layer base {
@@ -302,6 +331,13 @@
   /* Borders */
   .border-default { border-color: var(--border-default); }
   .border-strong { border-color: var(--border-strong); }
+
+  /* Admin */
+  .bg-admin-bg { background-color: var(--admin-bg); }
+  .bg-admin-sidebar { background-color: var(--admin-sidebar); }
+  .bg-admin-surface { background-color: var(--admin-surface); }
+  .border-admin { border-color: var(--admin-border); }
+  .border-admin-hover { border-color: var(--admin-border-hover); }
 
   /* Semantic */
   .text-success { color: var(--success); }
@@ -388,6 +424,124 @@
   animation: machine-pulse 2s ease-out infinite;
 }
 
+/* Login: células amber pulsantes no background */
+@keyframes cellPulse {
+  0%, 100% { opacity: 0.08; transform: scale(1); }
+  50%      { opacity: 0.25; transform: scale(1.15); }
+}
+.animate-cell-pulse {
+  animation: cellPulse 3s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+/* ===================================================== */
+/* VENDING PRO — LOGIN ANIMATIONS (calibrado, não mexa)  */
+/* ===================================================== */
+
+/* ---- CONVEYOR BACKGROUND ---- */
+@keyframes vp-conveyor {
+  from { background-position: 0 0, 0 0; }
+  to   { background-position: 32px 0, 0 0; }
+}
+.vp-conveyor-bg {
+  background-color: #142659;
+  background-image:
+    linear-gradient(to right,  rgba(255,255,255,0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+  animation: vp-conveyor 6s linear infinite;
+}
+
+/* ---- MACHINE: RESPIRAÇÃO (sempre on) ---- */
+@keyframes vp-breathe {
+  0%, 100% { transform: scaleY(1); }
+  50%      { transform: scaleY(1.012); }
+}
+.vp-breathe {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: vp-breathe 4s ease-in-out infinite;
+}
+
+/* ---- MACHINE: CICLO COMPLETO ---- */
+@keyframes vp-machine-cycle {
+  0%, 1.5% { transform: translateY(0)    scaleY(1)    rotate(0deg);   }
+  2%       { transform: translateY(0)    scaleY(1)    rotate(-2.5deg);}
+  2.7%     { transform: translateY(0)    scaleY(1)    rotate(2.5deg); }
+  3.4%     { transform: translateY(0)    scaleY(1)    rotate(-2deg);  }
+  4%       { transform: translateY(0)    scaleY(1)    rotate(2deg);   }
+  4.7%     { transform: translateY(0)    scaleY(1)    rotate(0);      }
+  6%       { transform: translateY(6px)  scaleY(0.9)  rotate(0);      }
+  8%       { transform: translateY(-18px) scaleY(1.1) rotate(-4deg);  }
+  10%      { transform: translateY(-22px) scaleY(1.05) rotate(4deg);  }
+  12%      { transform: translateY(4px)  scaleY(0.86) rotate(0);      }
+  14%      { transform: translateY(-3px) scaleY(1.04) rotate(0);      }
+  16%      { transform: translateY(0)    scaleY(1)    rotate(0);      }
+  100%     { transform: translateY(0)    scaleY(1)    rotate(0);      }
+}
+.vp-machine-cycle {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: vp-machine-cycle 7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* ---- MACHINE: OLHOS PISCAM ---- */
+@keyframes vp-blink {
+  0%, 86%, 94%, 100% { transform: scaleY(1);   }
+  90%                { transform: scaleY(0.1); }
+}
+.vp-blink {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: vp-blink 5.3s ease-in-out infinite;
+}
+
+/* ---- PARTÍCULAS AMBIENTES ---- */
+@keyframes vp-drift-a {
+  0%, 5%  { opacity: 0;    transform: translate(0, 180px);    }
+  18%     { opacity: 0.85;                                    }
+  50%     {                transform: translate(10px, -40px); }
+  82%     { opacity: 0.85;                                    }
+  100%    { opacity: 0;    transform: translate(-12px, -260px); }
+}
+@keyframes vp-drift-b {
+  0%, 5%  { opacity: 0;    transform: translate(0, 180px);    }
+  18%     { opacity: 0.55;                                    }
+  50%     {                transform: translate(-14px, -40px);}
+  82%     { opacity: 0.55;                                    }
+  100%    { opacity: 0;    transform: translate(16px, -260px);}
+}
+@keyframes vp-drift-c {
+  0%, 5%  { opacity: 0;    transform: translate(0, 200px);   }
+  22%     { opacity: 0.5;                                    }
+  78%     { opacity: 0.5;                                    }
+  100%    { opacity: 0;    transform: translate(0, -240px);  }
+}
+.vp-particle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* ---- INPUT FOCUS (amber ring) ---- */
+.vp-input:focus {
+  border-color: #fbbf24 !important;
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15);
+  outline: none;
+}
+
+/* ---- ACESSIBILIDADE: prefers-reduced-motion ---- */
+@media (prefers-reduced-motion: reduce) {
+  .vp-conveyor-bg,
+  .vp-breathe,
+  .vp-machine-cycle,
+  .vp-blink,
+  .vp-particle {
+    animation: none !important;
+  }
+}
+
 /* Shimmer pra progress bar de meta (gamificação sutil) */
 @keyframes progress-shimmer {
   0%   { background-position: -200% 0; }
@@ -402,4 +556,132 @@
   );
   background-size: 200% 100%;
   animation: progress-shimmer 2.5s linear infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ADMIN SHELL — dark navy context overrides
+   Restyle all shadcn/ui components inside .admin-shell
+   ═══════════════════════════════════════════════════════════════ */
+
+.admin-shell {
+  --background: var(--admin-bg);
+  --foreground: #f8fafc;
+  --card: var(--admin-surface);
+  --card-foreground: #f8fafc;
+  --popover: #1a2d5a;
+  --popover-foreground: #f8fafc;
+  --primary: #fbbf24;
+  --primary-foreground: #1e3a8a;
+  --secondary: rgba(255,255,255,0.06);
+  --secondary-foreground: #f8fafc;
+  --muted: rgba(255,255,255,0.06);
+  --muted-foreground: rgba(255,255,255,0.5);
+  --accent: rgba(255,255,255,0.06);
+  --accent-foreground: #f8fafc;
+  --destructive: #ef4444;
+  --border: var(--admin-border);
+  --input: var(--admin-border);
+  --ring: #fbbf24;
+  color: #f8fafc;
+}
+
+.admin-shell h1,
+.admin-shell h2,
+.admin-shell h3,
+.admin-shell h4 {
+  color: #f8fafc;
+}
+
+.admin-shell .text-muted-foreground {
+  color: rgba(255,255,255,0.5);
+}
+
+.admin-shell .text-foreground {
+  color: #f8fafc;
+}
+
+.admin-shell .text-text-primary {
+  color: #f8fafc;
+}
+
+.admin-shell .text-text-secondary {
+  color: rgba(255,255,255,0.6);
+}
+
+.admin-shell .text-text-tertiary {
+  color: rgba(255,255,255,0.4);
+}
+
+.admin-shell .bg-surface-base {
+  background-color: var(--admin-bg);
+}
+
+.admin-shell .bg-surface-card {
+  background-color: var(--admin-surface);
+}
+
+.admin-shell .bg-surface-subtle {
+  background-color: rgba(255,255,255,0.04);
+}
+
+.admin-shell .border-border-default {
+  border-color: var(--admin-border);
+}
+
+.admin-shell .border-border-strong {
+  border-color: var(--admin-border-hover);
+}
+
+.admin-shell .hover\:bg-surface-subtle:hover {
+  background-color: rgba(255,255,255,0.06);
+}
+
+.admin-shell .shadow-soft {
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+}
+
+.admin-shell .shadow-card {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+}
+
+.admin-shell .font-medium,
+.admin-shell .font-bold,
+.admin-shell .font-semibold {
+  color: inherit;
+}
+
+.admin-shell .text-brand-navy {
+  color: #93b3fd;
+}
+
+.admin-shell .bg-brand-navy {
+  background-color: rgba(255,255,255,0.08);
+}
+
+.admin-shell .bg-brand-navy\/10 {
+  background-color: rgba(255,255,255,0.06);
+}
+
+.admin-shell .text-brand-amber {
+  color: #fbbf24;
+}
+
+.admin-shell .text-warning {
+  color: #fbbf24;
+}
+
+.admin-shell .text-danger {
+  color: #ef4444;
+}
+
+.admin-shell .text-success {
+  color: #4ade80;
+}
+
+.admin-shell .bg-brand-amber-100 {
+  background-color: rgba(251,191,36,0.15);
+}
+
+.admin-shell .text-brand-amber-800 {
+  color: #fbbf24;
 }

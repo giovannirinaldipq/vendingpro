@@ -228,9 +228,9 @@ export default function AppDashboard() {
             <div className="sm:col-span-2">
               <KpiCardHero
                 label="Lucro líquido 30D"
-                value={fmtBRL(finance?.total.net_result ?? 0)}
+                value={fmtBRL(finance?.total?.net_result ?? 0)}
                 subtitle={
-                  finance
+                  finance?.total
                     ? `Receita ${fmtBRL(finance.total.revenue)} − taxas ${fmtBRL(finance.total.fees)} − CMV ${fmtBRL(finance.total.cmv)} − fixos ${fmtBRL(finance.total.fixed_costs)}`
                     : 'vs período anterior'
                 }
@@ -263,7 +263,7 @@ export default function AppDashboard() {
           <div>
             <strong className="text-text-primary">Por que líquido em destaque?</strong>{' '}
             Telemetria mostra só a receita bruta. O VendingPro desconta as taxas reais por método de pagamento e o CMV de cada produto, e te entrega o lucro real.
-            {finance.machines_in_loss > 0 && (
+            {(finance.machines_in_loss ?? 0) > 0 && (
               <> Hoje você tem <span className="font-semibold text-warning">{finance.machines_in_loss} máquina(s) no prejuízo</span> — veja em <Link href="/app/financeiro" className="text-brand-navy hover:underline">Financeiro</Link>.</>
             )}
           </div>

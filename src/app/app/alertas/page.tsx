@@ -218,7 +218,13 @@ export default function AlertsPage() {
             <Select value={statusFilter} onValueChange={(v) => v && setStatusFilter(v)}>
               <SelectTrigger className="w-full sm:w-[180px]">
                 <Filter className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Status" />
+                <SelectValue>
+                  {statusFilter === 'active' ? 'Ativos'
+                   : statusFilter === 'acknowledged' ? 'Reconhecidos'
+                   : statusFilter === 'resolved' ? 'Resolvidos'
+                   : statusFilter === 'dismissed' ? 'Dispensados'
+                   : 'Todos'}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">Ativos</SelectItem>
@@ -232,7 +238,14 @@ export default function AlertsPage() {
             <Select value={severityFilter} onValueChange={(v) => v && setSeverityFilter(v)}>
               <SelectTrigger className="w-full sm:w-[180px]">
                 <AlertTriangle className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Severidade" />
+                <SelectValue>
+                  {severityFilter === 'all' ? 'Todas'
+                   : severityFilter === 'critical' ? 'Crítico'
+                   : severityFilter === 'high' ? 'Alto'
+                   : severityFilter === 'medium' ? 'Médio'
+                   : severityFilter === 'low' ? 'Baixo'
+                   : 'Severidade'}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas</SelectItem>

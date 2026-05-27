@@ -129,36 +129,32 @@ export default function PaymentsPage() {
         <StatCard label="Recebido no mês" value={stats ? fmtBRL(stats.month.total) : '—'} count={stats?.month.count} loading={!stats} />
       </div>
 
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por fatura ou cliente…"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <Select value={methodFilter} onValueChange={(v) => v && setMethodFilter(v)}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <Filter className="mr-2 h-4 w-4" />
-                <SelectValue>{methodFilter === 'all' ? 'Todos métodos' : METHOD_META[methodFilter]?.label}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="pix">PIX</SelectItem>
-                <SelectItem value="boleto">Boleto</SelectItem>
-                <SelectItem value="credit_card">Cartão</SelectItem>
-                <SelectItem value="transfer">Transferência</SelectItem>
-                <SelectItem value="cash">Dinheiro</SelectItem>
-                <SelectItem value="other">Outro</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por fatura ou cliente…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="h-9 pl-9"
+          />
+        </div>
+        <Select value={methodFilter} onValueChange={(v) => v && setMethodFilter(v)}>
+          <SelectTrigger className="h-9 w-full sm:w-[160px]">
+            <Filter className="mr-2 h-4 w-4" />
+            <SelectValue>{methodFilter === 'all' ? 'Todos métodos' : METHOD_META[methodFilter]?.label}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="pix">PIX</SelectItem>
+            <SelectItem value="boleto">Boleto</SelectItem>
+            <SelectItem value="credit_card">Cartão</SelectItem>
+            <SelectItem value="transfer">Transferência</SelectItem>
+            <SelectItem value="cash">Dinheiro</SelectItem>
+            <SelectItem value="other">Outro</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       <Card>
         <CardHeader>
