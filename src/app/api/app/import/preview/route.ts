@@ -69,11 +69,12 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Lista de máquinas do tenant para o dropdown
+  // Lista de máquinas do tenant para o dropdown (apenas ativas)
   const { data: availableMachines } = await ctx.supabase
     .from('machines')
     .select('id, name, code')
     .eq('tenant_id', ctx.tenantId)
+    .eq('is_active', true)
     .order('name');
 
   const machines = externalNames.map(name => {

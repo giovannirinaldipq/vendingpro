@@ -107,12 +107,13 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Verificar se código já existe para este tenant
+  // Verificar se código já existe para este tenant (apenas máquinas ativas)
   const { data: existing } = await supabase
     .from('machines')
     .select('id')
     .eq('tenant_id', tenantId)
     .eq('code', validation.data.code)
+    .eq('is_active', true)
     .single();
 
   if (existing) {

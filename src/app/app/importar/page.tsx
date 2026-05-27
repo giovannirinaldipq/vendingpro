@@ -366,11 +366,27 @@ export default function ImportPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {preview.machines.map(m => (
+                    {preview.machines.map(m => {
+                      const selectedId = selections[m.external_name];
+                      const selectedMachine = selectedId ? preview.available_machines.find(am => am.id === selectedId) : null;
+                      const displayName = selectedMachine?.name ?? m.mapped_machine_name;
+                      const isLongId = m.external_name.length > 16;
+                      return (
                       <TableRow key={m.external_name}>
                         <TableCell>
-                          <div className="font-mono text-xs">{m.external_name}</div>
-                          {m.mapped_machine_id && (
+                          {displayName ? (
+                            <>
+                              <div className="text-sm font-medium">{displayName}</div>
+                              <div className="font-mono text-[10px] text-text-tertiary mt-0.5" title={m.external_name}>
+                                ID: {isLongId ? `${m.external_name.slice(0, 8)}…${m.external_name.slice(-4)}` : m.external_name}
+                              </div>
+                            </>
+                          ) : (
+                            <div className="font-mono text-xs" title={m.external_name}>
+                              {isLongId ? `${m.external_name.slice(0, 12)}…${m.external_name.slice(-4)}` : m.external_name}
+                            </div>
+                          )}
+                          {m.mapped_machine_id && !selectedId && (
                             <Pill tone="success" size="sm" dot className="mt-1">
                               Mapeamento salvo
                             </Pill>
@@ -400,7 +416,8 @@ export default function ImportPage() {
                           </Link>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      );
+                    })}
                   </TableBody>
                 </Table>
               )}
@@ -437,14 +454,14 @@ export default function ImportPage() {
           <CardContent className="space-y-4">
             <div className="grid sm:grid-cols-3 gap-4">
               {result.format === 'cashless_aggregated' ? (
-                <KpiInline
-                  label="Dias importados"
-                  value={String(result.imported)}
-                  sub={result.aggregated_transactions
-                    ? `${result.aggregated_transactions.toLocaleString('pt-BR')} vendas reais agregadas`
-                    : (result.duplicates ? `${result.duplicates} dias já existiam` : undefined)}
-                  variant="success"
-                />
+                <>
+                  <KpiInline
+                    label="Vendas importadas"
+                    value={result.aggregated_transactions?.toLocaleString('pt-BR') ?? String(result.imported)}
+                    sub={`${result.imported} dias no arquivo${result.duplicates ? ` · ${result.duplicates} dias já existiam` : ''}`}
+                    variant="success"
+                  />
+                </>
               ) : (
                 <KpiInline
                   label="Vendas importadas"
