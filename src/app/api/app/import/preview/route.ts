@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
     .from('machines')
     .select('id, name, code')
     .eq('tenant_id', ctx.tenantId)
-    .eq('is_active', true)
+    .neq('status', 'deactivated')
     .order('name');
 
   const machines = externalNames.map(name => {

@@ -37,7 +37,7 @@ export async function GET(
     lastLoginRes,
   ] = await Promise.all([
     supabaseAdmin.from('machines').select('id', { count: 'exact', head: true }).eq('tenant_id', id),
-    supabaseAdmin.from('machines').select('id', { count: 'exact', head: true }).eq('tenant_id', id).eq('is_active', true),
+    supabaseAdmin.from('machines').select('id', { count: 'exact', head: true }).eq('tenant_id', id).neq('status', 'deactivated'),
     supabaseAdmin.from('users').select('id', { count: 'exact', head: true }).eq('tenant_id', id).eq('is_active', true),
     supabaseAdmin.from('restockers').select('id', { count: 'exact', head: true }).eq('tenant_id', id).eq('is_active', true),
     supabaseAdmin.from('products').select('id', { count: 'exact', head: true }).eq('tenant_id', id),

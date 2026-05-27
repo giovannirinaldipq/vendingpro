@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
     .select('id')
     .eq('tenant_id', tenantId)
     .eq('code', validation.data.code)
-    .eq('is_active', true)
+    .neq('status', 'deactivated')
     .single();
 
   if (existing) {
