@@ -371,7 +371,23 @@ export default function InventoryPage() {
                 onValueChange={(v) => v && setMovementType(v as 'in' | 'out' | 'adjustment')}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue>
+                    {movementType === 'in' && (
+                      <div className="flex items-center">
+                        <Plus className="mr-2 h-4 w-4 text-success" />Entrada
+                      </div>
+                    )}
+                    {movementType === 'out' && (
+                      <div className="flex items-center">
+                        <Minus className="mr-2 h-4 w-4 text-danger" />Saída
+                      </div>
+                    )}
+                    {movementType === 'adjustment' && (
+                      <div className="flex items-center">
+                        <RefreshCw className="mr-2 h-4 w-4 text-info" />Ajuste
+                      </div>
+                    )}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="in">

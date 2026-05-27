@@ -15,11 +15,9 @@ export interface InventoryPrediction {
 }
 
 /**
- * Refatorado para 2 queries totais (não N+1):
- *   1. inventory rows do tenant (com nome do produto via join)
- *   2. todas vendas dos últimos LOOKBACK_DAYS pra esses produtos
- *
- * Antes: tenant com 50 produtos = 51 queries. Agora: 2.
+ * Usa inventory_movements (tipo 'sale') para calcular consumo médio.
+ * Antes usava tabela sales por product_id, mas product_id em sales
+ * raramente é preenchido (import só grava product_name).
  */
 export async function predictInventoryRunout(tenantId: string): Promise<InventoryPrediction[]> {
   const since = new Date(Date.now() - LOOKBACK_DAYS * 86400000).toISOString();
@@ -33,13 +31,14 @@ export async function predictInventoryRunout(tenantId: string): Promise<Inventor
 
   const productIds = inv.map(r => r.product_id);
 
-  // Query 2: TODAS as vendas desses produtos no período
-  const { data: salesRaw } = await supabaseAdmin
-    .from('sales')
+  // Query 2: movements de venda no período (quantity é negativo para sales)
+  const { data: movementsRaw } = await supabaseAdmin
+    .from('inventory_movements')
     .select('product_id, quantity')
     .eq('tenant_id', tenantId)
+    .eq('movement_type', 'sale')
     .in('product_id', productIds)
-    .gte('sale_datetime', since);
+    .gte('occurred_at', since);
 
   // Query 3: última movimentação por produto (qualquer kind)
   const { data: lastMovements } = await supabaseAdmin
@@ -56,11 +55,12 @@ export async function predictInventoryRunout(tenantId: string): Promise<Inventor
     }
   }
 
-  // Agregação por product_id em memória
+  // Agregação: soma absoluta de vendas por product_id
   const salesByProduct = new Map<string, number>();
-  for (const s of salesRaw ?? []) {
+  for (const s of movementsRaw ?? []) {
     if (!s.product_id) continue;
-    salesByProduct.set(s.product_id, (salesByProduct.get(s.product_id) ?? 0) + Number(s.quantity ?? 0));
+    // quantity é negativo para vendas, usamos valor absoluto
+    salesByProduct.set(s.product_id, (salesByProduct.get(s.product_id) ?? 0) + Math.abs(Number(s.quantity ?? 0)));
   }
 
   const out: InventoryPrediction[] = [];

@@ -68,6 +68,24 @@ interface SwapSuggestion {
   reason_detail: string[];
 }
 
+interface PicklistItem {
+  product_id: string;
+  product_name: string;
+  slot_code: string | null;
+  current_quantity: number;
+  max_capacity: number;
+  to_fill: number;
+}
+
+interface PicklistMachine {
+  machine_id: string;
+  machine_name: string;
+  machine_code: string;
+  location_name: string | null;
+  total_to_fill: number;
+  items: PicklistItem[];
+}
+
 const URGENCY_TONE: Record<string, 'danger' | 'warning' | 'info'> = {
   high: 'danger', medium: 'warning', low: 'info',
 };
@@ -85,6 +103,7 @@ export default function SuggestionsPage() {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [purchase, setPurchase] = useState<PurchaseItem[]>([]);
   const [swaps, setSwaps] = useState<SwapSuggestion[]>([]);
+  const [picklist, setPicklist] = useState<PicklistMachine[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedSchedule, setExpandedSchedule] = useState<Set<string>>(new Set());
   const [expandedSwap, setExpandedSwap] = useState<Set<string>>(new Set());
@@ -97,18 +116,20 @@ export default function SuggestionsPage() {
 
   useEffect(() => {
     (async () => {
-      const [s, p, pu, sw, cap] = await Promise.all([
+      const [s, p, pu, sw, cap, pl] = await Promise.all([
         fetch('/api/app/suggestions/schedule').then(r => r.json()),
         fetch('/api/app/suggestions/inventory').then(r => r.json()),
         fetch(`/api/app/suggestions/purchase?days=${purchaseDays}`).then(r => r.json()),
         fetch('/api/app/suggestions/swap').then(r => r.json()),
         fetch('/api/app/tenant/capacity').then(r => r.json()),
+        fetch('/api/app/suggestions/picklist').then(r => r.json()),
       ]);
       setSchedule(s.data ?? []);
       setPredictions(p.data ?? []);
       setPurchase(pu.data ?? []);
       setSwaps(sw.data ?? []);
       setCapacity(cap.data ?? null);
+      setPicklist(pl.data ?? []);
       setLoading(false);
     })();
     // Initial load só; mudança de purchaseDays usa reloadPurchase
@@ -241,8 +262,9 @@ export default function SuggestionsPage() {
       <Tabs defaultValue="schedule">
         <TabsList>
           <TabsTrigger value="schedule"><CalendarClock className="mr-2 h-4 w-4" />Abastecimento</TabsTrigger>
+          <TabsTrigger value="picklist"><Package2 className="mr-2 h-4 w-4" />Picklist</TabsTrigger>
           <TabsTrigger value="mix"><Repeat className="mr-2 h-4 w-4" />Manter vs Trocar</TabsTrigger>
-          <TabsTrigger value="predictions"><Package2 className="mr-2 h-4 w-4" />Previsão estoque</TabsTrigger>
+          <TabsTrigger value="predictions"><TrendingDown className="mr-2 h-4 w-4" />Previsão estoque</TabsTrigger>
           <TabsTrigger value="purchase"><ShoppingCart className="mr-2 h-4 w-4" />Lista de compras</TabsTrigger>
         </TabsList>
 
@@ -343,6 +365,74 @@ export default function SuggestionsPage() {
                     ))}
                   </TableBody>
                 </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="picklist" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Package2 className="h-5 w-5 text-brand-navy" />
+                O que levar — todas as máquinas
+              </CardTitle>
+              <CardDescription>
+                Consolidado por máquina: capacidade − estoque atual = quantidade a levar.
+                Só aparece se o planograma (capacidade) estiver configurado.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? <LoaderStub /> : picklist.length === 0 ? (
+                <EmptyStateV2
+                  illustration="no-machines"
+                  title="Nenhuma máquina precisa de reposição"
+                  description="Configure o planograma (capacidade por slot) nas suas máquinas para gerar o picklist automaticamente."
+                  ctaLabel="Ir para máquinas"
+                  ctaHref="/app/maquinas"
+                />
+              ) : (
+                <div className="space-y-6">
+                  {picklist.map(machine => (
+                    <div key={machine.machine_id} className="rounded-lg border border-border-default overflow-hidden">
+                      <div className="flex items-center justify-between bg-surface-subtle/60 px-4 py-2.5">
+                        <div>
+                          <Link href={`/app/maquinas/${machine.machine_id}/estoque`} className="font-medium text-sm hover:underline">
+                            {machine.machine_name}
+                          </Link>
+                          {machine.location_name && (
+                            <span className="text-xs text-text-tertiary ml-2">{machine.location_name}</span>
+                          )}
+                        </div>
+                        <Pill tone="info" size="sm">
+                          {machine.total_to_fill} un. total
+                        </Pill>
+                      </div>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[60px]">Slot</TableHead>
+                            <TableHead>Produto</TableHead>
+                            <TableHead className="text-right">Atual</TableHead>
+                            <TableHead className="text-right">Capacidade</TableHead>
+                            <TableHead className="text-right font-semibold">Levar</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {machine.items.map(item => (
+                            <TableRow key={item.product_id}>
+                              <TableCell className="font-mono text-xs text-text-tertiary">{item.slot_code ?? '—'}</TableCell>
+                              <TableCell className="text-sm font-medium">{item.product_name}</TableCell>
+                              <TableCell className="text-right font-mono tabular-nums">{item.current_quantity}</TableCell>
+                              <TableCell className="text-right font-mono tabular-nums text-text-tertiary">{item.max_capacity}</TableCell>
+                              <TableCell className="text-right font-mono tabular-nums font-bold text-brand-navy">{item.to_fill}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ))}
+                </div>
               )}
             </CardContent>
           </Card>

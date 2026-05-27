@@ -231,18 +231,25 @@ export async function POST(
     newQuantity = quantity;
   }
 
+  // Mapear tipo do frontend para tipo do banco
+  const dbMovementType = movement_type === 'in' ? 'restock'
+    : movement_type === 'out' ? 'manual_adjust'
+    : 'manual_adjust';
+  const dbQuantity = movement_type === 'in' ? quantity
+    : movement_type === 'out' ? -quantity
+    : quantity - inventory.current_quantity;
+
   // Registrar movimentação
   const { error: movementError } = await supabase
     .from('inventory_movements')
     .insert({
       tenant_id: tenantId,
-      inventory_id: id,
       product_id: inventory.product_id,
-      movement_type,
-      quantity,
-      quantity_before: inventory.current_quantity,
-      quantity_after: newQuantity,
-      reason: reason || null,
+      movement_type: dbMovementType,
+      quantity: dbQuantity,
+      occurred_at: new Date().toISOString(),
+      source_kind: 'manual',
+      notes: reason || null,
     });
 
   if (movementError) {
