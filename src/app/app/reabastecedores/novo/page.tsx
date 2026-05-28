@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { MaskedInput } from '@/components/ui/masked-input';
 
 const schema = z.object({
   name: z.string().min(2, 'Nome muito curto'),
@@ -71,11 +72,23 @@ export default function NovoRestockerPage() {
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="document_number">CPF</Label>
-                <Input id="document_number" placeholder="000.000.000-00" {...register('document_number')} disabled={loading} />
+                <MaskedInput
+                  id="document_number"
+                  mask="cpf"
+                  placeholder="000.000.000-00"
+                  {...register('document_number')}
+                  disabled={loading}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Telefone</Label>
-                <Input id="phone" placeholder="(00) 00000-0000" {...register('phone')} disabled={loading} />
+                <MaskedInput
+                  id="phone"
+                  mask="phone"
+                  placeholder="(00) 00000-0000"
+                  {...register('phone')}
+                  disabled={loading}
+                />
               </div>
             </div>
             <div className="space-y-2">

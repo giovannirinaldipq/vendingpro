@@ -34,6 +34,19 @@ const CATEGORY_SUGGESTIONS = [
   'Café', 'Snacks Salgados', 'Snacks Doces', 'Saudáveis', 'Outros',
 ];
 
+// Função para padronizar nomes de produtos
+const standardizeProductName = (name: string): string => {
+  // Remove espaços extras no início e fim
+  const trimmed = name.trim();
+
+  // Converte para o formato tradicional (apenas a primeira letra de cada palavra maiúscula)
+  return trimmed
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 export default function NewProductPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -146,7 +159,12 @@ export default function NewProductPage() {
                 <Input
                   id="name"
                   placeholder="Ex: Coca-Cola Lata"
-                  {...register('name')}
+                  {...register('name', {
+                    onChange: (e) => {
+                      const value = e.target.value;
+                      setValue('name', standardizeProductName(value));
+                    }
+                  })}
                 />
                 {errors.name && (
                   <p className="text-xs text-danger">{errors.name.message}</p>
@@ -260,9 +278,9 @@ export default function NewProductPage() {
                   <button
                     type="button"
                     onClick={() => setPriceEditing(p => ({ ...p, sale: true }))}
-                    className="flex h-9 w-full items-center rounded-md border border-dashed border-amber-300 bg-amber-50/50 px-3 text-xs text-amber-700 hover:bg-amber-50 transition-colors"
+                    className="flex h-9 w-full items-center rounded-md border border-dashed border-input bg-muted px-3 text-xs text-muted-foreground hover:bg-muted/80 transition-colors"
                   >
-                    Números fictícios — Clique para alterar o valor
+                    Editar preço
                   </button>
                 )}
               </div>
@@ -282,9 +300,9 @@ export default function NewProductPage() {
                   <button
                     type="button"
                     onClick={() => setPriceEditing(p => ({ ...p, cost: true }))}
-                    className="flex h-9 w-full items-center rounded-md border border-dashed border-amber-300 bg-amber-50/50 px-3 text-xs text-amber-700 hover:bg-amber-50 transition-colors"
+                    className="flex h-9 w-full items-center rounded-md border border-dashed border-input bg-muted px-3 text-xs text-muted-foreground hover:bg-muted/80 transition-colors"
                   >
-                    Números fictícios — Clique para alterar o valor
+                    Editar preço
                   </button>
                 )}
               </div>

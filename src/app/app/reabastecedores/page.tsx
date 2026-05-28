@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Plus, Loader2, Phone, Car } from 'lucide-react';
+import { Plus, Loader2, Phone, Car, Mail, CheckCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -22,11 +22,49 @@ interface Restocker {
   vehicle_model: string | null;
   is_active: boolean;
   created_at: string;
+  invite_sent_at: string | null;
+  user_id: string | null;
 }
 
 export default function RestockersPage() {
   const [rows, setRows] = useState<Restocker[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sendingInvites, setSendingInvites] = useState<string[]>([]);
+
+  async function sendInvite(restockerId: string, restockerName: string, restockerEmail: string | null) {
+    if (!restockerEmail) {
+      toast.error('Reabastecedor precisa de email para receber convite');
+      return;
+    }
+
+    setSendingInvites(prev => [...prev, restockerId]);
+    try {
+      const res = await fetch(`/api/app/restockers/${restockerId}/invite`, {
+        method: 'POST',
+      });
+      const json = await res.json();
+
+      if (res.ok) {
+        toast.success(`Convite enviado para ${restockerEmail}`);
+        // Atualiza o status do convite
+        setRows(prev => prev.map(r =>
+          r.id === restockerId
+            ? { ...r, invite_sent_at: new Date().toISOString() }
+            : r
+        ));
+      } else {
+        toast.error(json.error?.message || 'Erro ao enviar convite');
+        // Em dev, se email não foi enviado, mostra o link
+        if (json.data?.action_url) {
+          toast.info(`Copie este link: ${json.data.action_url}`);
+        }
+      }
+    } catch {
+      toast.error('Erro ao enviar convite');
+    } finally {
+      setSendingInvites(prev => prev.filter(id => id !== restockerId));
+    }
+  }
 
   async function load() {
     setLoading(true);
@@ -100,9 +138,41 @@ export default function RestockersPage() {
                         : <Badge className="bg-gray-200 text-gray-700">Inativo</Badge>}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Link href={`/app/reabastecedores/${r.id}`}>
-                        <Button variant="ghost" size="sm">Editar</Button>
-                      </Link>
+                      <div className="flex items-center justify-end gap-2">
+                        {r.user_id ? (
+                          <div className="flex items-center gap-1 text-sm text-success">
+                            <CheckCircle className="h-3 w-3" />
+                            <span>Acesso liberado</span>
+                          </div>
+                        ) : r.invite_sent_at ? (
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <AlertCircle className="h-3 w-3" />
+                            <span>Convite enviado</span>
+                          </div>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => sendInvite(r.id, r.name, r.email)}
+                            disabled={sendingInvites.includes(r.id)}
+                          >
+                            {sendingInvites.includes(r.id) ? (
+                              <>
+                                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                                Enviando...
+                              </>
+                            ) : (
+                              <>
+                                <Mail className="mr-1 h-3 w-3" />
+                                Gerar Acesso
+                              </>
+                            )}
+                          </Button>
+                        )}
+                        <Link href={`/app/reabastecedores/${r.id}`}>
+                          <Button variant="ghost" size="sm">Editar</Button>
+                        </Link>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

@@ -331,7 +331,7 @@ export default function ProductsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Pill tone="outline">{product.category || 'Sem categoria'}</Pill>
+                      <Pill tone="outline">{product.category ? product.category.replace(/_/g, ' ') : 'Sem categoria'}</Pill>
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {product.default_sale_price

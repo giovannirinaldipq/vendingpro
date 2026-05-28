@@ -381,3 +381,29 @@ export default function AnalyticsPage() {
     </div>
   );
 }
+
+// Função de verificação de cálculos (para desenvolvimento)
+function verifyCalculations(data: AnalyticsData) {
+  if (process.env.NODE_ENV !== 'development') return null;
+
+  const totalRevenue = data.daily_sales.reduce((sum, day) => sum + day.revenue, 0);
+  const totalSales = data.daily_sales.reduce((sum, day) => sum + day.count, 0);
+  const averageTicket = totalSales > 0 ? totalRevenue / totalSales : 0;
+
+  const issues = [];
+
+  // Verificar consistência
+  if (Math.abs(totalRevenue - data.summary.total_revenue) > 0.01) {
+    issues.push(`Inconsistência na receita total: ${totalRevenue.toFixed(2)} vs ${data.summary.total_revenue.toFixed(2)}`);
+  }
+
+  if (totalSales !== data.summary.total_sales) {
+    issues.push(`Inconsistência no total de vendas: ${totalSales} vs ${data.summary.total_sales}`);
+  }
+
+  if (Math.abs(averageTicket - data.summary.average_ticket) > 0.01) {
+    issues.push(`Inconsistência no ticket médio: ${averageTicket.toFixed(2)} vs ${data.summary.average_ticket.toFixed(2)}`);
+  }
+
+  return issues.length > 0 ? issues : null;
+}

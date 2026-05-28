@@ -349,14 +349,21 @@ export default function InventoryPage() {
                           autoFocus
                         />
                       ) : (
-                        <button
-                          type="button"
-                          onClick={() => { setEditingMinId(item.id); setEditingMinValue(String(item.minimum_quantity)); }}
-                          className="text-text-tertiary tabular-nums hover:text-text-primary hover:underline cursor-pointer"
-                          title="Clique para editar"
-                        >
-                          {item.minimum_quantity}
-                        </button>
+                        <div className="flex items-center justify-center gap-1">
+                          <span className={`text-sm tabular-nums ${isLowStock(item) ? 'text-warning font-medium' : 'text-text-tertiary'}`}>
+                            {item.minimum_quantity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => { setEditingMinId(item.id); setEditingMinValue(String(item.minimum_quantity)); }}
+                            className="p-0.5 hover:bg-surface-subtle rounded transition-colors"
+                            title="Editar quantidade mínima"
+                          >
+                            <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                        </div>
                       )}
                     </TableCell>
                     <TableCell>
@@ -415,17 +422,29 @@ export default function InventoryPage() {
                   <SelectValue>
                     {movementType === 'in' && (
                       <div className="flex items-center">
-                        <Plus className="mr-2 h-4 w-4 text-success" />Entrada
+                        <Plus className="mr-2 h-4 w-4 text-success" />
+                        <div>
+                          <div>Entrada</div>
+                          <div className="text-xs text-muted-foreground">Produtos adicionados ao estoque</div>
+                        </div>
                       </div>
                     )}
                     {movementType === 'out' && (
                       <div className="flex items-center">
-                        <Minus className="mr-2 h-4 w-4 text-danger" />Saída
+                        <Minus className="mr-2 h-4 w-4 text-danger" />
+                        <div>
+                          <div>Saída</div>
+                          <div className="text-xs text-muted-foreground">Produtos removidos do estoque</div>
+                        </div>
                       </div>
                     )}
                     {movementType === 'adjustment' && (
                       <div className="flex items-center">
-                        <RefreshCw className="mr-2 h-4 w-4 text-info" />Ajuste
+                        <RefreshCw className="mr-2 h-4 w-4 text-info" />
+                        <div>
+                          <div>Ajuste</div>
+                          <div className="text-xs text-muted-foreground">Correção de estoque</div>
+                        </div>
                       </div>
                     )}
                   </SelectValue>
@@ -434,19 +453,28 @@ export default function InventoryPage() {
                   <SelectItem value="in">
                     <div className="flex items-center">
                       <Plus className="mr-2 h-4 w-4 text-success" />
-                      Entrada
+                      <div>
+                        <div>Entrada</div>
+                        <div className="text-xs text-muted-foreground">Produtos adicionados ao estoque</div>
+                      </div>
                     </div>
                   </SelectItem>
                   <SelectItem value="out">
                     <div className="flex items-center">
                       <Minus className="mr-2 h-4 w-4 text-danger" />
-                      Saída
+                      <div>
+                        <div>Saída</div>
+                        <div className="text-xs text-muted-foreground">Produtos removidos do estoque</div>
+                      </div>
                     </div>
                   </SelectItem>
                   <SelectItem value="adjustment">
                     <div className="flex items-center">
                       <RefreshCw className="mr-2 h-4 w-4 text-info" />
-                      Ajuste (definir quantidade)
+                      <div>
+                        <div>Ajuste</div>
+                        <div className="text-xs text-muted-foreground">Correção de estoque</div>
+                      </div>
                     </div>
                   </SelectItem>
                 </SelectContent>

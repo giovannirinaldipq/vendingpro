@@ -134,22 +134,35 @@ export default function FinanceiroPage() {
                 value={fmtBRL(summary.total.net_result)}
                 icon={summary.total.net_result >= 0 ? TrendingUp : TrendingDown}
                 subtitle={`${summary.total.sales_count.toLocaleString('pt-BR')} vendas · receita ${fmtBRL(summary.total.revenue)}`}
+                trend={summary.total.net_result >= 0 ? 'up' : 'down'}
+                trendValue={Math.abs(summary.total.net_result)}
               />
             </div>
-            <KpiCard
-              label="Receita bruta"
-              value={fmtBRL(summary.total.revenue)}
-              icon={DollarSign}
-            />
-            <KpiCard
-              label="Custos totais"
-              value={fmtBRL(summary.total.fees + summary.total.cmv + summary.total.fixed_costs)}
-              hint={`Taxas ${fmtBRL(summary.total.fees)} · CMV ${fmtBRL(summary.total.cmv)} · Fixos ${fmtBRL(summary.total.fixed_costs)}`}
-            />
+            <div className="space-y-4">
+              <KpiCard
+                label="Receita bruta"
+                value={fmtBRL(summary.total.revenue)}
+                icon={DollarSign}
+                trend="up"
+                trendValue={summary.total.revenue}
+                showPercentage
+              />
+              <KpiCard
+                label="Custos totais"
+                value={fmtBRL(summary.total.fees + summary.total.cmv + summary.total.fixed_costs)}
+                icon={TrendingDown}
+                trend="down"
+                trendValue={summary.total.fees + summary.total.cmv + summary.total.fixed_costs}
+                showPercentage
+                hint={`Taxas ${fmtBRL(summary.total.fees)} · CMV ${fmtBRL(summary.total.cmv)} · Fixos ${fmtBRL(summary.total.fixed_costs)}`}
+              />
+            </div>
             <KpiCard
               label="Em prejuízo"
               value={String(summary.machines_in_loss)}
               icon={AlertTriangle}
+              trend={summary.machines_in_loss > 0 ? 'down' : 'up'}
+              trendValue={summary.machines_in_loss}
               hint={summary.machines_in_loss > 0 ? 'máquinas no negativo' : 'tudo no positivo'}
             />
           </div>
@@ -211,7 +224,7 @@ export default function FinanceiroPage() {
             <CardContent className="space-y-4">
               {settings && (
                 <>
-                  <div className="grid sm:grid-cols-3 gap-4">
+                  <div className="grid sm:grid-cols-4 gap-4">
                     <div className="space-y-2">
                       <Label>Taxa cartão de crédito (%)</Label>
                       <Input type="number" step="0.1" min="0" max="30" value={settings.card_fee_percent}
@@ -226,6 +239,11 @@ export default function FinanceiroPage() {
                       <Label>Taxa dinheiro (%)</Label>
                       <Input type="number" step="0.1" min="0" max="10" value={settings.cash_fee_percent}
                         onChange={e => setSettings({ ...settings, cash_fee_percent: Number(e.target.value) })} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Taxa cartão de débito (%)</Label>
+                      <Input type="number" step="0.1" min="0" max="30" value={settings.debit_fee_percent || 0}
+                        onChange={e => setSettings({ ...settings, debit_fee_percent: Number(e.target.value) })} />
                     </div>
                   </div>
                   <Separator />
