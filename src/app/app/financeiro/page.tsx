@@ -45,6 +45,7 @@ interface FinanceSettings {
   card_fee_percent: number;
   pix_fee_percent: number;
   cash_fee_percent: number;
+  debit_fee_percent: number;
   loss_alert_enabled: boolean;
   loss_alert_period_days: number;
 }
