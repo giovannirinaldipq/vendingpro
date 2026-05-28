@@ -114,16 +114,17 @@ export default function OnboardingPage() {
       const restockerCount = restockersRes.ok ? restockersData.data.length : 0;
 
       // Atualizar status dos steps
-      setSteps(prev => prev.map(step => {
-        if (step.id === 'machines' && machineCount >= 3) return { ...step, status: 'completed' };
-        if (step.id === 'locations' && locationCount >= 2) return { ...step, status: 'completed' };
-        if (step.id === 'products' && productCount >= 10) return { ...step, status: 'completed' };
-        if (step.id === 'restockers' && restockerCount >= 1) return { ...step, status: 'completed' };
+      const updatedSteps = steps.map(step => {
+        if (step.id === 'machines' && machineCount >= 3) return { ...step, status: 'completed' as const };
+        if (step.id === 'locations' && locationCount >= 2) return { ...step, status: 'completed' as const };
+        if (step.id === 'products' && productCount >= 10) return { ...step, status: 'completed' as const };
+        if (step.id === 'restockers' && restockerCount >= 1) return { ...step, status: 'completed' as const };
         return step;
-      }));
+      });
+      setSteps(updatedSteps);
 
       // Encontrar próximo step pendente
-      const nextPending = prev.findIndex(step => step.status === 'pending');
+      const nextPending = updatedSteps.findIndex(step => step.status === 'pending');
       if (nextPending !== -1) {
         setCurrentStep(nextPending);
       }
