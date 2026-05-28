@@ -1,92 +1,57 @@
 "use client"
 
-import { forwardRef, useState } from 'react'
-import { Input, InputProps } from './input'
+import { forwardRef } from 'react'
+import { Input } from './input'
 import { cn } from '@/lib/utils'
 
-interface MaskedInputProps extends Omit<InputProps, 'onChange'> {
+type InputProps = React.ComponentProps<"input">
+
+interface MaskedInputProps extends InputProps {
   mask: 'cpf' | 'phone'
-  value?: string
-  onChange?: (value: string) => void
+}
+
+function applyMask(value: string, mask: 'cpf' | 'phone'): string {
+  const digits = value.replace(/\D/g, '')
+  if (mask === 'cpf') {
+    return digits
+      .slice(0, 11)
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+  }
+  return digits
+    .slice(0, 11)
+    .replace(/(\d{2})(\d)/, '($1) $2')
+    .replace(/(\d{5})(\d{1,4})$/, '$1-$2')
 }
 
 const MaskedInput = forwardRef<HTMLInputElement, MaskedInputProps>(
-  ({ mask, value, onChange, className, ...props }, ref) => {
-    const [cursorPosition, setCursorPosition] = useState(0)
-
-    const applyMask = (value: string): string => {
-      if (mask === 'cpf') {
-        return value
-          .replace(/\D/g, '')
-          .replace(/(\d{0,3})(\d{0,3})(\d{0,3})(\d{0,2})/, '$1.$2.$3-$4')
-          .replace(/(-\d{2})+$/, '$1')
-      }
-      if (mask === 'phone') {
-        return value
-          .replace(/\D/g, '')
-          .replace(/(\d{0,2})(\d{0,5})(\d{0,4})/, '($1) $2-$3')
-          .replace(/(\(\d{2}\) \d{5})(\d{4})+$/, '$1-$2')
-      }
-      return value
-    }
+  ({ mask, onChange, className, ...props }, ref) => {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const rawValue = e.target.value
-      const maskedValue = applyMask(rawValue)
-
-      if (onChange) {
-        onChange(maskedValue)
-      }
-    }
-
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Backspace' || e.key === 'Delete') {
-        const input = e.target as HTMLInputElement
-        const start = input.selectionStart || 0
-        const end = input.selectionEnd || 0
-
-        // Se estiver selecionando texto, permite deletar normalmente
-        if (start !== end) return
-
-        // Para backspace, pula caracteres de máscara
-        if (e.key === 'Backspace' && start > 0) {
-          const prevChar = value?.[start - 1]
-          if (prevChar && /\D/.test(prevChar)) {
-            e.preventDefault()
-            const newPosition = Math.max(0, start - 1)
-            if (input.setSelectionRange) {
-              input.setSelectionRange(newPosition, newPosition)
-            }
-          }
-        }
-      }
+      const masked = applyMask(e.target.value, mask)
+      e.target.value = masked
+      onChange?.(e)
     }
 
     const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
       e.preventDefault()
-      const pastedData = e.clipboardData.getData('text')
-      const cleanData = pastedData.replace(/\D/g, '')
-      const maskedValue = applyMask(cleanData)
-
-      if (onChange) {
-        onChange(maskedValue)
-      }
+      const pasted = e.clipboardData.getData('text')
+      const masked = applyMask(pasted, mask)
+      const input = e.target as HTMLInputElement
+      input.value = masked
+      const nativeEvent = new Event('input', { bubbles: true })
+      input.dispatchEvent(nativeEvent)
     }
 
     return (
       <Input
         ref={ref}
-        value={value}
         onChange={handleChange}
-        onKeyDown={handleKeyDown}
         onPaste={handlePaste}
-        className={cn(
-          mask === 'cpf' && 'font-mono tracking-wider',
-          mask === 'phone' && 'font-mono tracking-wider',
-          className
-        )}
-        {...props}
+        className={cn('font-mono tracking-wider', className)}
         maxLength={mask === 'cpf' ? 14 : 15}
+        {...props}
       />
     )
   }
