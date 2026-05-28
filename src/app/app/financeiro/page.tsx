@@ -134,35 +134,22 @@ export default function FinanceiroPage() {
                 value={fmtBRL(summary.total.net_result)}
                 icon={summary.total.net_result >= 0 ? TrendingUp : TrendingDown}
                 subtitle={`${summary.total.sales_count.toLocaleString('pt-BR')} vendas · receita ${fmtBRL(summary.total.revenue)}`}
-                trend={summary.total.net_result >= 0 ? 'up' : 'down'}
-                trendValue={Math.abs(summary.total.net_result)}
               />
             </div>
-            <div className="space-y-4">
-              <KpiCard
-                label="Receita bruta"
-                value={fmtBRL(summary.total.revenue)}
-                icon={DollarSign}
-                trend="up"
-                trendValue={summary.total.revenue}
-                showPercentage
-              />
-              <KpiCard
-                label="Custos totais"
-                value={fmtBRL(summary.total.fees + summary.total.cmv + summary.total.fixed_costs)}
-                icon={TrendingDown}
-                trend="down"
-                trendValue={summary.total.fees + summary.total.cmv + summary.total.fixed_costs}
-                showPercentage
-                hint={`Taxas ${fmtBRL(summary.total.fees)} · CMV ${fmtBRL(summary.total.cmv)} · Fixos ${fmtBRL(summary.total.fixed_costs)}`}
-              />
-            </div>
+            <KpiCard
+              label="Receita bruta"
+              value={fmtBRL(summary.total.revenue)}
+              icon={DollarSign}
+            />
+            <KpiCard
+              label="Custos totais"
+              value={fmtBRL(summary.total.fees + summary.total.cmv + summary.total.fixed_costs)}
+              hint={`Taxas ${fmtBRL(summary.total.fees)} · CMV ${fmtBRL(summary.total.cmv)} · Fixos ${fmtBRL(summary.total.fixed_costs)}`}
+            />
             <KpiCard
               label="Em prejuízo"
               value={String(summary.machines_in_loss)}
               icon={AlertTriangle}
-              trend={summary.machines_in_loss > 0 ? 'down' : 'up'}
-              trendValue={summary.machines_in_loss}
               hint={summary.machines_in_loss > 0 ? 'máquinas no negativo' : 'tudo no positivo'}
             />
           </div>
