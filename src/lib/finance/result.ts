@@ -4,6 +4,7 @@ export interface FinanceSettings {
   card_fee_percent: number;
   pix_fee_percent: number;
   cash_fee_percent: number;
+  debit_fee_percent: number;
 }
 
 export interface MachineResult {
@@ -24,12 +25,13 @@ const DEFAULT_SETTINGS: FinanceSettings = {
   card_fee_percent: 4,
   pix_fee_percent: 0,
   cash_fee_percent: 0,
+  debit_fee_percent: 2,
 };
 
 export async function getFinanceSettings(tenantId: string): Promise<FinanceSettings> {
   const { data } = await supabaseAdmin
     .from('finance_settings')
-    .select('card_fee_percent, pix_fee_percent, cash_fee_percent')
+    .select('card_fee_percent, pix_fee_percent, cash_fee_percent, debit_fee_percent')
     .eq('tenant_id', tenantId)
     .maybeSingle();
 
@@ -42,6 +44,7 @@ export async function getFinanceSettings(tenantId: string): Promise<FinanceSetti
     card_fee_percent: Number(data.card_fee_percent),
     pix_fee_percent: Number(data.pix_fee_percent),
     cash_fee_percent: Number(data.cash_fee_percent),
+    debit_fee_percent: Number(data.debit_fee_percent ?? 0),
   };
 }
 
@@ -78,7 +81,9 @@ export async function calculateMachineResult(
     const cost = products?.default_cost_price != null ? Number(products.default_cost_price) : 0;
     cmv += qty * cost;
     const pm = String(s.payment_method ?? '').toLowerCase();
-    if (pm.includes('credit') || pm.includes('cart') || pm.includes('card')) {
+    if (pm.includes('debit') || pm.includes('débito') || pm.includes('debito')) {
+      fees += total * (cfg.debit_fee_percent / 100);
+    } else if (pm.includes('credit') || pm.includes('cart') || pm.includes('card') || pm.includes('crédito') || pm.includes('credito')) {
       fees += total * (cfg.card_fee_percent / 100);
     } else if (pm.includes('pix')) {
       fees += total * (cfg.pix_fee_percent / 100);

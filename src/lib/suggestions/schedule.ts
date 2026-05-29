@@ -95,18 +95,32 @@ export async function suggestRestockSchedule(tenantId: string): Promise<RestockS
 
   for (const m of machines) {
     const stat = statsByMachine.get(m.id)!;
-    if (stat.totalSales === 0) continue;
+
+    const lastVisitAt = lastVisitByMachine.get(m.id) ?? null;
+    const daysSinceVisit = lastVisitAt
+      ? Math.floor((Date.now() - new Date(lastVisitAt).getTime()) / 86400000)
+      : null;
+
+    // Machines with no sales still need visits (new machines or broken telemetry)
+    if (stat.totalSales === 0) {
+      raw.push({
+        machine: m,
+        stat,
+        bestWeekday: 1,
+        bestHour: 10,
+        lastVisitAt,
+        daysSinceVisit,
+        urgency: 'high',
+        avgDailySales: 0,
+      });
+      continue;
+    }
 
     const { byWeekday, byHour, totalSales } = stat;
     const bestWeekday = byWeekday.indexOf(Math.min(...byWeekday));
     const usefulHours = byHour.slice(8, 20);
     const minUseful = Math.min(...usefulHours);
     const bestHour = byHour.slice(8, 20).indexOf(minUseful) + 8;
-
-    const lastVisitAt = lastVisitByMachine.get(m.id) ?? null;
-    const daysSinceVisit = lastVisitAt
-      ? Math.floor((Date.now() - new Date(lastVisitAt).getTime()) / 86400000)
-      : null;
 
     const urgency: 'low' | 'medium' | 'high' =
       daysSinceVisit == null || daysSinceVisit > 14 ? 'high'
