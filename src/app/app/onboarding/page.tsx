@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CheckCircle, AlertCircle, Loader2, ArrowRight, Check, Home, Package, Monitor, MapPin, Users, Calculator } from 'lucide-react';
+import { CheckCircle, AlertCircle, Loader2, ArrowRight, Check, Home, Package, Monitor, MapPin, Users, Calculator, Upload, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -55,12 +55,21 @@ export default function OnboardingPage() {
     },
     {
       id: 'inventory',
-      title: 'Configurar Estoque',
-      description: 'Defina quantidades mínimas e inicie seu controle de inventário',
-      icon: Calculator,
+      title: 'Registrar Estoque Atual',
+      description: 'Informe a quantidade atual de cada produto nas máquinas para o sistema calcular reposições corretamente',
+      icon: Database,
       status: 'pending',
-      action: 'Configurar estoque inicial',
-      href: '/app/estoque',
+      action: 'Registrar estoque',
+      href: '/app/estoque/inicial',
+    },
+    {
+      id: 'import',
+      title: 'Importar Dados de Vendas',
+      description: 'Importe sua planilha VMPay ou VendPago. A partir daqui o sistema calcula sugestões, pick list e agenda de visitas',
+      icon: Upload,
+      status: 'pending',
+      action: 'Importar planilha',
+      href: '/app/relatorios',
     },
     {
       id: 'restockers',
@@ -280,19 +289,25 @@ export default function OnboardingPage() {
           <div className="flex items-start gap-2">
             <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
             <div className="text-sm">
-              <strong>Códigos de Máquina:</strong> Use códicos curtos e fáceis de lembrar para suas máquinas
+              <strong>Ordem importa:</strong> Registre o estoque atual ANTES de importar planilhas. Assim o sistema sabe o ponto de partida.
             </div>
           </div>
           <div className="flex items-start gap-2">
             <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
             <div className="text-sm">
-              <strong>Preços de Custo:</strong> Cadastre o custo real de cada produto para cálculos precisos de CMV
+              <strong>Importação diária:</strong> Importe a planilha VMPay/VendPago todo dia. Quanto mais dados, melhores as sugestões de reposição e agenda.
             </div>
           </div>
           <div className="flex items-start gap-2">
             <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
             <div className="text-sm">
-              <strong>Quantidades Mínimas:</strong> Defina estoques mínimos para evitar falta de produtos
+              <strong>Capacidade dos slots:</strong> Configure a capacidade máxima de cada produto na máquina (Planograma) para a Pick List funcionar corretamente.
+            </div>
+          </div>
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+            <div className="text-sm">
+              <strong>Resultados em 3-7 dias:</strong> Após 3 dias de importação, sugestões de estoque aparecem. Após 7 dias, a agenda de visitas fica precisa.
             </div>
           </div>
         </CardContent>

@@ -208,6 +208,7 @@ export async function POST(req: NextRequest) {
           product_id,
           sale_price: price,
           cost_price: 0,
+          max_capacity: 10,
           is_active: true,
         };
       });

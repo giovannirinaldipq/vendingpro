@@ -80,10 +80,10 @@ export async function GET() {
 
     const items: PicklistItem[] = [];
     for (const row of products) {
-      if (!row.max_capacity) continue;
+      const capacity = row.max_capacity || 15;
       const key = `${machineId}::${row.product_id}`;
       const current = Math.max(0, stockMap.get(key) ?? 0);
-      const toFill = row.max_capacity - current;
+      const toFill = capacity - current;
       if (toFill <= 0) continue;
 
       const prod = Array.isArray(row.product) ? row.product[0] : row.product;
@@ -92,7 +92,7 @@ export async function GET() {
         product_name: (prod as { name?: string } | null)?.name ?? 'Produto',
         slot_code: row.slot_code ?? null,
         current_quantity: current,
-        max_capacity: row.max_capacity,
+        max_capacity: capacity,
         to_fill: toFill,
       });
     }
