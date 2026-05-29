@@ -69,7 +69,7 @@ export default function OnboardingPage() {
       icon: Upload,
       status: 'pending',
       action: 'Importar planilha',
-      href: '/app/relatorios',
+      href: '/app/importar',
     },
     {
       id: 'restockers',
@@ -110,7 +110,7 @@ export default function OnboardingPage() {
       // Verificar locais
       const locationsRes = await fetch('/api/app/locations');
       const locationsData = await locationsRes.json();
-      const locationCount = locationsRes.ok ? locationsData.data.length : 0;
+      const locationCount = locationsRes.ok ? (locationsData.data?.locations?.length ?? locationsData.data?.length ?? 0) : 0;
 
       // Verificar produtos
       const productsRes = await fetch('/api/app/products');
@@ -122,12 +122,30 @@ export default function OnboardingPage() {
       const restockersData = await restockersRes.json();
       const restockerCount = restockersRes.ok ? restockersData.data.length : 0;
 
+      // Verificar estoque inicial (tem pelo menos 1 movement 'initial')
+      const inventoryRes = await fetch('/api/app/inventory');
+      const inventoryData = await inventoryRes.json();
+      const hasInventory = inventoryRes.ok && (inventoryData.data?.items ?? []).some((i: { current_quantity: number }) => i.current_quantity > 0);
+
+      // Verificar importações
+      const importsRes = await fetch('/api/app/imports');
+      const importsData = await importsRes.json();
+      const hasImports = importsRes.ok && (importsData.data?.length ?? 0) > 0;
+
+      // Verificar configurações financeiras
+      const financeRes = await fetch('/api/app/finance-settings');
+      const financeData = await financeRes.json();
+      const hasFinance = financeRes.ok && financeData.data?.card_fee_percent > 0;
+
       // Atualizar status dos steps
       const updatedSteps = steps.map(step => {
         if (step.id === 'machines' && machineCount >= 3) return { ...step, status: 'completed' as const };
         if (step.id === 'locations' && locationCount >= 2) return { ...step, status: 'completed' as const };
         if (step.id === 'products' && productCount >= 10) return { ...step, status: 'completed' as const };
+        if (step.id === 'inventory' && hasInventory) return { ...step, status: 'completed' as const };
+        if (step.id === 'import' && hasImports) return { ...step, status: 'completed' as const };
         if (step.id === 'restockers' && restockerCount >= 1) return { ...step, status: 'completed' as const };
+        if (step.id === 'finance' && hasFinance) return { ...step, status: 'completed' as const };
         return step;
       });
       setSteps(updatedSteps);
