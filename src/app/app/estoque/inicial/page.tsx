@@ -77,19 +77,19 @@ export default function EstoqueInicialPage() {
   if (done) {
     return (
       <div className="max-w-2xl mx-auto p-6">
-        <Card className="border-green-200 bg-green-50">
+        <Card className="border-success/30">
           <CardContent className="pt-6">
             <div className="text-center space-y-4">
-              <CheckCircle className="h-12 w-12 text-green-600 mx-auto" />
+              <CheckCircle className="h-12 w-12 text-success mx-auto" />
               <div>
-                <h3 className="text-xl font-semibold text-green-800">Estoque inicial registrado</h3>
-                <p className="text-green-700 mt-2">
+                <h3 className="text-xl font-semibold text-text-primary">Estoque inicial registrado</h3>
+                <p className="text-text-secondary mt-2">
                   Agora você pode importar suas planilhas de vendas. O sistema vai descontar
                   as vendas a partir de hoje automaticamente.
                 </p>
               </div>
               <div className="flex gap-2 justify-center">
-                <Button onClick={() => router.push('/app/relatorios')}>
+                <Button onClick={() => router.push('/app/importar')}>
                   Importar Planilha
                 </Button>
                 <Button variant="outline" onClick={() => router.push('/app/estoque')}>
@@ -112,15 +112,15 @@ export default function EstoqueInicialPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold">Registrar Estoque Atual</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-2xl font-bold text-text-primary">Registrar Estoque Atual</h1>
+          <p className="text-sm text-text-secondary">
             Informe a quantidade atual de cada produto. Isso define o ponto de partida do controle de estoque.
           </p>
         </div>
       </div>
 
-      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
-        <strong>Importante:</strong> Faça isso ANTES de importar planilhas de vendas.
+      <div className="rounded-lg border border-warning/30 bg-warning-soft/30 p-4 text-sm text-text-secondary">
+        <strong className="text-text-primary">Importante:</strong> Faça isso ANTES de importar planilhas de vendas.
         O sistema precisa saber quanto você tem hoje para calcular corretamente as saídas.
       </div>
 
@@ -136,9 +136,9 @@ export default function EstoqueInicialPage() {
         </CardHeader>
         <CardContent>
           {products.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
+            <p className="text-center text-text-tertiary py-8">
               Nenhum produto cadastrado ainda.{' '}
-              <Link href="/app/produtos/novo" className="text-blue-600 underline">Cadastrar produtos</Link>
+              <Link href="/app/produtos/novo" className="text-brand-navy hover:underline">Cadastrar produtos</Link>
             </p>
           ) : (
             <Table>
@@ -154,7 +154,7 @@ export default function EstoqueInicialPage() {
                     <TableCell>
                       <span className="font-medium">{p.name}</span>
                       {p.category && (
-                        <span className="ml-2 text-xs text-muted-foreground">
+                        <span className="ml-2 text-xs text-text-tertiary">
                           {p.category.replace(/_/g, ' ')}
                         </span>
                       )}

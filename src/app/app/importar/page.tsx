@@ -414,12 +414,19 @@ export default function ImportPage() {
                             }}
                           >
                             <SelectTrigger className="w-full max-w-[320px]">
-                              <SelectValue placeholder="Selecione a máquina..." />
+                              <SelectValue placeholder="Selecione a máquina...">
+                                {selections[m.external_name]
+                                  ? (() => {
+                                      const am = preview.available_machines.find(x => x.id === selections[m.external_name]);
+                                      return am ? `${am.name} (${am.code})` : 'Selecione a máquina...';
+                                    })()
+                                  : undefined}
+                              </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                               {preview.available_machines.map(am => (
                                 <SelectItem key={am.id} value={am.id}>
-                                  {am.name} <span className="text-text-tertiary text-xs ml-1">({am.code})</span>
+                                  {am.name} ({am.code})
                                 </SelectItem>
                               ))}
                             </SelectContent>

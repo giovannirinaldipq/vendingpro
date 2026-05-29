@@ -23,6 +23,14 @@ export async function POST(req: NextRequest) {
 
   const hasInitialStock = (initialCount ?? 0) > 0;
 
+  // Check if tenant has any products (first import auto-creates them)
+  const { count: productCount } = await supabaseAdmin
+    .from('products')
+    .select('id', { count: 'exact', head: true })
+    .eq('tenant_id', ctx.tenantId);
+
+  const hasProducts = (productCount ?? 0) > 0;
+
   const form = await req.formData();
   const file = form.get('file') as File | null;
   const systemRaw = (form.get('system') as string | null) ?? 'vmpay';
@@ -31,10 +39,12 @@ export async function POST(req: NextRequest) {
 
   if (!file) return NextResponse.json({ error: 'file_required' }, { status: 400 });
 
-  if (!hasInitialStock && !skipStockWarning) {
+  // Only block if tenant HAS products but no initial stock
+  // First import (no products yet) is allowed — products will be auto-created
+  if (hasProducts && !hasInitialStock && !skipStockWarning) {
     return NextResponse.json({
       error: 'no_initial_stock',
-      message: 'Você ainda não registrou o estoque inicial. Importe sem estoque inicial e as quantidades ficarão negativas. Registre o estoque em /app/estoque/inicial antes de importar, ou envie skip_stock_warning=true para prosseguir mesmo assim.',
+      message: 'Você tem produtos cadastrados mas não registrou o estoque inicial. Sem isso, as quantidades ficarão negativas. Registre o estoque em /app/estoque/inicial ou envie skip_stock_warning=true para prosseguir.',
     }, { status: 409 });
   }
 
