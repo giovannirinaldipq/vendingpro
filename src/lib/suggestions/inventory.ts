@@ -16,8 +16,8 @@ export interface InventoryPrediction {
 
 /**
  * Usa inventory_movements (tipo 'sale') para calcular consumo médio.
- * Antes usava tabela sales por product_id, mas product_id em sales
- * raramente é preenchido (import só grava product_name).
+ * Divide pelo número de dias DISTINTOS com vendas (não pelo período inteiro)
+ * para evitar subestimar quando há gaps de importação.
  */
 export async function predictInventoryRunout(tenantId: string): Promise<InventoryPrediction[]> {
   const since = new Date(Date.now() - LOOKBACK_DAYS * 86400000).toISOString();
@@ -34,7 +34,7 @@ export async function predictInventoryRunout(tenantId: string): Promise<Inventor
   // Query 2: movements de venda no período (quantity é negativo para sales)
   const { data: movementsRaw } = await supabaseAdmin
     .from('inventory_movements')
-    .select('product_id, quantity')
+    .select('product_id, quantity, occurred_at')
     .eq('tenant_id', tenantId)
     .eq('movement_type', 'sale')
     .in('product_id', productIds)
@@ -55,12 +55,15 @@ export async function predictInventoryRunout(tenantId: string): Promise<Inventor
     }
   }
 
-  // Agregação: soma absoluta de vendas por product_id
+  // Agregação: soma absoluta de vendas + dias distintos por product_id
   const salesByProduct = new Map<string, number>();
+  const daysByProduct = new Map<string, Set<string>>();
   for (const s of movementsRaw ?? []) {
     if (!s.product_id) continue;
-    // quantity é negativo para vendas, usamos valor absoluto
     salesByProduct.set(s.product_id, (salesByProduct.get(s.product_id) ?? 0) + Math.abs(Number(s.quantity ?? 0)));
+    const day = (s.occurred_at as string).slice(0, 10);
+    if (!daysByProduct.has(s.product_id)) daysByProduct.set(s.product_id, new Set());
+    daysByProduct.get(s.product_id)!.add(day);
   }
 
   const out: InventoryPrediction[] = [];
@@ -71,7 +74,8 @@ export async function predictInventoryRunout(tenantId: string): Promise<Inventor
       : (row.products as { name?: string } | null)?.name ?? 'produto';
 
     const totalQty = salesByProduct.get(row.product_id) ?? 0;
-    const avgDaily = totalQty / LOOKBACK_DAYS;
+    const distinctDays = daysByProduct.get(row.product_id)?.size ?? 0;
+    const avgDaily = distinctDays > 0 ? totalQty / distinctDays : 0;
     const current = Number(row.current_quantity);
     const minimum = Number(row.minimum_quantity ?? 0);
 

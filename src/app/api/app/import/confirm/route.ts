@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getTenantContext } from '@/lib/auth/tenant';
 import { runParser, type ImportSource } from '@/lib/import';
 import { recordSalesMovementsFiltered } from '@/lib/inventory/movements';
+import { supabaseAdmin } from '@/lib/supabase/admin';
+import { findBestProductMatch } from '@/lib/import/product-match';
 
 interface MappingPair {
   external_name: string;
@@ -12,12 +14,30 @@ export async function POST(req: NextRequest) {
   const ctx = await getTenantContext();
   if (!ctx) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
+  // Check if tenant has at least one initial stock movement
+  const { count: initialCount } = await supabaseAdmin
+    .from('inventory_movements')
+    .select('id', { count: 'exact', head: true })
+    .eq('tenant_id', ctx.tenantId)
+    .eq('movement_type', 'initial');
+
+  const hasInitialStock = (initialCount ?? 0) > 0;
+
   const form = await req.formData();
   const file = form.get('file') as File | null;
   const systemRaw = (form.get('system') as string | null) ?? 'vmpay';
   const mappingsRaw = form.get('mappings') as string | null;
+  const skipStockWarning = form.get('skip_stock_warning') === 'true';
 
   if (!file) return NextResponse.json({ error: 'file_required' }, { status: 400 });
+
+  if (!hasInitialStock && !skipStockWarning) {
+    return NextResponse.json({
+      error: 'no_initial_stock',
+      message: 'Você ainda não registrou o estoque inicial. Importe sem estoque inicial e as quantidades ficarão negativas. Registre o estoque em /app/estoque/inicial antes de importar, ou envie skip_stock_warning=true para prosseguir mesmo assim.',
+    }, { status: 409 });
+  }
+
   if (systemRaw !== 'vmpay' && systemRaw !== 'vendpago') {
     return NextResponse.json({ error: 'invalid_system' }, { status: 400 });
   }
@@ -150,7 +170,9 @@ export async function POST(req: NextRequest) {
 
   // ─────────────────────────────────────────────────────────────
   // Auto-create products from imported sales (if they don't exist yet)
+  // Uses fuzzy matching to avoid duplicates from name variations
   // ─────────────────────────────────────────────────────────────
+  let fuzzyMatched = 0;
   if (insertedSales.length > 0) {
     const distinctProductNames = [...new Set(insertedSales.map(s => s.product_name).filter(Boolean))];
     if (distinctProductNames.length > 0) {
@@ -160,8 +182,19 @@ export async function POST(req: NextRequest) {
         .eq('tenant_id', ctx.tenantId);
       const existingSet = new Set((existingProducts ?? []).map(p => (p.name as string).toLowerCase()));
       const existingByName = new Map((existingProducts ?? []).map(p => [(p.name as string).toLowerCase(), p.id as string]));
+
+      // Try fuzzy matching for names that don't have exact match
+      const unmatched = distinctProductNames.filter(name => !existingSet.has(name.toLowerCase()));
+      for (const name of unmatched) {
+        const matchId = findBestProductMatch(name, (existingProducts ?? []) as Array<{ id: string; name: string }>);
+        if (matchId) {
+          existingByName.set(name.toLowerCase(), matchId);
+          fuzzyMatched++;
+        }
+      }
+
       const newProducts = distinctProductNames
-        .filter(name => !existingSet.has(name.toLowerCase()))
+        .filter(name => !existingSet.has(name.toLowerCase()) && !existingByName.has(name.toLowerCase()))
         .map(name => ({
           tenant_id: ctx.tenantId,
           name,
@@ -316,6 +349,7 @@ export async function POST(req: NextRequest) {
       total_revenue: parsed.summary.total_revenue,
       format: parsed.summary.format,
       aggregated_transactions: parsed.summary.aggregated_transactions,
+      fuzzy_matched: fuzzyMatched,
       stock: {
         movements_inserted: movementsInserted,
         movements_skipped: movementsSkipped,

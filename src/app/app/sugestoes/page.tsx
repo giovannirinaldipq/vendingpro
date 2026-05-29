@@ -108,6 +108,8 @@ export default function SuggestionsPage() {
   const [expandedSchedule, setExpandedSchedule] = useState<Set<string>>(new Set());
   const [expandedSwap, setExpandedSwap] = useState<Set<string>>(new Set());
 
+  const [swapMeta, setSwapMeta] = useState<{ insufficient_data: boolean; days_available: number; days_required?: number; message?: string } | null>(null);
+
   // Period selector pra lista de compras
   const [purchaseDays, setPurchaseDays] = useState<number>(30);
   const [purchaseCustom, setPurchaseCustom] = useState<string>('');
@@ -128,6 +130,7 @@ export default function SuggestionsPage() {
       setPredictions(p.data ?? []);
       setPurchase(pu.data ?? []);
       setSwaps(sw.data ?? []);
+      setSwapMeta(sw.meta ?? null);
       setCapacity(cap.data ?? null);
       setPicklist(pl.data ?? []);
       setLoading(false);
@@ -439,6 +442,26 @@ export default function SuggestionsPage() {
         </TabsContent>
 
         <TabsContent value="mix" className="mt-4 space-y-4">
+          {swapMeta?.insufficient_data ? (
+            <Card className="border-amber-200 bg-amber-50">
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-3">
+                  <Info className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-amber-800">Dados insuficientes para sugestões de troca</p>
+                    <p className="text-sm text-amber-700 mt-1">
+                      Você tem {swapMeta.days_available} dia(s) de vendas importadas. O sistema precisa de pelo menos 14 dias
+                      para identificar com confiança quais produtos manter e quais trocar.
+                    </p>
+                    <p className="text-sm text-amber-700 mt-2">
+                      Continue importando suas planilhas diariamente. Esta aba será ativada automaticamente quando houver dados suficientes.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+          <>
           {/* KEEP — top vendedores */}
           <Card className="border-success/30">
             <CardHeader>
@@ -580,6 +603,8 @@ export default function SuggestionsPage() {
               )}
             </CardContent>
           </Card>
+          </>
+          )}
         </TabsContent>
 
         <TabsContent value="predictions" className="mt-4">

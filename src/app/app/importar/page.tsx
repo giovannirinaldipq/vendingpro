@@ -57,6 +57,7 @@ interface ConfirmResult {
   total_revenue: number;
   format?: 'sales_detailed' | 'cashless_aggregated';
   aggregated_transactions?: number;
+  fuzzy_matched?: number;
 }
 
 const fmtBRL = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -129,6 +130,17 @@ export default function ImportPage() {
       const res = await fetch('/api/app/import/confirm', { method: 'POST', body: fd });
       const json = await res.json();
       if (!res.ok) {
+        if (json.error === 'no_initial_stock') {
+          toast.error('Registre o estoque inicial antes de importar', {
+            description: 'Sem estoque inicial, as quantidades ficarão negativas. Vá em Estoque > Registrar Estoque Atual.',
+            duration: 8000,
+            action: {
+              label: 'Registrar agora',
+              onClick: () => { window.location.href = '/app/estoque/inicial'; },
+            },
+          });
+          return;
+        }
         toast.error(json.error ?? 'Falha ao importar');
         return;
       }
@@ -523,6 +535,19 @@ export default function ImportPage() {
                 </div>
               </div>
             )}
+            <div className="rounded-lg border border-info/30 bg-info-soft/40 p-3 text-sm flex gap-3">
+              <Sparkles className="h-4 w-4 text-info shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-text-primary">Próximo passo: configure a capacidade dos slots</p>
+                <p className="text-xs text-text-secondary mt-1">
+                  Para a Pick List funcionar corretamente, defina a capacidade máxima de cada produto em cada máquina.
+                  Acesse o Planograma de cada máquina e ajuste os valores.
+                </p>
+                <Link href="/app/maquinas" className="text-xs text-brand-navy hover:underline font-medium mt-1 inline-block">
+                  Ir para Máquinas →
+                </Link>
+              </div>
+            </div>
             <div className="flex gap-2 pt-2">
               <Button onClick={reset}><Upload className="mr-2 h-4 w-4" />Importar outro arquivo</Button>
               <Link href="/app/analytics"><Button variant="outline">Ver analytics<ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
